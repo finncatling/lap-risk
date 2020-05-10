@@ -27,14 +27,12 @@ def split_into_folds(
 ) -> (pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray):
     """Splits supplied DataFrame into train and test folds, such that the test
         fold is the cases from the test trusts which are complete for the
-        variables
-        in the current NELA risk model, and the train fold is all the available
-        cases from the train trusts. Two things to note:
+        variables in the current NELA risk model, and the train fold is all
+        the available cases from the train trusts. Two things to note:
 
         1) The train fold will be different between models as for the current
-        NELA
-        model it will only contain complete cases, whereas for our model it will
-        also contain the cases that were incomplete prior to imputation.
+        NELA model it will only contain complete cases, whereas for our model
+        it will also contain the cases that were incomplete prior to imputation.
 
         2) The test fold will be the same for all models, i.e. the current-NELA-
         model incomplete cases from the test fold trusts will not be used in
@@ -62,8 +60,8 @@ def split_into_folds(
         split[fold]['y'] = split[fold]['X_df']['Target'].values
         split[fold]['X_df'] = split[fold]['X_df'].drop('Target', axis=1)
 
-    assert (split['test']['X_df'].shape[0] == train_test_split['test_i'].shape[
-        0])
+    assert (split['test']['X_df'].shape[0] ==
+            train_test_split['test_i'].shape[0])
 
     return (split['train']['X_df'], split['train']['y'],
             split['test']['X_df'], split['test']['y'])
