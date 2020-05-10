@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 import copy
+from typing import List, Dict
+
 import numpy as np
 import pandas as pd
-from typing import List, Dict
 from numpy.random import RandomState
 from progressbar import progressbar as pb
-from sklearn.preprocessing import RobustScaler
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import RobustScaler
 
 
 class CategoricalImputer:
     """Imputes missing values of non-binary categorical
         variables in MICE DataFrames."""
+
     def __init__(self,
                  original_df: pd.DataFrame,
                  mice_dfs: List[pd.DataFrame],
@@ -66,12 +68,12 @@ class CategoricalImputer:
         n_cols = len(self.odf.columns)
         self.odf = self.odf[self.cont_vars + self.binary_vars +
                             self.cat_vars]
-        assert(n_cols == self.odf.shape[1])
+        assert (n_cols == self.odf.shape[1])
         for i in range(len(self.mice_dfs)):
             n_cols = len(self.mice_dfs[i].columns)
             self.mice_dfs[i] = self.mice_dfs[i][self.cont_vars +
                                                 self.binary_vars]
-            assert(n_cols == self.mice_dfs[i].shape[1])
+            assert (n_cols == self.mice_dfs[i].shape[1])
 
     def _scale_mice_dfs(self):
         """We need to scale the continuous variables in order to use
@@ -80,7 +82,7 @@ class CategoricalImputer:
             s = RobustScaler()
             self.mice_dfs[i].loc[:, self.cont_vars] = s.fit_transform(
                 self.mice_dfs[i].loc[:, self.cont_vars].values)
-    
+
     def _impute_v(self, v: str):
         self._v[v] = {'imp': []}
         self._get_train_missing_i(v)
@@ -111,7 +113,8 @@ class CategoricalImputer:
         lr.fit(self.mice_dfs[i].loc[self._v[v]['train_i']].values,
                self._v[v]['y_train'])
         return (lr.predict_proba(self.mice_dfs[i].loc[
-            self._v[v]['missing_i']].values), lr.classes_)
+                                     self._v[v]['missing_i']].values),
+                lr.classes_)
 
     def _impute_y(self, v: str, i: int, y_missing_probs, y_classes):
         """Rather than imputing each missing value using
@@ -144,6 +147,7 @@ class ContImpPreprocessor:
     """Prepares output from notebook 4 (list of DataFrames from MICE and
         categorical imputation) for input to GAMs for imputation of
         remaining unimputed variables, e.g. lactate, albumin."""
+
     def __init__(self,
                  imp_dfs: List[pd.DataFrame],
                  target: str,
@@ -185,7 +189,7 @@ class ContImpPreprocessor:
 
     def _get_train_missing_i(self) -> Dict[str, pd.Int64Index]:
         return {'train': self.imp_dfs[0].loc[self.imp_dfs[0][
-                    self.target].notnull()].index,
+            self.target].notnull()].index,
                 'missing': self.imp_dfs[0].loc[self.imp_dfs[0][
                     self.target].isnull()].index}
 
@@ -198,18 +202,16 @@ class ContImpPreprocessor:
         self.y_train = copy.deepcopy(
             self.imp_dfs[0].loc[self._i['train'], self.target].values)
         for i in range(1, self.n_imp_dfs):  # Check that all y are same
-            assert((self.y_train == 
-                    self.imp_dfs[i].loc[self._i['train'],
-                                        self.target].values).all())
+            assert ((self.y_train ==
+                     self.imp_dfs[i].loc[self._i['train'],
+                                         self.target].values).all())
 
     def _X_train_missing_split(self, i: int):
         for fold in self.X.keys():
             self.X[fold].append(self.imp_dfs[i].loc[
-                self._i[fold]].drop(self.target, axis=1).copy())
+                                    self._i[fold]].drop(self.target,
+                                                        axis=1).copy())
 
     @property
     def n_imp_dfs(self) -> int:
         return len(self.imp_dfs)
-        
-
-    

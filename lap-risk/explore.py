@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
+from typing import List
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+from IPython.display import display
 from scipy import stats
-from typing import List
 
 
 def cat_data(df: pd.DataFrame, col_name: str,
-             binary: bool = False) -> pd.core.series.Series:
+             binary: bool = False) -> None:
     """Display some useful attributes of a categorical feature. Note
         that binary=True alters the underlying input DataFrame."""
     if binary:
@@ -16,49 +18,47 @@ def cat_data(df: pd.DataFrame, col_name: str,
     print(f"Missing rows: {missingness_perc(df, col_name)}%")
     dot_chart(df[col_name].value_counts(dropna=False), col_name)
 
-    
+
 def con_data(df: pd.DataFrame, col_name: str, bins: int = 50) -> None:
     """Display some useful attributes of a continuous feature.
         NB. Normality test is likely to fail even for Gaussian-looking
         distributions given that the dataset is large."""
     print(f"Data type: {df[col_name].dtype}")
     print(f"Missing rows: {missingness_perc(df, col_name)}%")
-#     print(f"Normality test p = {}".format(
-#         stats.normaltest(df.loc[df[col_name].notnull(),
-#                                 col_name].values)[1]))
     display(pd.DataFrame(df[col_name].describe()))
-    
+
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].hist(df[col_name].values, bins=bins)
     stats.probplot(df.loc[df[col_name].notnull(), col_name].values,
                    plot=axes[1])
     plt.show()
-    
-    
+
+
 def dummies_data(df: pd.DataFrame, categories: list, concept: str,
                  col_name_prefix_len: int) -> None:
     """Summarises groups of columns containing related indicator
         variables.
     
     Args:
+        df: DataFrame containing the columns of indicator variables
         categories: column names of the related variables
         concept: the thing that groups the columns together
         col_name_prefix_len: length of the common prefix to all
             the column names
     """
     ddf = df[categories].copy()
-    
+
     for c in ddf.columns:
         ddf.loc[ddf[c] != 1, c] = 0
         ddf[c] = ddf[c].astype(int)
-    
+
     ind_vc = ddf.sum(0).sort_values(ascending=False)
     ind_vc.index = ind_vc.index.str[col_name_prefix_len:]
     dot_chart(ind_vc, f'How common is each {concept}?')
-    
+
     dot_chart(ddf.sum(1).value_counts().sort_index(),
               f'How many {concept}s per laparotomy?')
-    
+
     for c in ddf.columns:
         cat_data(df, c)
 
@@ -87,7 +87,7 @@ def convert_to_binary(x):
         return 1
 
 
-def dot_chart(vc: pd.core.series.Series, title: str) -> None:
+def dot_chart(vc: pd.Series, title: str) -> None:
     """Plot Bill Cleveland-style dot chart for categorical features.
     
     Args:
@@ -98,7 +98,7 @@ def dot_chart(vc: pd.core.series.Series, title: str) -> None:
     f, ax = plt.subplots(figsize=(6, vc.shape[0] / 3))
 
     data = vc.values
-    datalabels = list(vc.index)
+    data_labels = list(vc.index)
 
     n = len(data)
     y = np.arange(n)[::-1]
@@ -107,7 +107,7 @@ def dot_chart(vc: pd.core.series.Series, title: str) -> None:
             markeredgewidth=0)
 
     ax.set_yticks(list(range(n)))
-    ax.set_yticklabels(datalabels[::-1])
+    ax.set_yticklabels(data_labels[::-1])
 
     ax.set_ylim(-1, n)
 
@@ -129,35 +129,36 @@ def dot_chart(vc: pd.core.series.Series, title: str) -> None:
     plt.show()
 
 
-def multi_dot_chart(vcs: List[pd.core.series.Series],
-                    labels: List[str], normalise: bool = True) -> None:
+def multi_dot_chart(vcs: List[pd.Series],
+                    labels: List[str],
+                    normalise: bool = True) -> None:
     """Plot Bill Cleveland-style dot chart for categorical features,
         where categories are stratified according to something.
     
     Args:
-        vcs: Output from pandas value_counts(dropna=False) on
+        vcs: List of outputs from pandas value_counts(dropna=False) on
             categorical feature
-        title: Name of feature
+        labels: Labels plotted for stratum, i.e. for each element of vcs
         normalise: If True, makes counts in each stratum sum to 1
     """
     f, ax = plt.subplots(figsize=(6, vcs[0].shape[0] / 3))
-    
+
     for i, vc in enumerate(vcs):
         if not i:
-            datalabels = list(vc.index)
-            n = len(datalabels)
+            data_labels = list(vc.index)
+            n = len(data_labels)
             y = np.arange(n)[::-1]
-        
-        data = vc.reindex(datalabels).values
+
+        data = vc.reindex(data_labels).values
         if normalise:
             data = data / data.sum()
-        
+
         ax.plot(data, y, marker='.',
                 linestyle='', markersize=10, markeredgewidth=0,
                 label=labels[i])
 
     ax.set_yticks(list(range(n)))
-    ax.set_yticklabels(datalabels[::-1])
+    ax.set_yticklabels(data_labels[::-1])
     ax.set_ylim(-1, n)
     ax.tick_params(axis='y', which='major', right=True,
                    left=True, color='0.8')
@@ -165,6 +166,6 @@ def multi_dot_chart(vcs: List[pd.core.series.Series],
             linestyle='-', color='0.8')
     if normalise:
         ax.set_xlabel('Fraction of per-stratum total')
-    
+
     plt.legend(loc='lower right')
     plt.show()

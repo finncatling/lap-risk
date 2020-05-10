@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-import pickle, os, operator
+import operator
+import os
+import pickle
+from typing import Dict, List, Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple
 
 
 def drop_incomplete_cases(df: pd.DataFrame) -> (pd.DataFrame, int, int):
@@ -21,15 +24,17 @@ def drop_incomplete_cases(df: pd.DataFrame) -> (pd.DataFrame, int, int):
 
 
 def split_into_folds(
-    df: pd.DataFrame,
-    tts_filepath: str = os.path.join('data', 'train_test_split.pkl')
+        df: pd.DataFrame,
+        tts_filepath: str = os.path.join('data', 'train_test_split.pkl')
 ) -> (pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray):
     """Splits supplied DataFrame into train and test folds, such that the test
-        fold is the cases from the test trusts which are complete for the variables
+        fold is the cases from the test trusts which are complete for the
+        variables
         in the current NELA risk model, and the train fold is all the available
         cases from the train trusts. Two things to note:
 
-        1) The train fold will be different between models as for the current NELA
+        1) The train fold will be different between models as for the current
+        NELA
         model it will only contain complete cases, whereas for our model it will
         also contain the cases that were incomplete prior to imputation.
 
@@ -43,20 +48,24 @@ def split_into_folds(
         if fold == 'train':
             train_total = train_test_split[f'{fold}_i'].shape[0]
             train_test_split[f'{fold}_i'] = np.array([i for i in
-                train_test_split[f'{fold}_i'] if i in df.index])
+                                                      train_test_split[
+                                                          f'{fold}_i'] if
+                                                      i in df.index])
             train_intersection = train_test_split[f'{fold}_i'].shape[0]
+            percent_unavailable = 100 * (1 - train_intersection / train_total)
             print(f'{train_total} cases in unabridged train fold.')
             print(f'Excluded {train_total - train_intersection} cases',
-                  f'({np.round(100 * (1 - train_intersection / train_total), 3)}%)',
+                  f'({np.round(percent_unavailable, 3)}%)',
                   'not available in input DataFrame.')
-            print(f'{train_intersection} cases in returned train Dataframe.')   
+            print(f'{train_intersection} cases in returned train Dataframe.')
 
         split[fold] = {'X_df': df.loc[
             train_test_split[f'{fold}_i']].copy().reset_index(drop=True)}
         split[fold]['y'] = split[fold]['X_df']['Target'].values
         split[fold]['X_df'] = split[fold]['X_df'].drop('Target', axis=1)
 
-    assert(split['test']['X_df'].shape[0] == train_test_split['test_i'].shape[0])
+    assert (split['test']['X_df'].shape[0] == train_test_split['test_i'].shape[
+        0])
 
     return (split['train']['X_df'], split['train']['y'],
             split['test']['X_df'], split['test']['y'])
@@ -67,7 +76,7 @@ def winsorize(df: pd.DataFrame,
               cont_vars: List[str] = None,
               quantiles: Tuple[float, float] = (0.001, 0.999),
               include: Dict[str, Tuple[bool, bool]] = None) -> (
-              pd.DataFrame, Dict[str, Tuple[float, float]]):
+        pd.DataFrame, Dict[str, Tuple[float, float]]):
     """Winsorize continuous variables at thresholds in
         thresholds_dict, or at specified quantiles if thresholds_dict
         is None. If thresholds_dict is None, upper and/or lower
@@ -78,8 +87,8 @@ def winsorize(df: pd.DataFrame,
     df = df.copy()
 
     ops = (operator.lt, operator.gt)
-    
-    if thresholds_dict:      
+
+    if thresholds_dict:
         for v, thresholds in thresholds_dict.items():
             for i, threshold in enumerate(thresholds):
                 if threshold is not None:
@@ -96,7 +105,7 @@ def winsorize(df: pd.DataFrame,
                         thresholds_dict[v][i] = None
                 except KeyError:
                     df.loc[ops[i](df[v], threshold), v] = threshold
-    
+
     return df, thresholds_dict
 
 
