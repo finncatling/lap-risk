@@ -1,33 +1,34 @@
 # -*- coding: utf-8 -*-
-import numpy as np
+from typing import Tuple
+from warnings import warn
+
 import matplotlib.pyplot as plt
-from sklearn.metrics import (roc_auc_score, average_precision_score,
-                             log_loss, brier_score_loss,
-                             mean_absolute_error)
+import numpy as np
+from progressbar import progressbar
 from pygam import GAM
 from pygam.distributions import BinomialDist
-from progressbar import progressbar
-from warnings import warn
-from typing import Tuple
+from sklearn.metrics import (roc_auc_score, log_loss, brier_score_loss,
+                             mean_absolute_error)
+
 from .constants import (N_GAM_CONFIDENCE_INTERVALS,
                         GAM_OUTER_CONFIDENCE_INTERVALS)
 
 
 def evaluate_predictions(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    bs_iters: int = 1000,
-    dec_places: int = 8,
-    n_cis: int = N_GAM_CONFIDENCE_INTERVALS,
-    outer_cis: Tuple[float] = GAM_OUTER_CONFIDENCE_INTERVALS
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+        bs_iters: int = 1000,
+        dec_places: int = 8,
+        n_cis: int = N_GAM_CONFIDENCE_INTERVALS,
+        outer_cis: Tuple[float] = GAM_OUTER_CONFIDENCE_INTERVALS
 ):
     """Evaluates model predictions by calculating scores with bootstrap
-        confidence intervals. Plots and scores model calibration error."""    
+        confidence intervals. Plots and scores model calibration error."""
     bss = BootstrapScorer(y_true, y_pred, bs_iters)
     bss.calculate_scores()
-    p, cal_curve, calib_cis, calib_mae = score_calibration(
+    p, _, calib_cis, calib_mae = score_calibration(
         y_true, y_pred, n_cis, outer_cis)
-    plot_calibration(p, cal_curve, calib_cis)
+    plot_calibration(p, calib_cis)
     bss.print_scores(dec_places)
     print(f'Calibration MAE = {np.round(calib_mae, dec_places)}')
 
@@ -49,8 +50,7 @@ def score_calibration(y_true: np.ndarray, y_pred: np.ndarray,
     return p, cal_curve, calib_cis, calib_mae
 
 
-def plot_calibration(p: np.ndarray, cal_curve: np.ndarray,
-                     calib_cis: np.ndarray):
+def plot_calibration(p: np.ndarray, calib_cis: np.ndarray):
     """Plot calibration curve, with confidence intervals."""
     f, ax = plt.subplots(figsize=(4, 4))
     n_cis = int(calib_cis.shape[1] / 2)
@@ -84,17 +84,16 @@ def score_predictions(y_true, y_pred):
     """Calculate several scores for model performance using predicted risks
         and true labels.
 
-        We probably shouldn't report average precision - it is predicated
+        NB. We probably shouldn't report average precision - it is predicated
         on binarizing our model output but we care about risks. It is a more
         useful metric in e.g. information retrieval."""
     scores = {}
     for score_name, score_f in (
-        ('C statistic', roc_auc_score),
-        ("Somers' Dxy", somers_dxy),
-        # ('Average precision', average_precision_score),
-        ('Log loss', log_loss),
-        ('Brier score', brier_score_loss),
-        ("Tsur's discrimination coef.", tjurs_cof)
+            ('C statistic', roc_auc_score),
+            ("Somers' Dxy", somers_dxy),
+            ('Log loss', log_loss),
+            ('Brier score', brier_score_loss),
+            ("Tsur's discrimination coef.", tjurs_cof)
     ):
         scores[score_name] = score_f(y_true, y_pred)
     return scores
@@ -103,6 +102,7 @@ def score_predictions(y_true, y_pred):
 class BootstrapScorer:
     """Calculate confidence intervals for model evaluation scores by drawing
         bootstrap samples from true labels and predicted risks."""
+
     def __init__(self, y_true, y_pred, bootstrap_iter, random_seed=1):
         self.y_true = y_true
         self.y_pred = y_pred
@@ -113,7 +113,7 @@ class BootstrapScorer:
         warn("""The bootstrap confidence intervals derived here ignore
              important sources of uncertainty, e.g. that which stems from
              data splitting. Fix this ASAP!""")
-    
+
     def calculate_scores(self):
         self.scores['point_estimates'] = score_predictions(
             self.y_true, self.y_pred)
@@ -127,27 +127,27 @@ class BootstrapScorer:
             print(f"{score} = {np.round(pe, dec_places)}",
                   f"({np.round(self.scores['95ci'][score][0], dec_places)} -",
                   f"{np.round(self.scores['95ci'][score][1], dec_places)})")
-    
+
     def _run_bootstrap_iter(self, i):
         self.scores['bs_iter'][i] = score_predictions(
             *self._make_bootstrap_fold())
-    
+
     def _make_bootstrap_fold(self):
         bs_index = self.rnd.choice(self.y_index,
                                    size=self.y_index.shape[0])
         return (np.array([self.y_true[i] for i in bs_index]),
                 np.array([self.y_pred[i] for i in bs_index]))
-    
+
     def _calculate_95ci(self):
         for score in self.scores['point_estimates'].keys():
             self._extract_iter_per_score(score)
             self.scores['bs'][score] = (
-                self.scores['bs'][score] -
-                self.scores['point_estimates'][score])
+                    self.scores['bs'][score] -
+                    self.scores['point_estimates'][score])
             self.scores['95ci'][score] = list(
                 self.scores['point_estimates'][score] +
                 np.percentile(self.scores['bs'][score], (2.5, 97.5)))
-    
+
     def _extract_iter_per_score(self, score):
         self.scores['bs'][score] = np.zeros(self.bootstrap_iter)
         for i in range(self.bootstrap_iter):
@@ -171,7 +171,7 @@ def evaluate_samples(y: np.ndarray, y_samples: np.ndarray,
     for i, ci in enumerate(progressbar(cis)):
         tail = (1 - ci) / 2
         quantiles = (tail, 1 - tail)
-        
+
         pop_ci = np.quantile(y, q=quantiles)
         pop_iqrs.append(pop_ci[1] - pop_ci[0])
 
@@ -179,10 +179,8 @@ def evaluate_samples(y: np.ndarray, y_samples: np.ndarray,
         sam_iqrs[i, :] = sam_ci[:, 1] - sam_ci[:, 0]
         sam_mean_iqrs.append(sam_iqrs[i, :].mean())
 
-        sam_cis.append(y[
-            np.where((y > sam_ci[:, 0]) &
-                     (y < sam_ci[:, 1]))
-        ].shape[0] / y.shape[0])
+        sam_cis.append(y[np.where((y > sam_ci[:, 0]) &
+                                  (y < sam_ci[:, 1]))].shape[0] / y.shape[0])
 
     fig, ax = plt.subplots(2, 2, figsize=(7, 6.4))
     ax = ax.ravel()
