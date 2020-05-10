@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+import os
 
 RANDOM_SEED = 1
+
+DATA_DIR = os.path.join(os.pardir, 'nelarisk', 'data')
 
 """NB. NB. Web form for NELA risk model includes Hb,
     but only uses this to calculate P-POSSUM."""
