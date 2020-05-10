@@ -101,7 +101,12 @@ def score_predictions(y_true, y_pred):
 
 class BootstrapScorer:
     """Calculate confidence intervals for model evaluation scores by drawing
-        bootstrap samples from true labels and predicted risks."""
+        bootstrap samples from true labels and predicted risks.
+
+        TODO: Consider retiring this class, given that the CIs it calculates
+            don't capture some important sources of uncertainty in our analysis,
+            e.g. that which stems from our splitting of the dataset.
+    """
 
     def __init__(self, y_true, y_pred, bootstrap_iter, random_seed=1):
         self.y_true = y_true
