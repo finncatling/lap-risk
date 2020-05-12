@@ -165,7 +165,8 @@ def add_quadratic_features(df: pd.DataFrame,
     """Add quadratic transformation of all continuous features."""
     # TODO: ensure that cont_log_vars (consider rename) is input to this
     for v in cont_vars:
-        df[f'{v}_2'] = df[v] ** 2
+        if v != 'S03Sodium':
+            df[f'{v}_2'] = df[v] ** 2
     return df
 
 
@@ -199,7 +200,6 @@ def add_asa_age_resp_interaction(df: pd.DataFrame) -> pd.DataFrame:
 
 def transform_sodium(df: pd.DataFrame) -> pd.DataFrame:
     """Transform sodium as described in NELA paper."""
-    # TODO: Remove sodium**2 (currently left in by accident)
     df['S03Sodium_3'] = df['S03Sodium'] ** 3
     df['S03Sodium_3_log'] = df['S03Sodium_3'] * np.log(df['S03Sodium'])
     return df.drop('S03Sodium', axis=1)
