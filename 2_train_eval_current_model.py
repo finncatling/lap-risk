@@ -93,8 +93,7 @@ scorer.print_scores(dec_places=3)
 
 
 reporter.report('Saving SplitterTrainerPredictor for use in model evaluation')
-save_object(tt_splitter, os.path.join('outputs',
-                                      'splitter_trainer_predictor.pkl'))
+save_object(stp, os.path.join('outputs', 'splitter_trainer_predictor.pkl'))
 # TODO: Save scores
 
 
