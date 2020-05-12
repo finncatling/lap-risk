@@ -114,6 +114,7 @@ def binarize_categorical(
                 cat_names = [f'{v}_{c}' for c in lb[v].classes_]
                 v_df = pd.DataFrame(trans, columns=cat_names)
                 df = pd.concat([df, v_df], axis=1)
+                df = df.drop(v, axis=1)
 
     return df, label_binarizers
 
@@ -162,7 +163,8 @@ def centre(df: pd.DataFrame, centres: Dict[str, float]) -> pd.DataFrame:
 
 def add_quadratic_features(df: pd.DataFrame,
                            cont_vars: List[str]) -> pd.DataFrame:
-    """Add quadratic transformation of all continuous features."""
+    """Add quadratic transformation of all continuous features. Sodium is
+        exempt as it is custom transformed later."""
     # TODO: ensure that cont_log_vars (consider rename) is input to this
     for v in cont_vars:
         if v != 'S03Sodium':
@@ -229,9 +231,12 @@ def preprocess_continuous(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def preprocess_df(data, label_binarizers=None):
+def preprocess_df(
+    df: pd.DataFrame,
+    label_binarizers: List[LabelBinarizer] = None
+) -> (pd.DataFrame, List[LabelBinarizer]):
     """Preprocess NELA data."""
-    df = data.copy()
+    df = df.copy()
     df = df.reset_index(drop=True)
     df, label_binarizers = preprocess_categorical(df, label_binarizers)
     df = preprocess_continuous(df)
