@@ -186,7 +186,7 @@ def split_into_folds(
         split[fold]['y'] = split[fold]['X_df'][target_var_name].values
         split[fold]['X_df'] = split[fold]['X_df'].drop(target_var_name, axis=1)
 
-    assert split['test']['X_df'].shape[0] == indices['test_i'].shape[0]
+    assert split['test']['X_df'].shape[0] == indices['test'].shape[0]
 
     return (split['train']['X_df'], split['train']['y'],
             split['test']['X_df'], split['test']['y'],
