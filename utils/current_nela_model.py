@@ -1,8 +1,12 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from progressbar import progressbar as pb
 from sklearn.preprocessing import LabelBinarizer
+from sklearn.linear_model import LogisticRegression
+
+from utils.split_data import TrainTestSplitter, split_into_folds
 
 """
 Web form for current NELA risk model includes Hb, but only uses this to
@@ -89,35 +93,34 @@ def combine_highest_resp_levels(df: pd.DataFrame) -> pd.DataFrame:
 
 def binarize_categorical(
         df: pd.DataFrame,
-        label_binarizers: List[LabelBinarizer],
-        cat_vars: List[str]
+        label_binarizers: Union[None, List[LabelBinarizer]],
+        binarize_vars: List[str]
 ) -> (pd.DataFrame, List[LabelBinarizer]):
     """Binarise categorical features. Can use pre-fit label binarisers
         if these are available (e.g. ones fit on the train fold).
 
-        GCS is exempt from binarisation as it is discretised differently in a
-        separate function. ASA is exempt as it is only used in a later
-        interaction term."""
+        Note that in the current NELA model, GCS is exempt from binarisation
+        as it is binned. ASA is exempt as it is only used in a later interaction
+        term."""
     if label_binarizers:
         lb = label_binarizers
     else:
         lb = {}
 
-    for v in cat_vars:
-        if v not in ('S03GlasgowComaScore', 'S03ASAScore'):
-            if label_binarizers:
-                trans = lb[v].transform(df[v].astype(int).values)
-            else:
-                lb[v] = LabelBinarizer()
-                trans = lb[v].fit_transform(df[v].astype(int).values)
+    for v in binarize_vars:
+        if label_binarizers:
+            trans = lb[v].transform(df[v].astype(int).values)
+        else:
+            lb[v] = LabelBinarizer()
+            trans = lb[v].fit_transform(df[v].astype(int).values)
 
-            if len(lb[v].classes_) == 2:
-                df[v] = trans
-            else:
-                cat_names = [f'{v}_{c}' for c in lb[v].classes_]
-                v_df = pd.DataFrame(trans, columns=cat_names)
-                df = pd.concat([df, v_df], axis=1)
-                df = df.drop(v, axis=1)
+        if len(lb[v].classes_) == 2:
+            df[v] = trans
+        else:
+            cat_names = [f'{v}_{c}' for c in lb[v].classes_]
+            v_df = pd.DataFrame(trans, columns=cat_names)
+            df = pd.concat([df, v_df], axis=1)
+            df = df.drop(v, axis=1)
 
     return df, label_binarizers
 
@@ -165,13 +168,11 @@ def centre(df: pd.DataFrame, centres: Dict[str, float]) -> pd.DataFrame:
 
 
 def add_quadratic_features(df: pd.DataFrame,
-                           cont_vars: List[str]) -> pd.DataFrame:
-    """Add quadratic transformation of all continuous features. Sodium is
-        exempt as it is custom transformed later."""
-    # TODO: ensure that cont_log_vars (consider rename) is input to this
-    for v in cont_vars:
-        if v != 'S03Sodium':
-            df[f'{v}_2'] = df[v] ** 2
+                           quadratic_vars: List[str]) -> pd.DataFrame:
+    """Add quadratic transformation of some continuous features. Sodium is
+        exempt as it undergoes a customised transformation."""
+    for v in quadratic_vars:
+        df[f'{v}_2'] = df[v] ** 2
     return df
 
 
@@ -210,37 +211,124 @@ def transform_sodium(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop('S03Sodium', axis=1)
 
 
-def preprocess_categorical(
+def preprocess_df(
         df: pd.DataFrame,
-        label_binarizers: List[LabelBinarizer]
+        quadratic_vars: List[str],
+        winsor_threholds: Dict[str, Tuple[float, float]],
+        centres: Dict[str, float],
+        binarize_vars: List[str],
+        label_binarizers: Union[None, List[LabelBinarizer]],
 ) -> (pd.DataFrame, List[LabelBinarizer]):
-    """Preprocess categorical variables in NELA data."""
+    """Preprocess NELA data for input to current EL mortality risk model.
+
+    Args:
+        df: Manually-wrangled NELA data
+        quadratic_vars: Continuous features to add a quadratic transformation of
+        winsor_threholds: Upper and lower bounds for winsorisation of
+            continuous variables
+        centres: For use in centering the continuous variables
+        binarize_vars: Categorical features to binarize
+        label_binarizers: The LabelBinarizer objects used to binarize the
+            categorical features. If None, LabelBinarizers will be fit using
+            the data in df
+
+    Returns:
+        Preprocessed data
+        Fitted LabelBinarizers (if label_binarizers is not None, then
+            label_binarizers is returned unmodified
+    """
+    df = df.copy()
+    df = df.reset_index(drop=True)
+
+    # Preprocess categorical variables
     df = discretise_gcs(df)
     df = combine_ncepod_urgencies(df)
     df = combine_highest_resp_levels(df)
-    df, label_binarizers = binarize_categorical(df, label_binarizers)
+    df, label_binarizers = binarize_categorical(df, label_binarizers,
+                                                binarize_vars)
     df = drop_base_categories(df)
-    return df, label_binarizers
 
-
-def preprocess_continuous(df: pd.DataFrame) -> pd.DataFrame:
-    """Preprocess continuous variables in NELA data."""
+    # Preprocess continuous variables
     df = log_urea_creat(df)
-    df = winsorize(df)
-    df = centre(df)
-    df = add_quadratic_features(df)
+    df = winsorize(df, winsor_threholds)
+    df = centre(df, centres)
+    df = add_quadratic_features(df, quadratic_vars)
     df = add_asa_age_resp_interaction(df)
     df = transform_sodium(df)
-    return df
 
-
-def preprocess_df(
-        df: pd.DataFrame,
-        label_binarizers: List[LabelBinarizer] = None
-) -> (pd.DataFrame, List[LabelBinarizer]):
-    """Preprocess NELA data."""
-    df = df.copy()
-    df = df.reset_index(drop=True)
-    df, label_binarizers = preprocess_categorical(df, label_binarizers)
-    df = preprocess_continuous(df)
     return df, label_binarizers
+
+
+class SplitterTrainerPredictor:
+    """Handles the process of repeated of train-test splitting, re-fitting the
+        current NELA model using the training fold, and predicting mortality
+        risk for each case in the test fold. Keeps track of relevant
+        quantities."""
+
+    def __init__(self,
+                 df: pd.DataFrame,
+                 test_train_splitter: TrainTestSplitter,
+                 target_variable_name: str,
+                 random_seed):
+        self.df = df
+        self.tts = test_train_splitter
+        self.target_variable_name = target_variable_name
+        self.split_stats = {'n_total_train_cases': [],
+                            'n_included_train_cases': []}
+        self.features: List[str] = ['intercept']
+        self.coefficients: List[np.ndarray] = []
+        self.y_test: List[np.ndarray] = []
+        self.y_pred: List[np.ndarray] = []
+        self.rnd = np.random.RandomState(random_seed)
+
+    def split_train_predict(self):
+        for i in pb(range(self.tts.n_splits), prefix='STP iteration'):
+            X_train_df, y_train, X_test_df = self._split(i)
+            model = self._train(X_train_df, y_train)
+            self.y_pred.append(model.predict_proba(X_test_df.values)[:, 1])
+        self._calculate_convenience_split_stats()
+
+    def _split(self, i: int) -> (pd.DataFrame, np.ndarray, pd.DataFrame):
+        """Train-test split, according to the pre-defined splits calculated
+            in 1_train_test_split.py"""
+        (X_train_df, y_train, X_test_df, y_test,
+         n_total_train_cases, n_included_train_cases) = split_into_folds(
+            self.df,
+            indices={'train': self.tts.train_i[i], 'test': self.tts.test_i[i]},
+            target_var_name=self.target_variable_name)
+        self.split_stats['n_total_train_cases'].append(
+            n_total_train_cases)
+        self.split_stats['n_included_train_cases'].append(
+            n_included_train_cases)
+        self.y_test.append(y_test)
+        if not i:  # only need to do this on first iteration
+            self.features += X_train_df.columns.tolist()
+        return X_train_df, y_train, X_test_df
+
+    def _train(self,
+               X_train_df: pd.DataFrame,
+               y_train: np.ndarray) -> LogisticRegression:
+        """We use the liblinear solver, as the unscaled features would slow the
+            convergence of the other solvers. The current NELA model is
+            unregularised, but using the liblinear solver means that we must
+            specify a value for C (the inverse of regularisation strength). We
+            get around this by setting C to a very large number in order to
+            avoid any meaningful regularisation."""
+        model = LogisticRegression(C=10 ** 50, solver='liblinear',
+                                   random_state=self.rnd)
+        model.fit(X_train_df.values, y_train)
+        coefficients = model.coef_.flatten()
+        self.coefficients.append(np.zeros(coefficients.shape[0] + 1))
+        self.coefficients[-1][0] = model.intercept_
+        self.coefficients[-1][1:] = coefficients
+        return model
+
+    def _calculate_convenience_split_stats(self):
+        for stat in self.split_stats.keys():
+            self.split_stats[stat] = np.array(self.split_stats[stat])
+        self.split_stats['n_excluded_train_cases'] = (
+            self.split_stats['n_total_train_cases'] -
+            self.split_stats['n_included_train_cases'])
+        self.split_stats['fraction_excluded_train_cases'] = 1 - (
+            self.split_stats['n_included_train_cases'] /
+            self.split_stats['n_total_train_cases'])

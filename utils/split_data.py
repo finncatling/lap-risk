@@ -1,4 +1,3 @@
-import os
 import warnings
 from typing import Dict, List
 
@@ -7,7 +6,6 @@ import pandas as pd
 
 from utils.current_nela_model import flatten_nela_var_dict
 from utils.explore import missingness_perc
-from utils.io import load_object
 
 
 class TrainTestSplitter:
@@ -145,13 +143,10 @@ def drop_incomplete_cases(df: pd.DataFrame) -> (pd.DataFrame, Dict[str, float]):
 
 def split_into_folds(
         df: pd.DataFrame,
-        tts_filepath: str = os.path.join('data', 'train_test_split.pkl')
-) -> (pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray):
-    """ TODO: Update this function to be compatible with TrainTestSplitter class
-        TODO: Put summary statistics in dictionary for pickling, rather than
-            printing them
-
-        Splits supplied DataFrame into train and test folds, such that the test
+        indices: Dict[str, np.ndarray],
+        target_var_name: str
+) -> (pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray, int, int):
+    """Splits supplied DataFrame into train and test folds, such that the test
         fold is the cases from the test trusts which are complete for the
         variables in the current NELA risk model, and the train fold is all
         the available cases from the train trusts. Two things to note:
@@ -163,32 +158,36 @@ def split_into_folds(
 
         2) The test fold will be the same for all models, i.e. the current-NELA-
         model incomplete cases from the test fold trusts will not be used in
-        training or testing of any of the models."""
-    train_test_split = load_object(tts_filepath)
+        training or testing of any of the models.
+
+    Args:
+        df: NELA data
+        indices: Of the form {'train': [train_fold_indices...],
+                              'test': [test_fold_indices...]}
+        target_var_name: Name of DataFrame column containing mortality status
+
+    Returns:
+        Training features
+        Training targets
+        Testing features
+        Testing targets
+        Number of cases in unabridged train fold
+        Number of train-fold cases available in the input DataFrame, i.e. the
+            number of cases in the returned training data.
+    """
+    n_total_train_cases = indices['train'].shape[0]
+    indices['train'] = np.array([i for i in indices['train'] if i in df.index])
+    n_intersection_train_cases = indices['train'].shape[0]
+
     split = {}
-
     for fold in ('train', 'test'):
-        if fold == 'train':
-            train_total = train_test_split[f'{fold}_i'].shape[0]
-            train_test_split[f'{fold}_i'] = np.array([i for i in
-                                                      train_test_split[
-                                                          f'{fold}_i'] if
-                                                      i in df.index])
-            train_intersection = train_test_split[f'{fold}_i'].shape[0]
-            percent_unavailable = 100 * (1 - train_intersection / train_total)
-            print(f'{train_total} cases in unabridged train fold.')
-            print(f'Excluded {train_total - train_intersection} cases',
-                  f'({np.round(percent_unavailable, 3)}%)',
-                  'not available in input DataFrame.')
-            print(f'{train_intersection} cases in returned train Dataframe.')
-
         split[fold] = {'X_df': df.loc[
-            train_test_split[f'{fold}_i']].copy().reset_index(drop=True)}
-        split[fold]['y'] = split[fold]['X_df']['Target'].values
-        split[fold]['X_df'] = split[fold]['X_df'].drop('Target', axis=1)
+            indices[fold]].copy().reset_index(drop=True)}
+        split[fold]['y'] = split[fold]['X_df'][target_var_name].values
+        split[fold]['X_df'] = split[fold]['X_df'].drop(target_var_name, axis=1)
 
-    assert (split['test']['X_df'].shape[0] ==
-            train_test_split['test_i'].shape[0])
+    assert split['test']['X_df'].shape[0] == indices['test_i'].shape[0]
 
     return (split['train']['X_df'], split['train']['y'],
-            split['test']['X_df'], split['test']['y'])
+            split['test']['X_df'], split['test']['y'],
+            n_total_train_cases, n_intersection_train_cases)
