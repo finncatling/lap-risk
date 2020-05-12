@@ -83,10 +83,10 @@ stp = SplitterTrainerPredictor(
 stp.split_train_predict()
 
 
-reporter.report('Scoring model performance')
-scorer = ModelScorer(stp.y_test, stp.y_pred)
-scorer.calculate_scores()
-scorer.print_scores(dec_places=3)
+# reporter.report('Scoring model performance')
+# scorer = ModelScorer(stp.y_test, stp.y_pred)
+# scorer.calculate_scores()
+# scorer.print_scores(dec_places=3)
 
 
 # TODO: Calculate calibration

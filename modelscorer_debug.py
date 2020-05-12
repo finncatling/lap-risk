@@ -5,8 +5,7 @@ from utils.evaluate import ModelScorer
 
 reporter = Reporter()
 reporter.first('Loading SplitterTrainerPredictor for use in model evaluation')
-stp = load_object(os.path.join('outputs',
-                                       'splitter_trainer_predictor.pkl'))
+stp = load_object(os.path.join('outputs', 'splitter_trainer_predictor.pkl'))
 
 
 reporter.report('Scoring model performance')
