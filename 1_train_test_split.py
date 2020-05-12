@@ -12,7 +12,7 @@ from utils.split_data import TrainTestSplitter
 reporter = Reporter()
 
 
-reporter.report("Creating external outputs dir (if it doesn't already exist)")
+reporter.first("Creating external outputs dir (if it doesn't already exist)")
 make_directory(os.path.join(STATS_OUTPUT_DIR))
 
 
@@ -47,4 +47,4 @@ save_object(tt_split_stats,
             os.path.join(STATS_OUTPUT_DIR, '1_train_test_split_stats.pkl'))
 
 
-reporter.report('Done')
+reporter.last('Done.')

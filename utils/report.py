@@ -4,14 +4,14 @@ import time
 class Timer:
     """Convenience wrapper on timer function."""
 
-    def __init__(self, start_on_instantiation=True):
+    def __init__(self, start_on_instantiation: bool = True):
         if start_on_instantiation:
             self.start = time.time()
         else:
             self.start = None
         self.stopped = False
 
-    def elapsed(self, raw=False):
+    def elapsed(self, raw: bool = False):
         """Displays elapsed time. If raw=True, returns datetime, else
             returns ready-formatted string."""
         if self.start:
@@ -46,17 +46,28 @@ class Reporter:
     def __init__(self):
         self.timer = Timer()
 
-    def report(self, message, leading_newline=True):
+    def report(self,
+               message: str,
+               leading_newline: bool = False,
+               trailing_newline: bool = False) -> None:
         """Prints message for end user.
 
         Args:
-            message (str): Message
-            leading_newline (bool): If True, starts message with a new line.
-
-        Returns:
-            None
+            message: Message
+            leading_newline: If True, starts message with a new line
+            trailing_newline: If True, end message with a new line
         """
+        message = f'{message} {self.timer.elapsed()}'
         if leading_newline:
-            print('\n', message, ' ', self.timer.elapsed(), sep='')
-        else:
-            print(message, self.timer.elapsed())
+            message = f'\n{message}'
+        if trailing_newline:
+            message = f'{message}\n'
+        print(message)
+
+    def first(self, message: str):
+        """Convenience wrapper for first message."""
+        self.report(message, leading_newline=True)
+
+    def last(self, message: str):
+        """Convenience wrapper for first message."""
+        self.report(message, trailing_newline=True)
