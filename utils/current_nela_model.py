@@ -4,9 +4,14 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelBinarizer
 
+"""
+Web form for current NELA risk model includes Hb, but only uses this to
+    calculate P-POSSUM.
 
-"""NB. Web form for current NELA risk model includes Hb, but only uses this to
-calculate P-POSSUM."""
+Winsorisation thresholds and centres are sourced from the appendix of
+    Eugene et al. BJA 2018. Available at https://bit.ly/3dE9YS2
+"""
+
 CURRENT_NELA_MODEL_VARS = {
     'cat': ('S01Sex',
             'S03ASAScore',
@@ -30,7 +35,6 @@ CURRENT_NELA_MODEL_VARS = {
              'S03SystolicBloodPressure'),
     'target': 'Target'}
 
-
 WINSOR_THRESHOLDS = {
     # age seems to be excluded from winsorization
     'logcreat': (3.3, 6.0),
@@ -40,7 +44,6 @@ WINSOR_THRESHOLDS = {
     'logurea': (0.0, 3.7),
     'S03Potassium': (2.8, 5.9),
     'S03Sodium': (124.0, 148.0)}
-
 
 CENTRES = {
     'S01AgeOnArrival': -64.0,
@@ -63,7 +66,7 @@ def discretise_gcs(df: pd.DataFrame) -> pd.DataFrame:
     """Discretise GCS. 13-15 category is eliminated to avoid dummy variable
         effect."""
     for gcs_threshold in ((3, 9), (9, 13)):
-        v_name = f'gcs_{gcs_threshold[0]}_{gcs_threshold[1]}'
+        v_name = f'gcs_{gcs_threshold[0]}_{int(gcs_threshold[1] - 1)}'
         df[v_name] = np.zeros(df.shape[0])
         df.loc[(df['S03GlasgowComaScore'] >= gcs_threshold[0]) &
                (df['S03GlasgowComaScore'] < gcs_threshold[1]), v_name] = 1
@@ -85,9 +88,9 @@ def combine_highest_resp_levels(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def binarize_categorical(
-    df: pd.DataFrame,
-    label_binarizers: List[LabelBinarizer],
-    cat_vars: List[str]
+        df: pd.DataFrame,
+        label_binarizers: List[LabelBinarizer],
+        cat_vars: List[str]
 ) -> (pd.DataFrame, List[LabelBinarizer]):
     """Binarise categorical features. Can use pre-fit label binarisers
         if these are available (e.g. ones fit on the train fold).
@@ -142,8 +145,8 @@ def log_urea_creat(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def winsorize(
-    df: pd.DataFrame,
-    winsor_thresholds: Dict[str, Tuple[float, float]]
+        df: pd.DataFrame,
+        winsor_thresholds: Dict[str, Tuple[float, float]]
 ) -> pd.DataFrame:
     """Winsorize continuous variables at thresholds specified in NELA paper
         appendix."""
@@ -208,8 +211,8 @@ def transform_sodium(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def preprocess_categorical(
-    df: pd.DataFrame,
-    label_binarizers: List[LabelBinarizer]
+        df: pd.DataFrame,
+        label_binarizers: List[LabelBinarizer]
 ) -> (pd.DataFrame, List[LabelBinarizer]):
     """Preprocess categorical variables in NELA data."""
     df = discretise_gcs(df)
@@ -232,8 +235,8 @@ def preprocess_continuous(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def preprocess_df(
-    df: pd.DataFrame,
-    label_binarizers: List[LabelBinarizer] = None
+        df: pd.DataFrame,
+        label_binarizers: List[LabelBinarizer] = None
 ) -> (pd.DataFrame, List[LabelBinarizer]):
     """Preprocess NELA data."""
     df = df.copy()
