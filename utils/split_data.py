@@ -85,7 +85,7 @@ class TrainTestSplitter:
             and so doesn't change the number of complete cases by being dropped
             later, 3) removes variables not in current NELA risk model."""
         df = df.copy().reset_index(drop=True)
-        assert missingness_perc(df, self.split_variable_name)
+        assert missingness_perc(df, self.split_variable_name) == 0.0
         return df[self.nela_vars + [self.split_variable_name]]
 
     def split(self) -> None:
