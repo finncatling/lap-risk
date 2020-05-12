@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
 import operator
 import os
-import pickle
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -44,16 +42,6 @@ def winsorize(df: pd.DataFrame,
                     df.loc[ops[i](df[v], threshold), v] = threshold
 
     return df, thresholds_dict
-
-
-def save_object(obj, filename):
-    with open(filename, 'wb') as output:
-        pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
-
-
-def load_object(filename):
-    with open(filename, 'rb') as input_file:
-        return pickle.load(input_file)
 
 
 def check_system_resources():

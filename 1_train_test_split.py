@@ -1,140 +1,50 @@
-#!/usr/bin/env python
-# coding: utf-8
+import os
 
-# # Train-test split (by trusts)
-
-# In[1]:
-
-
-import os, sys
 import pandas as pd
-import numpy as np
 
-sys.path.append('')
-from nelarisk.constants import CURRENT_NELA_RISK_MODEL_VARS, RANDOM_SEED
-from nelarisk.explore import missingness_perc
-from nelarisk.helpers import drop_incomplete_cases, save_object
+from utils.constants import RANDOM_SEED, DATA_DIR, STATS_OUTPUT_DIR
+from utils.current_nela_model import CURRENT_NELA_MODEL_VARS
+from utils.io import make_directory
+from utils.io import save_object
+from utils.report import Reporter
+from utils.split_data import TrainTestSplitter
+
+reporter = Reporter()
 
 
-# In[2]:
+reporter.report("Creating external outputs dir (if it doesn't already exist)")
+make_directory(os.path.join(STATS_OUTPUT_DIR))
 
 
+reporter.report('Loading manually-wrangled NELA data')
 df = pd.read_pickle(
-    os.path.join('data', 'df_after_univariate_wrangling.pkl'))
+    os.path.join(DATA_DIR, 'df_after_univariate_wrangling.pkl'))
 
 
-# ## Split into train and test trusts
-
-# In[3]:
-
-
-n_trusts = df['TrustId.anon'].nunique()
-trust_ids = df['TrustId.anon'].unique()
-n_trusts
-
-
-# In[4]:
+reporter.report('Performing train-test split')
+tt_splitter_args = {'split_variable_name': 'TrustId.anon',
+                    'test_fraction': 0.2,
+                    'n_splits': 120}
+tt_splitter = TrainTestSplitter(df=df,
+                                current_nela_model_vars=CURRENT_NELA_MODEL_VARS,
+                                random_seed=RANDOM_SEED,
+                                **tt_splitter_args)
+tt_splitter.split()
 
 
-test_fraction = 0.2
-test_n_trusts = int(np.round(n_trusts * test_fraction))
-print(f'The test fold is from {test_n_trusts} trusts')
+reporter.report('Saving TrainTestSplitter for use later in analysis')
+save_object(tt_splitter, os.path.join('outputs', 'train_test_splitter.pkl'))
 
 
-# In[5]:
+reporter.report('Saving summary statistics for external use')
+tt_split_stats = {'n_institutions': tt_splitter.n_institutions,
+                  'n_train_institutions': tt_splitter.n_train_institutions,
+                  'n_test_institutions': tt_splitter.n_test_institutions,
+                  'drop_stats': tt_splitter.drop_stats,
+                  'split_stats': tt_splitter.split_stats,
+                  **tt_splitter_args}
+save_object(tt_split_stats,
+            os.path.join(STATS_OUTPUT_DIR, '1_train_test_split_stats.pkl'))
 
 
-rnd = np.random.RandomState(RANDOM_SEED)
-
-
-# In[6]:
-
-
-test_trust_ids = np.sort(rnd.choice(trust_ids, test_n_trusts,
-                                    replace=False))
-
-
-# In[7]:
-
-
-train_trust_ids = np.array(list(set(trust_ids) -
-                                set(test_trust_ids)))
-
-
-# In[8]:
-
-
-test_trust_ids
-
-
-# In[9]:
-
-
-train_trust_ids
-
-
-# In[10]:
-
-
-train_i = df.index[
-    df['TrustId.anon'].isin(train_trust_ids)].to_numpy()
-
-
-# ## Select only the features current NELA risk model uses
-
-# In[11]:
-
-
-nela_vars = (list(CURRENT_NELA_RISK_MODEL_VARS['cat']) +
-             list(CURRENT_NELA_RISK_MODEL_VARS['cont']) +
-             [CURRENT_NELA_RISK_MODEL_VARS['target']])
-
-df = df[nela_vars + ['TrustId.anon']]
-
-
-# Check that `TrustId.anon` has no missing values (so shouldn't change the number of complete cases below by being dropped).
-
-# In[12]:
-
-
-missingness_perc(df, 'TrustId.anon')
-
-
-# In[13]:
-
-
-df, total_n, complete_n = drop_incomplete_cases(df)
-
-
-# ## Select consistent test fold across models, with test fold all from trusts not in train fold
-
-# We will use these as the test fold for all models, i.e. we will not use incomplete cases from the test fold trusts for training or testing (though we may use them for MICE).
-# 
-# Are these complete cases likely to be systemically different from the incomplete cases?
-
-# In[14]:
-
-
-test_i = df.index[
-    df['TrustId.anon'].isin(test_trust_ids)].to_numpy()
-
-print(f'There are {test_i.shape[0]} cases in the test fold.',
-      f'This is {np.round(100 * (test_i.shape[0] / complete_n), 3)}%',
-      'of complete cases and',
-      f'{np.round(100 * (test_i.shape[0] / total_n), 3)}%',
-       'of all cases')
-
-
-# Save train/test arrays for use elsewhere:
-
-# In[15]:
-
-
-train_test_split = {'train_trust_ids': train_trust_ids,
-                    'test_trust_ids': test_trust_ids,
-                    'test_i': test_i,
-                    'train_i': train_i}
-
-save_object(train_test_split,
-            os.path.join('data', 'train_test_split.pkl'))
-
+reporter.report('Done')
