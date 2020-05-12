@@ -4,7 +4,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from utils.current_nela_model import flatten_nela_var_dict
+from utils.helpers import flatten_nela_var_dict
 from utils.explore import missingness_perc
 
 

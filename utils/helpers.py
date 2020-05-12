@@ -77,3 +77,10 @@ class GammaTransformer:
         arr[np.where(arr > self.high)] = self.high
         arr[np.where(arr < self.low)] = self.low
         return arr
+
+
+def flatten_nela_var_dict(nela_vars: Dict) -> List[str]:
+    """Flattens current NELA model variable name dict into single list. Function
+        placed in this file to avoid cyclical dependencies."""
+    return (list(nela_vars['cat']) + list(nela_vars['cont']) +
+            [nela_vars['target']])

@@ -60,12 +60,6 @@ CENTRES = {
     'S03Sodium': -123.0}
 
 
-def flatten_nela_var_dict(nela_vars: Dict) -> List[str]:
-    """Flattens current NELA model variable name dict into single list."""
-    return (list(nela_vars['cat']) + list(nela_vars['cont']) +
-            [nela_vars['target']])
-
-
 def discretise_gcs(df: pd.DataFrame) -> pd.DataFrame:
     """Discretise GCS. 13-15 category is eliminated to avoid dummy variable
         effect."""

@@ -4,8 +4,9 @@ import pandas as pd
 
 from utils.constants import DATA_DIR, RANDOM_SEED
 from utils.current_nela_model import (preprocess_df, SplitterTrainerPredictor,
-                                      flatten_nela_var_dict, WINSOR_THRESHOLDS,
+                                      WINSOR_THRESHOLDS,
                                       CURRENT_NELA_MODEL_VARS, CENTRES)
+from utils.helpers import flatten_nela_var_dict
 from utils.split_data import drop_incomplete_cases
 from utils.io import load_object, save_object
 from utils.report import Reporter
@@ -61,7 +62,6 @@ the data are repeatedly split and the model retrained.
 """
 preprocessed_df, _ = preprocess_df(
     df,
-    current_nela_model_vars=CURRENT_NELA_MODEL_VARS,
     quadratic_vars=quadratic_vars,
     winsor_threholds=WINSOR_THRESHOLDS,
     centres=CENTRES,
