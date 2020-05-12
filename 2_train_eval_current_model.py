@@ -24,7 +24,7 @@ reporter.report('Removing unused variables')
 df = df[flatten_nela_var_dict(CURRENT_NELA_MODEL_VARS)]
 
 
-reporter.report("Drop cases which are incomplete for the models' variables")
+reporter.report("Dropping cases which are incomplete for the models' variables")
 df, _ = drop_incomplete_cases(df)
 
 
@@ -83,7 +83,11 @@ stp.split_train_predict()
 
 
 reporter.report('Saving SplitterTrainerPredictor for use in model evaluation')
-save_object(tt_splitter, os.path.join('outputs', 'train_test_splitter.pkl'))
+save_object(tt_splitter, os.path.join('outputs',
+                                      'splitter_trainer_predictor.pkl'))
 
 
 # TODO: Evaluate model predictions
+
+
+reporter.last('Done.')
