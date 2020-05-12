@@ -8,6 +8,7 @@ from utils.current_nela_model import (preprocess_df, SplitterTrainerPredictor,
                                       CURRENT_NELA_MODEL_VARS, CENTRES)
 from utils.helpers import flatten_nela_var_dict
 from utils.split_data import drop_incomplete_cases
+from utils.evaluate import ModelScorer
 from utils.io import load_object, save_object
 from utils.report import Reporter
 
@@ -82,12 +83,22 @@ stp = SplitterTrainerPredictor(
 stp.split_train_predict()
 
 
+reporter.report('Scoring model performance')
+scorer = ModelScorer(stp.y_test, stp.y_pred)
+scorer.calculate_scores()
+scorer.print_scores(dec_places=3)
+
+
+# TODO: Calculate calibration
+
+
 reporter.report('Saving SplitterTrainerPredictor for use in model evaluation')
 save_object(tt_splitter, os.path.join('outputs',
                                       'splitter_trainer_predictor.pkl'))
+# TODO: Save scores
 
 
-# TODO: Evaluate model predictions
+# TODO: Save external outputs
 
 
 reporter.last('Done.')
