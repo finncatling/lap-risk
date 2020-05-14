@@ -115,9 +115,7 @@ class ModelScorer:
 
     def _sanity_check(self):
         for i in range(self.n_splits):
-            print(self.y_true[i].shape, self.y_pred[i].shape)
-            # assert self.y_true[i].shape[0] == self.y_true[0].shape[0]
-            # assert self.y_pred[i].shape[0] == self.y_true[0].shape[0]
+            assert self.y_true[i].shape[0] == self.y_pred[i].shape[0]
 
     def calculate_scores(self):
         for i in range(self.n_splits):
