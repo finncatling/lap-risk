@@ -1,6 +1,7 @@
 import os
 from utils.io import load_object, make_directory
-from utils.constants import FIGURES_OUTPUT_DIR
+from utils.constants import (FIGURES_OUTPUT_DIR, CALIB_GAM_N_SPLINES,
+                             CALIB_GAM_LAM_CANDIDATES)
 from utils.report import Reporter
 from utils.evaluate import ModelScorer, plot_calibration
 
@@ -16,7 +17,10 @@ stp = load_object(os.path.join('outputs', 'splitter_trainer_predictor.pkl'))
 
 
 reporter.report('Scoring model performance')
-scorer = ModelScorer(stp.y_test, stp.y_pred)
+scorer = ModelScorer(y_true=stp.y_test,
+                     y_pred=stp.y_pred,
+                     calibration_n_splines=CALIB_GAM_N_SPLINES,
+                     calibration_lam_candidates=CALIB_GAM_LAM_CANDIDATES)
 scorer.calculate_scores()
 scorer.print_scores(dec_places=3)
 
