@@ -22,8 +22,9 @@ reporter.first('***** Re-fit current NELA emergency laparotomy mortality risk'
                'performance *****')
 
 
-reporter.report("Creating external outputs dir (if it doesn't already exist)")
+reporter.report("Creating external output dirs (if it doesn't already exist)")
 make_directory(os.path.join(FIGURES_OUTPUT_DIR))
+make_directory(os.path.join(STATS_OUTPUT_DIR))
 
 
 reporter.report('Loading manually-wrangled NELA data')
