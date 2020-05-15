@@ -17,9 +17,12 @@ from utils.report import Reporter
 
 
 reporter = Reporter()
+reporter.first('***** Re-fit current NELA emergency laparotomy mortality risk'
+               "model on the different train folds, and evaluate the models'"
+               'performance *****')
 
 
-reporter.first("Creating external outputs dir (if it doesn't already exist)")
+reporter.report("Creating external outputs dir (if it doesn't already exist)")
 make_directory(os.path.join(FIGURES_OUTPUT_DIR))
 
 

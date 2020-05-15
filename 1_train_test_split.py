@@ -11,9 +11,11 @@ from utils.split_data import TrainTestSplitter
 
 
 reporter = Reporter()
+reporter.first('***** Derive case indices needed to repeatedly split NELA data'
+               'into train and test folds. *****')
 
 
-reporter.first("Creating external outputs dir (if it doesn't already exist)")
+reporter.report("Creating external outputs dir (if it doesn't already exist)")
 make_directory(os.path.join(STATS_OUTPUT_DIR))
 
 
