@@ -102,7 +102,7 @@ class ModelScorer:
         self.scores = {'per_iter': {}, 'per_split': {}, '95ci': {}}
         self.p: Union[None, np.ndarray] = None
         self.calib_lams: List[float] = []
-        self.calib_curves = List[np.ndarray] = []
+        self.calib_curves: List[np.ndarray] = []
         self._sanity_check()
 
     @property
