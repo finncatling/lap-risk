@@ -1,69 +1,54 @@
-from typing import Tuple, List
+import os
+from typing import List, Dict, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from progressbar import progressbar as pb
 from pygam import GAM
 from pygam.distributions import BinomialDist
+from pygam.terms import s
 from sklearn.metrics import (roc_auc_score, log_loss, brier_score_loss,
                              mean_absolute_error)
 
-from .constants import (N_GAM_CONFIDENCE_INTERVALS,
-                        GAM_OUTER_CONFIDENCE_INTERVALS)
 
-# TODO: Update these methods to be compatiable with ModelScorer
-# def evaluate_predictions(
-#         y_true: np.ndarray,
-#         y_pred: np.ndarray,
-#         bs_iters: int = 1000,
-#         dec_places: int = 8,
-#         n_cis: int = N_GAM_CONFIDENCE_INTERVALS,
-#         outer_cis: Tuple[float] = GAM_OUTER_CONFIDENCE_INTERVALS
-# ):
-#     """Evaluates model predictions by calculating scores with bootstrap
-#         confidence intervals. Plots and scores model calibration error.
-#
-#         TODO: Train multiple calibration GAMs and combine using Rubin's rules
-#         TODO: Remove bootstrapping, but repurpose BootstrapScorer to evaluate
-#             performance
-#     """
-#     bss = BootstrapScorer(y_true, y_pred, bs_iters)
-#     bss.calculate_scores()
-#     p, _, calib_cis, calib_mae = score_calibration(
-#         y_true, y_pred, n_cis, outer_cis)
-#     plot_calibration(p, calib_cis)
-#     bss.print_scores(dec_places)
-#     print(f'Calibration MAE = {np.round(calib_mae, dec_places)}')
-#
-#
-# def score_calibration(y_true: np.ndarray, y_pred: np.ndarray,
-#                       n_cis: int, outer_cis: Tuple[float],
-#                       lam_candidates: np.ndarray = np.logspace(1.5, 2.5)):
-#     """Derive smooth model calibration curve using a GAM. Report calibration
-#         error versus line of indentity."""
-#     calib_gam = GAM(distribution=BinomialDist(levels=1),
-#                     link='logit').gridsearch(y_pred.reshape(-1, 1),
-#                                              y_true,
-#                                              lam=lam_candidates)
-#     p = np.linspace(0, 1, 101)
-#     cal_curve = calib_gam.predict(p)
-#     calib_mae = mean_absolute_error(p, cal_curve)
-#     calib_cis = calib_gam.confidence_intervals(
-#         p, quantiles=np.linspace(*outer_cis, n_cis * 2))
-#     return p, cal_curve, calib_cis, calib_mae
-#
-#
-# def plot_calibration(p: np.ndarray, calib_cis: np.ndarray):
-#     """Plot calibration curve, with confidence intervals."""
-#     f, ax = plt.subplots(figsize=(4, 4))
-#     n_cis = int(calib_cis.shape[1] / 2)
-#     for k in range(n_cis):
-#         ax.fill_between(p, calib_cis[:, k], calib_cis[:, -(k + 1)],
-#                         alpha=1 / n_cis, color='black', lw=0.0)
-#     ax.plot([0, 1], [0, 1], linestyle='dotted', c='red')
-#     ax.set(xlabel='Predicted risk', ylabel='True risk',
-#            xlim=[0, 1], ylim=[0, 1], title='Calibration')
-#     plt.show()
+def score_calibration(
+        y_true: np.ndarray,
+        y_pred: np.ndarray,
+        n_splines: int,
+        lam_candidates: np.ndarray
+) -> (np.ndarray, np.ndarray, float, float):
+    """Derive smooth model calibration curve using a GAM. Report calibration
+        error versus line of identity."""
+    calib_gam = GAM(s(0, n_splines=n_splines),
+                    distribution=BinomialDist(levels=1),
+                    link='logit').gridsearch(y_pred.reshape(-1, 1), y_true,
+                                             lam=lam_candidates, progress=False)
+    p = np.linspace(0, 1, 101)
+    cal_curve = calib_gam.predict(p)
+    calib_mae = mean_absolute_error(p, cal_curve)
+    return p, cal_curve, calib_mae, calib_gam.terms.lam
+
+
+def plot_calibration(p: np.ndarray,
+                     calib_curves: List[np.ndarray],
+                     curve_transparency: float = 0.1,
+                     output_dir: Union[None, str] = None,
+                     output_filename: Union[None, str] = None,
+                     extensions: List[str] = ('pdf', 'eps')):
+    """Plot calibration curve, with confidence intervals. Provide filename
+        without extension."""
+    f, ax = plt.subplots(figsize=(4, 4))
+    for calib_curve in calib_curves:
+        ax.plot(p, calib_curve, alpha=curve_transparency)
+    ax.plot([0, 1], [0, 1], linestyle='dotted', c='black')
+    ax.set(xlabel='Predicted risk', ylabel='Estimated true risk',
+           xlim=[0, 1], ylim=[0, 1])
+    if output_dir is None:
+        plt.show()
+    else:
+        for ext in extensions:
+            plt.savefig(os.path.join(output_dir, f'{output_filename}.{ext}'),
+                        format=ext, bbox_inches='tight')
 
 
 def somers_dxy(y_true, y_pred):
@@ -83,7 +68,8 @@ def tjurs_coef(y_true, y_pred):
     return strata[1] - strata[0]
 
 
-def score_predictions(y_true, y_pred):
+def score_predictions(y_true: np.ndarray,
+                      y_pred: np.ndarray) -> Dict[str, float]:
     """Calculate several scores for model performance using predicted risks
         and true labels.
 
@@ -103,10 +89,20 @@ def score_predictions(y_true, y_pred):
 class ModelScorer:
     """Calculate confidence intervals for model evaluation scores using their
         predictions on the different test folds from 1_train_test_split.py"""
-    def __init__(self, y_true: List[np.ndarray], y_pred: List[np.ndarray]):
+
+    def __init__(self,
+                 y_true: List[np.ndarray],
+                 y_pred: List[np.ndarray],
+                 calibration_n_splines: int,
+                 calibration_lam_candidates: np.ndarray):
         self.y_true = y_true
         self.y_pred = y_pred
-        self.scores = {'iter': {}, 'splits': {}, '95ci': {}}
+        self.calib_n_splines = calibration_n_splines
+        self.calib_lam_candidates = calibration_lam_candidates
+        self.scores = {'per_iter': {}, 'per_split': {}, '95ci': {}}
+        self.p: Union[None, np.ndarray] = None
+        self.calib_lams: List[float] = []
+        self.calib_curves = List[np.ndarray] = []
         self._sanity_check()
 
     @property
@@ -118,10 +114,16 @@ class ModelScorer:
             assert self.y_true[i].shape[0] == self.y_pred[i].shape[0]
 
     def calculate_scores(self):
-        for i in range(self.n_splits):
-            self.scores['iter'][i] = score_predictions(self.y_true[i],
-                                                       self.y_pred[i])
-        self.scores['point_estimates'] = self.scores['iter'][0]
+        for i in pb(range(self.n_splits)):
+            self.scores['per_iter'][i] = score_predictions(self.y_true[i],
+                                                           self.y_pred[i])
+            self.p, calib_curve, calib_mae, best_lam = score_calibration(
+                self.y_true[i], self.y_pred[i], self.calib_n_splines,
+                self.calib_lam_candidates)
+            self.scores['per_iter'][i]['Calibration MAE'] = calib_mae
+            self.calib_curves.append(calib_curve)
+            self.calib_lams.append(best_lam)
+        self.scores['point_estimates'] = self.scores['per_iter'][0]
         self._calculate_95ci()
 
     def print_scores(self, dec_places):
@@ -133,17 +135,18 @@ class ModelScorer:
     def _calculate_95ci(self):
         for score in self.scores['point_estimates'].keys():
             self._extract_iter_per_score(score)
-            self.scores['splits'][score] = (
-                    self.scores['splits'][score] -
+            self.scores['per_split'][score] = (
+                    self.scores['per_split'][score] -
                     self.scores['point_estimates'][score])
             self.scores['95ci'][score] = list(
                 self.scores['point_estimates'][score] +
-                np.percentile(self.scores['splits'][score], (2.5, 97.5)))
+                np.percentile(self.scores['per_split'][score], (2.5, 97.5)))
 
     def _extract_iter_per_score(self, score):
-        self.scores['splits'][score] = np.zeros(self.n_splits)
+        self.scores['per_split'][score] = np.zeros(self.n_splits)
         for i in range(self.n_splits):
-            self.scores['splits'][score][i] = self.scores['iter'][i][score]
+            self.scores['per_split'][score][i] = self.scores[
+                'per_iter'][i][score]
 
 
 def evaluate_samples(y: np.ndarray, y_samples: np.ndarray,

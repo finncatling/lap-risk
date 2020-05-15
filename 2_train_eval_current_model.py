@@ -2,10 +2,11 @@ import os
 
 import pandas as pd
 
-from utils.constants import DATA_DIR, RANDOM_SEED
+from utils.constants import DATA_DIR, RANDOM_SEED, FIGURES_OUTPUT_DIR
 from utils.current_nela_model import (preprocess_df, SplitterTrainerPredictor,
                                       WINSOR_THRESHOLDS,
                                       CURRENT_NELA_MODEL_VARS, CENTRES)
+from utils.io import make_directory
 from utils.helpers import flatten_nela_var_dict
 from utils.split_data import drop_incomplete_cases
 from utils.evaluate import ModelScorer
@@ -14,6 +15,10 @@ from utils.report import Reporter
 
 
 reporter = Reporter()
+
+
+reporter.first("Creating external outputs dir (if it doesn't already exist)")
+make_directory(os.path.join(FIGURES_OUTPUT_DIR))
 
 
 reporter.first('Loading manually-wrangled NELA data')
@@ -83,17 +88,21 @@ stp = SplitterTrainerPredictor(
 stp.split_train_predict()
 
 
-# reporter.report('Scoring model performance')
-# scorer = ModelScorer(stp.y_test, stp.y_pred)
-# scorer.calculate_scores()
-# scorer.print_scores(dec_places=3)
+reporter.first('Scoring model performance')
+scorer = ModelScorer(stp.y_test, stp.y_pred)
+scorer.calculate_scores()
+scorer.print_scores(dec_places=3)
 
 
+reporter.first('Saving SplitterTrainerPredictor for use in model evaluation')
+save_object(stp, os.path.join('outputs', 'splitter_trainer_predictor.pkl'))
+
+
+reporter.first('Scoring model performance')
 # TODO: Calculate calibration
 
 
-reporter.report('Saving SplitterTrainerPredictor for use in model evaluation')
-save_object(stp, os.path.join('outputs', 'splitter_trainer_predictor.pkl'))
+
 # TODO: Save scores
 
 
