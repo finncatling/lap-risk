@@ -38,9 +38,9 @@ def plot_calibration(p: np.ndarray,
     """Plot calibration curve, with confidence intervals. Provide filename
         without extension."""
     f, ax = plt.subplots(figsize=(4, 4))
-    ax.plot([0, 1], [0, 1], linestyle='dotted', c='black')
     for calib_curve in calib_curves:
         ax.plot(p, calib_curve, c='tab:blue', alpha=curve_transparency)
+    ax.plot([0, 1], [0, 1], linestyle='dotted', c='black')
     ax.set(xlabel='Predicted risk', ylabel='Estimated true risk',
            xlim=[0, 1], ylim=[0, 1])
     if output_dir is None:
