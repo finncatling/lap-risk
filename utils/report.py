@@ -72,7 +72,7 @@ class Reporter:
         if show_time:
             message = f'{message} {self.timer.elapsed()}'
         print(f'\n{box_edge}')
-        if char_i < len(message):
+        while char_i < len(message):
             print(f'# {message[char_i:char_i + text_width]} #')
             char_i += text_width
         print(f'{box_edge}\n')

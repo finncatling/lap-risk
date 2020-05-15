@@ -11,7 +11,7 @@ from utils.split_data import TrainTestSplitter
 
 
 reporter = Reporter()
-reporter.title('Derive case indices needed to repeatedly split NELA data'
+reporter.title('Derive case indices needed to repeatedly split NELA data '
                'into train and test folds')
 
 
