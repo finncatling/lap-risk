@@ -23,7 +23,7 @@ reporter.first("Creating external outputs dir (if it doesn't already exist)")
 make_directory(os.path.join(FIGURES_OUTPUT_DIR))
 
 
-reporter.first('Loading manually-wrangled NELA data')
+reporter.report('Loading manually-wrangled NELA data')
 df = pd.read_pickle(
     os.path.join(DATA_DIR, 'df_after_univariate_wrangling.pkl'))
 
@@ -93,12 +93,13 @@ reporter.report('Saving SplitterTrainerPredictor for later use')
 save_object(stp, os.path.join('outputs', 'splitter_trainer_predictor.pkl'))
 
 
-reporter.first('Scoring model performance')
+reporter.report('Scoring model performance')
 scorer = ModelScorer(y_true=stp.y_test,
                      y_pred=stp.y_pred,
                      calibration_n_splines=CALIB_GAM_N_SPLINES,
                      calibration_lam_candidates=CALIB_GAM_LAM_CANDIDATES)
 scorer.calculate_scores()
+print('')
 scorer.print_scores(dec_places=3)
 
 
@@ -109,7 +110,7 @@ save_object(stp, os.path.join('outputs', 'splitter_trainer_predictor.pkl'))
 reporter.report('Saving plot of calibration curves')
 plot_calibration(p=scorer.p,
                  calib_curves=scorer.calib_curves,
-                 curve_transparency=0.1,
+                 curve_transparency=0.15,
                  output_dir=FIGURES_OUTPUT_DIR,
                  output_filename='current_model_calibration')
 

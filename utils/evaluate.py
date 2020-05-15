@@ -31,7 +31,7 @@ def score_calibration(
 
 def plot_calibration(p: np.ndarray,
                      calib_curves: List[np.ndarray],
-                     curve_transparency: float = 0.15,
+                     curve_transparency: float,
                      output_dir: Union[None, str] = None,
                      output_filename: Union[None, str] = None,
                      extensions: List[str] = ('pdf', 'eps')):
