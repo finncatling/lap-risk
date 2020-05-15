@@ -18,7 +18,7 @@ from utils.report import Reporter
 
 reporter = Reporter()
 reporter.title('Re-fit current NELA emergency laparotomy mortality risk '
-               "model on the different train folds, and evaluate the models'"
+               "model on the different train folds, and evaluate the models' "
                'performance')
 
 

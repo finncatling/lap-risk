@@ -64,7 +64,7 @@ class Reporter:
             message = f'{message}\n'
         print(message)
 
-    def title(self, message: str, show_time=False, box_width: int = 79):
+    def title(self, message: str, show_time=False, box_width: int = 72):
         """Print message in title box."""
         box_edge = '#' * box_width
         text_width = int(box_width - 4)
@@ -73,7 +73,9 @@ class Reporter:
             message = f'{message} {self.timer.elapsed()}'
         print(f'\n{box_edge}')
         while char_i < len(message):
-            print(f'# {message[char_i:char_i + text_width]} #')
+            fragment = message[char_i:char_i + text_width]
+            extra_spaces = ' ' * int(text_width - len(fragment))
+            print(f'# {fragment}{extra_spaces} #')
             char_i += text_width
         print(f'{box_edge}\n')
 
