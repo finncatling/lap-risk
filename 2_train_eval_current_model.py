@@ -17,9 +17,9 @@ from utils.report import Reporter
 
 
 reporter = Reporter()
-reporter.first('***** Re-fit current NELA emergency laparotomy mortality risk'
+reporter.title('Re-fit current NELA emergency laparotomy mortality risk'
                "model on the different train folds, and evaluate the models'"
-               'performance *****')
+               'performance')
 
 
 reporter.report("Creating external output dirs (if it doesn't already exist)")

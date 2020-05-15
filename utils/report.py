@@ -49,7 +49,7 @@ class Reporter:
     def report(self,
                message: str,
                leading_newline: bool = False,
-               trailing_newline: bool = False) -> None:
+               trailing_newline: bool = False):
         """Prints message for end user.
 
         Args:
@@ -63,6 +63,19 @@ class Reporter:
         if trailing_newline:
             message = f'{message}\n'
         print(message)
+
+    def title(self, message: str, show_time=False, box_width: int = 79):
+        """Print message in title box."""
+        box_edge = '#' * box_width
+        text_width = int(box_width - 4)
+        char_i = 0
+        if show_time:
+            message = f'{message} {self.timer.elapsed()}'
+        print(f'\n{box_edge}')
+        if char_i < len(message):
+            print(f'# {message[char_i:char_i + text_width]} #')
+            char_i += text_width
+        print(f'{box_edge}\n')
 
     def first(self, message: str):
         """Convenience wrapper for first message."""
