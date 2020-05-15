@@ -12,7 +12,7 @@ STATS_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, 'statistics')
 FIGURES_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, 'figures')
 
 # For use in model evaluation
-CALIB_GAM_N_SPLINES = 5,
+CALIB_GAM_N_SPLINES = 5
 CALIB_GAM_LAM_CANDIDATES = np.logspace(-3, 3)
 
 # For use when plotting gam output
