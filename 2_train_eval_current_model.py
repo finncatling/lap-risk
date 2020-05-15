@@ -2,14 +2,16 @@ import os
 
 import pandas as pd
 
-from utils.constants import DATA_DIR, RANDOM_SEED, FIGURES_OUTPUT_DIR
+from utils.constants import (DATA_DIR, RANDOM_SEED, FIGURES_OUTPUT_DIR,
+                             STATS_OUTPUT_DIR, CALIB_GAM_N_SPLINES,
+                             CALIB_GAM_LAM_CANDIDATES)
 from utils.current_nela_model import (preprocess_df, SplitterTrainerPredictor,
                                       WINSOR_THRESHOLDS,
                                       CURRENT_NELA_MODEL_VARS, CENTRES)
 from utils.io import make_directory
 from utils.helpers import flatten_nela_var_dict
 from utils.split_data import drop_incomplete_cases
-from utils.evaluate import ModelScorer
+from utils.evaluate import ModelScorer, plot_calibration
 from utils.io import load_object, save_object
 from utils.report import Reporter
 
@@ -66,13 +68,12 @@ derived from the data for use in transforming the variables. This means that
 we can speed up our code by running the preprocessing prior to the loop wherein
 the data are repeatedly split and the model retrained.  
 """
-preprocessed_df, _ = preprocess_df(
-    df,
-    quadratic_vars=quadratic_vars,
-    winsor_threholds=WINSOR_THRESHOLDS,
-    centres=CENTRES,
-    binarize_vars=binarize_vars,
-    label_binarizers=None)
+preprocessed_df, _ = preprocess_df(df,
+                                   quadratic_vars=quadratic_vars,
+                                   winsor_threholds=WINSOR_THRESHOLDS,
+                                   centres=CENTRES,
+                                   binarize_vars=binarize_vars,
+                                   label_binarizers=None)
 
 
 reporter.report('Loading data needed for train-test splitting')
@@ -88,25 +89,45 @@ stp = SplitterTrainerPredictor(
 stp.split_train_predict()
 
 
-reporter.first('Scoring model performance')
-scorer = ModelScorer(stp.y_test, stp.y_pred)
-scorer.calculate_scores()
-scorer.print_scores(dec_places=3)
-
-
-reporter.first('Saving SplitterTrainerPredictor for use in model evaluation')
+reporter.report('Saving SplitterTrainerPredictor for later use')
 save_object(stp, os.path.join('outputs', 'splitter_trainer_predictor.pkl'))
 
 
 reporter.first('Scoring model performance')
-# TODO: Calculate calibration
+scorer = ModelScorer(y_true=stp.y_test,
+                     y_pred=stp.y_pred,
+                     calibration_n_splines=CALIB_GAM_N_SPLINES,
+                     calibration_lam_candidates=CALIB_GAM_LAM_CANDIDATES)
+scorer.calculate_scores()
+scorer.print_scores(dec_places=3)
 
 
+reporter.first('Saving ModelScorer for later use')
+save_object(stp, os.path.join('outputs', 'splitter_trainer_predictor.pkl'))
 
-# TODO: Save scores
+
+reporter.report('Saving plot of calibration curves')
+plot_calibration(p=scorer.p,
+                 calib_curves=scorer.calib_curves,
+                 curve_transparency=0.1,
+                 output_dir=FIGURES_OUTPUT_DIR,
+                 output_filename='current_model_calibration')
 
 
-# TODO: Save external outputs
+reporter.report('Saving summary statistics for external use')
+del scorer.scores['per_iter']
+current_model_stats = {'train_fold_stats': stp.split_stats,
+                       'model_features': stp.features,
+                       'model_coefficients': stp.coefficients,
+                       'scores': scorer.scores,
+                       'calib_p': scorer.p,
+                       'calib_curves': scorer.calib_curves,
+                       'calib_n_splines': scorer.calib_n_splines,
+                       'calib_lam_candidates': scorer.calib_lam_candidates,
+                       'calib_best_lams': scorer.calib_lams}
+save_object(current_model_stats,
+            os.path.join(STATS_OUTPUT_DIR,
+                         '2_train_eval_current_model_stats.pkl'))
 
 
 reporter.last('Done.')

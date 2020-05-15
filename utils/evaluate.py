@@ -31,16 +31,16 @@ def score_calibration(
 
 def plot_calibration(p: np.ndarray,
                      calib_curves: List[np.ndarray],
-                     curve_transparency: float = 0.1,
+                     curve_transparency: float = 0.15,
                      output_dir: Union[None, str] = None,
                      output_filename: Union[None, str] = None,
                      extensions: List[str] = ('pdf', 'eps')):
     """Plot calibration curve, with confidence intervals. Provide filename
         without extension."""
     f, ax = plt.subplots(figsize=(4, 4))
-    for calib_curve in calib_curves:
-        ax.plot(p, calib_curve, alpha=curve_transparency)
     ax.plot([0, 1], [0, 1], linestyle='dotted', c='black')
+    for calib_curve in calib_curves:
+        ax.plot(p, calib_curve, c='tab:blue', alpha=curve_transparency)
     ax.set(xlabel='Predicted risk', ylabel='Estimated true risk',
            xlim=[0, 1], ylim=[0, 1])
     if output_dir is None:
@@ -114,7 +114,7 @@ class ModelScorer:
             assert self.y_true[i].shape[0] == self.y_pred[i].shape[0]
 
     def calculate_scores(self):
-        for i in pb(range(self.n_splits)):
+        for i in pb(range(self.n_splits), prefix='Train-test split'):
             self.scores['per_iter'][i] = score_predictions(self.y_true[i],
                                                            self.y_pred[i])
             self.p, calib_curve, calib_mae, best_lam = score_calibration(
