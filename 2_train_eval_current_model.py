@@ -19,8 +19,8 @@ from utils.report import Reporter
 
 reporter = Reporter()
 reporter.title('Re-fit current NELA emergency laparotomy mortality risk '
-               "model on the different train folds, and evaluate the models' "
-               'performance')
+               "model on the different train folds, and evaluate the models "
+               'obtained on the corresponding test folds')
 
 
 reporter.report("Creating external output dirs (if it doesn't already exist)")
