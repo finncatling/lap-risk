@@ -38,7 +38,7 @@ def plot_stratified_risk_distributions(
     for i, outcome in enumerate(('Alive', 'Dead')):
         stratified_y_pred = y_pred[np.where(y_true == i)[0]]
         plt.hist(stratified_y_pred, label=outcome, **hist_args)
-    plt.xlabel('Mortality risk')
+    plt.xlabel('Predicted mortality risk')
     plt.ylabel('Probability density')
     plt.legend()
 
