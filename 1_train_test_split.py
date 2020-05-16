@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+from datetime import datetime
 
 from utils.constants import RANDOM_SEED, DATA_DIR, STATS_OUTPUT_DIR
 from utils.current_nela_model import CURRENT_NELA_MODEL_VARS
@@ -40,12 +41,14 @@ save_object(tt_splitter, os.path.join('outputs', 'train_test_splitter.pkl'))
 
 
 reporter.report('Saving summary statistics for external use')
-tt_split_stats = {'n_institutions': tt_splitter.n_institutions,
-                  'n_train_institutions': tt_splitter.n_train_institutions,
-                  'n_test_institutions': tt_splitter.n_test_institutions,
-                  'drop_stats': tt_splitter.drop_stats,
-                  'split_stats': tt_splitter.split_stats,
-                  **tt_splitter_args}
+tt_split_stats = {
+    'start_datetime': datetime.fromtimestamp(reporter.timer.start_time),
+    'n_institutions': tt_splitter.n_institutions,
+    'n_train_institutions': tt_splitter.n_train_institutions,
+    'n_test_institutions': tt_splitter.n_test_institutions,
+    'drop_stats': tt_splitter.drop_stats,
+    'split_stats': tt_splitter.split_stats,
+    **tt_splitter_args}
 save_object(tt_split_stats,
             os.path.join(STATS_OUTPUT_DIR, '1_train_test_split_stats.pkl'))
 

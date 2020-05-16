@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+from datetime import datetime
 
 from utils.constants import (DATA_DIR, RANDOM_SEED, FIGURES_OUTPUT_DIR,
                              STATS_OUTPUT_DIR, CALIB_GAM_N_SPLINES,
@@ -121,15 +122,17 @@ plot_calibration(p=scorer.p,
 
 reporter.report('Saving summary statistics for external use')
 del scorer.scores['per_iter']
-current_model_stats = {'train_fold_stats': stp.split_stats,
-                       'model_features': stp.features,
-                       'model_coefficients': stp.coefficients,
-                       'scores': scorer.scores,
-                       'calib_p': scorer.p,
-                       'calib_curves': scorer.calib_curves,
-                       'calib_n_splines': scorer.calib_n_splines,
-                       'calib_lam_candidates': scorer.calib_lam_candidates,
-                       'calib_best_lams': scorer.calib_lams}
+current_model_stats = {
+    'start_datetime': datetime.fromtimestamp(reporter.timer.start_time),
+    'train_fold_stats': stp.split_stats,
+    'model_features': stp.features,
+    'model_coefficients': stp.coefficients,
+    'scores': scorer.scores,
+    'calib_p': scorer.p,
+    'calib_curves': scorer.calib_curves,
+    'calib_n_splines': scorer.calib_n_splines,
+    'calib_lam_candidates': scorer.calib_lam_candidates,
+    'calib_best_lams': scorer.calib_lams}
 save_object(current_model_stats,
             os.path.join(STATS_OUTPUT_DIR,
                          '2_train_eval_current_model_stats.pkl'))

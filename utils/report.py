@@ -6,19 +6,19 @@ class Timer:
 
     def __init__(self, start_on_instantiation: bool = True):
         if start_on_instantiation:
-            self.start = time.time()
+            self.start_time = time.time()
         else:
-            self.start = None
+            self.start_time = None
         self.stopped = False
 
     def elapsed(self, raw: bool = False):
         """Displays elapsed time. If raw=True, returns datetime, else
             returns ready-formatted string."""
-        if self.start:
+        if self.start_time:
             if self.stopped:
-                diff = self.stopped - self.start
+                diff = self.stopped - self.start_time
             else:
-                diff = time.time() - self.start
+                diff = time.time() - self.start_time
 
             if raw:
                 return diff
@@ -27,8 +27,8 @@ class Timer:
 
     def start(self):
         """Starts timer, if it isn't already started."""
-        if self.start is None:
-            self.start = time.time()
+        if self.start_time is None:
+            self.start_time = time.time()
         else:
             print('Timer is already started.')
 
