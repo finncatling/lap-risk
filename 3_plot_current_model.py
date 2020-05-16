@@ -31,8 +31,10 @@ plot_saver(plot_calibration,
 
 reporter.report('Plotting risk distributions')
 plot_saver(plot_stratified_risk_distributions,
-           y_true=np.array(scorer.y_true).flatten(),
-           y_pred=np.array(scorer.y_pred).flatten(),
+           # y_true=np.array(scorer.y_true).flatten(),
+           # y_pred=np.array(scorer.y_pred).flatten(),
+           y_true=scorer.y_true[0],
+           y_pred=scorer.y_pred[0],
            output_dir=FIGURES_OUTPUT_DIR,
            output_filename='current_model_risk_distributions')
 
