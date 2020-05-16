@@ -35,12 +35,12 @@ def plot_stratified_risk_distributions(
         hist_args: Dict = {'bins': 50, 'density': True, 'alpha': 0.5}
 ) -> None:
     """Plots predicted risks, stratified by mortality label."""
+    f, ax = plt.subplots()
     for i, outcome in enumerate(('Alive', 'Dead')):
         stratified_y_pred = y_pred[np.where(y_true == i)[0]]
-        plt.hist(stratified_y_pred, label=outcome, **hist_args)
-    plt.xlabel('Predicted mortality risk')
-    plt.ylabel('Probability density')
-    plt.legend()
+        ax.hist(stratified_y_pred, label=outcome, **hist_args)
+    ax.set(xlabel='Predicted mortality risk', ylabel='Probability density')
+    ax.legend()
 
 
 def plot_calibration(p: np.ndarray,
