@@ -1,0 +1,4 @@
+# keep this folder in git, but ignore contents (including subfolders)
+*
+*/
+!.gitignore
