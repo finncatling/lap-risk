@@ -6,7 +6,11 @@ RANDOM_SEED = 1
 # Location of source data, plus this data after initial manual wrangling
 DATA_DIR = os.path.join(os.pardir, 'nelarisk', 'data')
 
-# Location where (non-PHI) outputs are saved
+# Locations where 'internal' outputs are saved for use later in the analysis
+INTERNAL_OUTPUT_DIR = 'outputs'
+CURRENT_MODEL_OUTPUT_DIR = os.path.join(INTERNAL_OUTPUT_DIR, 'current_model')
+
+# Locations where 'external' (non-PHI) outputs are saved
 EXTERNAL_OUTPUT_DIR = os.path.join(os.pardir, 'lap-risk-outputs')
 STATS_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, 'statistics')
 FIGURES_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, 'figures')

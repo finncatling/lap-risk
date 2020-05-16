@@ -4,8 +4,8 @@ import pandas as pd
 from datetime import datetime
 
 from utils.constants import (DATA_DIR, RANDOM_SEED, FIGURES_OUTPUT_DIR,
-                             STATS_OUTPUT_DIR, CALIB_GAM_N_SPLINES,
-                             CALIB_GAM_LAM_CANDIDATES)
+                             STATS_OUTPUT_DIR, CURRENT_MODEL_OUTPUT_DIR,
+                             CALIB_GAM_N_SPLINES, CALIB_GAM_LAM_CANDIDATES)
 from utils.current_nela_model import (preprocess_df, SplitterTrainerPredictor,
                                       WINSOR_THRESHOLDS,
                                       CURRENT_NELA_MODEL_VARS, CENTRES)
@@ -23,9 +23,10 @@ reporter.title('Re-fit current NELA emergency laparotomy mortality risk '
                'obtained on the corresponding test folds')
 
 
-reporter.report("Creating external output dirs (if it doesn't already exist)")
+reporter.report("Creating output dirs (if they don't already exist)")
 make_directory(os.path.join(FIGURES_OUTPUT_DIR))
 make_directory(os.path.join(STATS_OUTPUT_DIR))
+make_directory(CURRENT_MODEL_OUTPUT_DIR)
 
 
 reporter.report('Loading manually-wrangled NELA data')
@@ -95,7 +96,8 @@ stp.split_train_predict()
 
 
 reporter.report('Saving SplitterTrainerPredictor for later use')
-save_object(stp, os.path.join('outputs', 'splitter_trainer_predictor.pkl'))
+save_object(stp, os.path.join(CURRENT_MODEL_OUTPUT_DIR,
+                              'splitter_trainer_predictor.pkl'))
 
 
 reporter.report('Scoring model performance')
@@ -109,7 +111,8 @@ scorer.print_scores(dec_places=3)
 
 
 reporter.first('Saving ModelScorer for later use')
-save_object(stp, os.path.join('outputs', 'splitter_trainer_predictor.pkl'))
+save_object(scorer, os.path.join(CURRENT_MODEL_OUTPUT_DIR,
+                                 'scorer.pkl'))
 
 
 reporter.report('Saving plot of calibration curves')

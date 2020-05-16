@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from utils.helpers import flatten_nela_var_dict
-from utils.explore import missingness_perc
+from utils.inspect import missingness_perc
 
 
 class TrainTestSplitter:
