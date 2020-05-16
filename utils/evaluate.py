@@ -1,4 +1,3 @@
-import os
 from typing import List, Dict, Union
 
 import matplotlib.pyplot as plt
@@ -27,28 +26,6 @@ def score_calibration(
     cal_curve = calib_gam.predict(p)
     calib_mae = mean_absolute_error(p, cal_curve)
     return p, cal_curve, calib_mae, calib_gam.terms.lam
-
-
-def plot_calibration(p: np.ndarray,
-                     calib_curves: List[np.ndarray],
-                     curve_transparency: float,
-                     output_dir: Union[None, str] = None,
-                     output_filename: Union[None, str] = None,
-                     extensions: List[str] = ('pdf', 'eps')):
-    """Plot calibration curve, with confidence intervals. Provide filename
-        without extension."""
-    f, ax = plt.subplots(figsize=(4, 4))
-    for calib_curve in calib_curves:
-        ax.plot(p, calib_curve, c='tab:blue', alpha=curve_transparency)
-    ax.plot([0, 1], [0, 1], linestyle='dotted', c='black')
-    ax.set(xlabel='Predicted risk', ylabel='Estimated true risk',
-           xlim=[0, 1], ylim=[0, 1])
-    if output_dir is None:
-        plt.show()
-    else:
-        for ext in extensions:
-            plt.savefig(os.path.join(output_dir, f'{output_filename}.{ext}'),
-                        format=ext, bbox_inches='tight')
 
 
 def somers_dxy(y_true, y_pred):
@@ -114,7 +91,7 @@ class ModelScorer:
             assert self.y_true[i].shape[0] == self.y_pred[i].shape[0]
 
     def calculate_scores(self):
-        for i in pb(range(self.n_splits), prefix='Train-test split'):
+        for i in pb(range(self.n_splits), prefix='Scorer iteration'):
             self.scores['per_iter'][i] = score_predictions(self.y_true[i],
                                                            self.y_pred[i])
             self.p, calib_curve, calib_mae, best_lam = score_calibration(

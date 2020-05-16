@@ -12,7 +12,7 @@ from utils.current_nela_model import (preprocess_df, SplitterTrainerPredictor,
 from utils.io import make_directory
 from utils.helpers import flatten_nela_var_dict
 from utils.split_data import drop_incomplete_cases
-from utils.evaluate import ModelScorer, plot_calibration
+from utils.evaluate import ModelScorer
 from utils.io import load_object, save_object
 from utils.report import Reporter
 
@@ -24,7 +24,6 @@ reporter.title('Re-fit current NELA emergency laparotomy mortality risk '
 
 
 reporter.report("Creating output dirs (if they don't already exist)")
-make_directory(os.path.join(FIGURES_OUTPUT_DIR))
 make_directory(os.path.join(STATS_OUTPUT_DIR))
 make_directory(CURRENT_MODEL_OUTPUT_DIR)
 
@@ -111,16 +110,7 @@ scorer.print_scores(dec_places=3)
 
 
 reporter.first('Saving ModelScorer for later use')
-save_object(scorer, os.path.join(CURRENT_MODEL_OUTPUT_DIR,
-                                 'scorer.pkl'))
-
-
-reporter.report('Saving plot of calibration curves')
-plot_calibration(p=scorer.p,
-                 calib_curves=scorer.calib_curves,
-                 curve_transparency=0.15,
-                 output_dir=FIGURES_OUTPUT_DIR,
-                 output_filename='current_model_calibration')
+save_object(scorer, os.path.join(CURRENT_MODEL_OUTPUT_DIR, 'scorer.pkl'))
 
 
 reporter.report('Saving summary statistics for external use')
