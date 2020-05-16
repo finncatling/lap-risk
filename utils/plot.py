@@ -32,7 +32,8 @@ def plot_saver(plot_func: Callable,
 def plot_stratified_risk_distributions(
         y_true: np.ndarray,
         y_pred: np.ndarray,
-        hist_args: Dict = {'bins': 50, 'density': True, 'alpha': 0.5}
+        hist_args: Dict = {'bins': 50, 'density': True, 'alpha': 0.5,
+                           'range': (0, 1)}
 ) -> None:
     """Plots predicted risks, stratified by mortality label."""
     f, ax = plt.subplots()
