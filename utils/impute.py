@@ -9,6 +9,17 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import RobustScaler
 
 
+def calculate_mice_imputations(df: pd.DataFrame) -> (int, float):
+    """White et al recommend using 100 * f MICE imputations,
+        where f is the fraction of incomplete cases in the
+        DataFrame."""
+    f = 1 - (df.dropna(how='any').shape[0] / df.shape[0])
+    n_imputations = int(np.ceil(f * 100))
+    print(f'{np.round(f * 100, 3)}% incomplete cases',
+          f'so running {n_imputations} MICE imputations')
+    return n_imputations, f
+
+
 class CategoricalImputer:
     """Imputes missing values of non-binary categorical
         variables in MICE DataFrames."""
@@ -44,6 +55,10 @@ class CategoricalImputer:
         self._v = {}
         self.imputed_dfs = copy.deepcopy(mice_dfs)
         self._rnd = self._init_rnd()
+
+    @property
+    def n_mice_dfs(self) -> int:
+        return len(self.mice_dfs)
 
     def impute_all(self):
         self._preprocess_dfs()
@@ -133,10 +148,6 @@ class CategoricalImputer:
                 self.imputed_dfs[i].loc[
                     self._v[v]['missing_i'], v] = self._v[v]['imp'][i]
 
-    @property
-    def n_mice_dfs(self) -> int:
-        return len(self.mice_dfs)
-
     def _init_rnd(self) -> Dict[str, RandomState]:
         return {'lr': RandomState(self.random_seed),
                 'choice': RandomState(self.random_seed)}
@@ -169,6 +180,10 @@ class ContImpPreprocessor:
         self.X = {'train': [], 'missing': []}
         self.y_train = None
         self.y_train_trans = None
+
+    @property
+    def n_imp_dfs(self) -> int:
+        return len(self.imp_dfs)
 
     def preprocess(self):
         self._i = self._get_train_missing_i()
@@ -210,7 +225,3 @@ class ContImpPreprocessor:
             self.X[fold].append(self.imp_dfs[i].loc[
                                     self._i[fold]].drop(self.target,
                                                         axis=1).copy())
-
-    @property
-    def n_imp_dfs(self) -> int:
-        return len(self.imp_dfs)
