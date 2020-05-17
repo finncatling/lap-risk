@@ -141,7 +141,7 @@ def log_urea_creat(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop(['S03SerumCreatinine', 'S03Urea'], axis=1)
 
 
-def winsorize(
+def winsorize_current(
         df: pd.DataFrame,
         winsor_thresholds: Dict[str, Tuple[float, float]]
 ) -> pd.DataFrame:
@@ -205,7 +205,7 @@ def transform_sodium(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop('S03Sodium', axis=1)
 
 
-def preprocess_df(
+def preprocess_current(
         df: pd.DataFrame,
         quadratic_vars: List[str],
         winsor_threholds: Dict[str, Tuple[float, float]],
@@ -244,7 +244,7 @@ def preprocess_df(
 
     # Preprocess continuous variables
     df = log_urea_creat(df)
-    df = winsorize(df, winsor_threholds)
+    df = winsorize_current(df, winsor_threholds)
     df = centre(df, centres)
     df = add_quadratic_features(df, quadratic_vars)
     df = add_asa_age_resp_interaction(df)

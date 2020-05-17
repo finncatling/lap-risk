@@ -6,7 +6,7 @@ from datetime import datetime
 from utils.constants import (DATA_DIR, RANDOM_SEED,
                              STATS_OUTPUT_DIR, CURRENT_MODEL_OUTPUT_DIR,
                              CALIB_GAM_N_SPLINES, CALIB_GAM_LAM_CANDIDATES)
-from utils.current_model import (preprocess_df, SplitterTrainerPredictor,
+from utils.current_model import (preprocess_current, SplitterTrainerPredictor,
                                  WINSOR_THRESHOLDS,
                                  CURRENT_MODEL_VARS, CENTRES)
 from utils.io import make_directory, load_object, save_object
@@ -73,12 +73,12 @@ derived from the data for use in transforming the variables. This means that
 we can speed up our code by running the preprocessing prior to the loop wherein
 the data are repeatedly split and the model retrained.  
 """
-preprocessed_df, _ = preprocess_df(df,
-                                   quadratic_vars=quadratic_vars,
-                                   winsor_threholds=WINSOR_THRESHOLDS,
-                                   centres=CENTRES,
-                                   binarize_vars=binarize_vars,
-                                   label_binarizers=None)
+preprocessed_df, _ = preprocess_current(df,
+                                        quadratic_vars=quadratic_vars,
+                                        winsor_threholds=WINSOR_THRESHOLDS,
+                                        centres=CENTRES,
+                                        binarize_vars=binarize_vars,
+                                        label_binarizers=None)
 
 
 reporter.report('Loading data needed for train-test splitting')
