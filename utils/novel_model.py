@@ -32,8 +32,7 @@ MULTI_CATEGORY_LEVELS = {
     'S03CardiacSigns': (1., 2., 4., 8.),
     'S03RespiratorySigns': (1., 2., 4., 8.),
     'S03DiagnosedMalignancy': (1., 2., 4., 8.),
-    'S03Pred_Peritsoil': (1., 2., 4., 8.),
-    'S03NCEPODUrgency': (1., 2., 3., 8.)
+    'S03Pred_Peritsoil': (1., 2., 4., 8.)
 }
 
 MISSINGNESS_VARS = ('S03PreOpArterialBloodLactate', 'S03PreOpLowestAlbumin')

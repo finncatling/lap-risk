@@ -17,9 +17,9 @@ INDICATION_VAR_NAME = 'Indication'
 
 
 reporter = Reporter()
-reporter.title('Wrangle NELA data in preparation for later input into the '
-               'novel model. The file includes multiple imputation of missing '
-               'values for all variables apart from lactate and albumin')
+reporter.title('Wrangle NELA data in preparation for later input to the '
+               'novel model. Multiply impute missing values for all variables '
+               'apart from lactate and albumin')
 
 
 reporter.report("Creating output dirs (if they don't already exist)")
