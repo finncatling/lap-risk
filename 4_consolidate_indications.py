@@ -8,13 +8,16 @@ from utils.report import Reporter
 from utils.io import make_directory, save_object
 from utils.constants import DATA_DIR, STATS_OUTPUT_DIR
 
+SINGLE_IND_FREQUENCY_THRESHOLD = 1200
+IND_PREFIX = 'S05Ind_'
+
+
 reporter = Reporter()
 reporter.title('Rationalise indications for surgery (retaining common single '
                'indications and reassigning common combinations of indications '
-               'in preparation for data input to the novel risk model. See '
+               'in preparation for data input to the novel risk model). See '
                'relevant data exploration and summary statistics in '
-               'consolidate_indications.ipynb notebook (as well as in initial '
-               'manual data wrangling notebook)')
+               'consolidate_indications.ipynb notebook')
 
 
 reporter.report("Creating output dirs (if they don't already exist)")
@@ -27,14 +30,12 @@ df = pd.read_pickle(
 
 
 reporter.report('Isolating indication variables')
-IND_PREFIX = 'S05Ind_'
 indications = [c for c in df.columns if IND_PREFIX in c]
 ind_df = df[indications].copy()
 
 
-reporter.report("Setting frequency threshold to define list of 'common "
-                "single indications' (i.e. these occur in isolation)")
-SINGLE_IND_FREQUENCY_THRESHOLD = 1200
+reporter.report("Defining 'common single indications' as those that occur in "
+                f'isolation more than {SINGLE_IND_FREQUENCY_THRESHOLD} times')
 common_single_inds: List[str] = ind_df.loc[ind_df.sum(1) == 1].sum(0)[
     ind_df.loc[ind_df.sum(1) == 1].sum(0) > SINGLE_IND_FREQUENCY_THRESHOLD
     ].sort_values(ascending=False).index.tolist()
@@ -44,8 +45,8 @@ print('The common single indications are',
       [i[len(IND_PREFIX):] for i in common_single_inds])
 
 
-reporter.report('Making a new one-hot-encoded DataFrame containing just the '
-                'common single indications')
+reporter.first('Making a new one-hot-encoded DataFrame containing just the '
+               'common single indications')
 new_ind_df = pd.DataFrame(np.zeros((df.shape[0], len(common_single_inds))),
                           columns=common_single_inds)
 for csi in common_single_inds:
@@ -53,8 +54,8 @@ for csi in common_single_inds:
 report_ohe_category_assignment(new_ind_df, 'indication')
 
 
-reporter.first('Changing the cases with the most-commonly-occurring pairs of '
-               'indications so that they have the closest single indication')
+reporter.first('Changing the most-commonly-occurring pairs of '
+               'indications to the closest single indication')
 for ind_pair, keep_ind_index in (
         (('Perforation', 'Peritonitis'), 0),
         (('SmallBowelObstruction', 'IncarceratedHernia'), 0),
@@ -68,8 +69,8 @@ for ind_pair, keep_ind_index in (
     report_ohe_category_assignment(new_ind_df, 'indication')
 
 
-reporter.first('Changing the cases with the most-commonly-occurring trios of '
-               'indications so that they have the closest single indication')
+reporter.first('Changing the most-commonly-occurring trios of '
+               'indications to the closest single indication')
 for ind_trio, keep_ind_index in (
         (('Perforation', 'Peritonitis', 'AbdominalAbscess'), 0),
 ):
@@ -83,14 +84,14 @@ for ind_trio, keep_ind_index in (
 
 
 reporter.first("Assigning the following cases to a new 'indication missing' "
-               'category: 1) cases missing an indication in the original data, '
-               '2) cases not reassigned above, where at least one of their '
-               'indications is a common single indications. These missing '
-               'indications will be multiply imputed later')
+               'category: 1) cases with no indication in the original data, '
+               '2) cases with >1 indication (and not reassigned earlier), '
+               'where at least one of their indications is a common single '
+               'indication.')
 MISSING_IND_CATEGORY = f'{IND_PREFIX}Missing'
 new_ind_df[MISSING_IND_CATEGORY] = np.zeros(df.shape[0])
 new_ind_df.loc[ind_df.sum(1) == 0, MISSING_IND_CATEGORY] = 1.
-new_ind_df.loc[((ind_df.sum(1) > 2) & (ind_df[common_single_inds].sum(1) > 0)),
+new_ind_df.loc[((ind_df.sum(1) > 1) & (ind_df[common_single_inds].sum(1) > 0)),
                MISSING_IND_CATEGORY] = 1.
 report_ohe_category_assignment(new_ind_df, 'indication')
 
@@ -103,8 +104,8 @@ new_ind_df.loc[new_ind_df.sum(1) == 0, f'{IND_PREFIX}Other'] = 1.
 report_ohe_category_assignment(new_ind_df, 'indication')
 
 
-reporter.report('Checking each case now has exactly one assigned indication '
-                "(remember this assignment may be 'indication missing')")
+reporter.first('Checking each case now has exactly one assigned indication '
+               "(remember this assignment may be 'indication missing')")
 assert new_ind_df.loc[new_ind_df.sum(1) == 1].shape[0] == new_ind_df.shape[0]
 
 
