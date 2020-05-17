@@ -37,7 +37,6 @@ indications = [c for c in df.columns if INDICATION_PREFIX in c]
 
 reporter.report('Removing variables not used in the novel model')
 df = df[flatten_model_var_dict(NOVEL_MODEL_VARS) + indications]
-print(df.columns)
 
 
 reporter.report('Prepare details of discrete variables')
@@ -57,8 +56,9 @@ df = preprocess_novel_pre_split(
     multi_category_levels=multi_category_levels)
 
 
-for i in range(0, df.shape[1], 4):
-    print(df[df.columns[i:i+4]].head())
+print(df.columns)
+for i in range(0, df.shape[1], 3):
+    print(df[df.columns[i:i+3]].head())
 
 
 # TODO: Class to handle preprocessing loop for each train-test split
