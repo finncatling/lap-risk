@@ -14,14 +14,15 @@ IND_PREFIX = 'S05Ind_'
 
 reporter = Reporter()
 reporter.title('Rationalise indications for surgery (retaining common single '
-               'indications and reassigning common combinations of indications '
-               'in preparation for data input to the novel risk model). See '
-               'relevant data exploration and summary statistics in '
-               'consolidate_indications.ipynb notebook')
+               'indications and reassigning common combinations of '
+               'indications) in preparation for data input to the novel risk '
+               'model. See additional data exploration and summary statistics '
+               'in the consolidate_indications.ipynb notebook')
 
 
 reporter.report("Creating output dirs (if they don't already exist)")
 make_directory(STATS_OUTPUT_DIR)
+
 
 reporter.report('Loading manually-wrangled NELA data')
 df = pd.read_pickle(
