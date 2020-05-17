@@ -31,6 +31,10 @@ from nelarisk.constants import (N_GAM_CONFIDENCE_INTERVALS,
                                 GAM_OUTER_CONFIDENCE_INTERVALS)
 
 
+# TODO: Make SBO the default indication category
+# TODO: Consider defining edge knots for variables sparse at extremes
+
+
 # In[2]:
 
 
