@@ -56,8 +56,8 @@ df = preprocess_novel_pre_split(
     multi_category_levels=multi_category_levels)
 
 
-print(df.dtypes)
-print(df[INDICATION_VAR_NAME])
+for i in range(0, df.shape[1], 4):
+    print(df[df.columns[i:i+4]].head())
 
 
 # (X_train_df, y_train, X_test_df, y_test, winsor_thresholds) = preprocess_novel(
