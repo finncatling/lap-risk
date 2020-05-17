@@ -10,6 +10,7 @@ from utils.constants import DATA_DIR, STATS_OUTPUT_DIR
 
 SINGLE_IND_FREQUENCY_THRESHOLD = 1200
 IND_PREFIX = 'S05Ind_'
+MISSING_IND_CATEGORY = f'{IND_PREFIX}Missing'
 
 
 reporter = Reporter()
@@ -84,15 +85,19 @@ for ind_trio, keep_ind_index in (
     report_ohe_category_assignment(new_ind_df, 'indication')
 
 
-reporter.first("Assigning the following cases to a new 'indication missing' "
-               'category: 1) cases with no indication in the original data, '
-               '2) cases with >1 indication (and not reassigned earlier), '
-               'where at least one of their indications is a common single '
-               'indication.')
-MISSING_IND_CATEGORY = f'{IND_PREFIX}Missing'
+reporter.first("Assigning cases with no indication in the original data to a "
+               "new 'indication missing' category")
 new_ind_df[MISSING_IND_CATEGORY] = np.zeros(df.shape[0])
 new_ind_df.loc[ind_df.sum(1) == 0, MISSING_IND_CATEGORY] = 1.
-new_ind_df.loc[((ind_df.sum(1) > 1) & (ind_df[common_single_inds].sum(1) > 0)),
+report_ohe_category_assignment(new_ind_df, 'indication')
+
+
+reporter.first('Assigning cases with >1 indication (which were not reassigned '
+               'earlier), at least one of which is a common single '
+               'indication, to the missing category.')
+new_ind_df.loc[((ind_df.sum(1) > 1) &
+                (ind_df[common_single_inds].sum(1) > 0) &
+                (new_ind_df.sum(1) == 0)),
                MISSING_IND_CATEGORY] = 1.
 report_ohe_category_assignment(new_ind_df, 'indication')
 
