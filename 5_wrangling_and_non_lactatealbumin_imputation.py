@@ -58,7 +58,8 @@ df = preprocess_novel_pre_split(
     multi_category_levels=multi_category_levels)
 
 
-n_imputations, _ = calculate_mice_imputations(df)
+n_imputations, _ = calculate_mice_imputations(
+    df.drop(list(MISSINGNESS_VARS) + ['Indication'], axis=1))
 
 
 # TODO: Class to handle preprocessing loop for each train-test split
