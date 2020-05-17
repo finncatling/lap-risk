@@ -9,6 +9,7 @@ DATA_DIR = os.path.join(os.pardir, 'nelarisk', 'data')
 # Locations where 'internal' outputs are saved for use later in the analysis
 INTERNAL_OUTPUT_DIR = 'outputs'
 CURRENT_MODEL_OUTPUT_DIR = os.path.join(INTERNAL_OUTPUT_DIR, 'current_model')
+NOVEL_MODEL_OUTPUT_DIR = os.path.join(INTERNAL_OUTPUT_DIR, 'novel_model')
 
 # Locations where 'external' (non-PHI) outputs are saved
 EXTERNAL_OUTPUT_DIR = os.path.join(os.pardir, 'lap-risk-outputs')

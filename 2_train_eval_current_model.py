@@ -3,17 +3,16 @@ import os
 import pandas as pd
 from datetime import datetime
 
-from utils.constants import (DATA_DIR, RANDOM_SEED, FIGURES_OUTPUT_DIR,
+from utils.constants import (DATA_DIR, RANDOM_SEED,
                              STATS_OUTPUT_DIR, CURRENT_MODEL_OUTPUT_DIR,
                              CALIB_GAM_N_SPLINES, CALIB_GAM_LAM_CANDIDATES)
 from utils.current_nela_model import (preprocess_df, SplitterTrainerPredictor,
                                       WINSOR_THRESHOLDS,
                                       CURRENT_NELA_MODEL_VARS, CENTRES)
-from utils.io import make_directory
+from utils.io import make_directory, load_object, save_object
 from utils.helpers import flatten_nela_var_dict
 from utils.split_data import drop_incomplete_cases
 from utils.evaluate import ModelScorer
-from utils.io import load_object, save_object
 from utils.report import Reporter
 
 
@@ -24,13 +23,14 @@ reporter.title('Re-fit current NELA emergency laparotomy mortality risk '
 
 
 reporter.report("Creating output dirs (if they don't already exist)")
-make_directory(os.path.join(STATS_OUTPUT_DIR))
+make_directory(STATS_OUTPUT_DIR)
 make_directory(CURRENT_MODEL_OUTPUT_DIR)
 
 
 reporter.report('Loading manually-wrangled NELA data')
 df = pd.read_pickle(
-    os.path.join(DATA_DIR, 'df_after_univariate_wrangling.pkl'))
+    os.path.join(DATA_DIR, 'df_after_univariate_wrangling.pkl')
+).reset_index(drop=True)
 
 
 reporter.report('Removing unused variables')
