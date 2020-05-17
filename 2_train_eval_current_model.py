@@ -6,11 +6,11 @@ from datetime import datetime
 from utils.constants import (DATA_DIR, RANDOM_SEED,
                              STATS_OUTPUT_DIR, CURRENT_MODEL_OUTPUT_DIR,
                              CALIB_GAM_N_SPLINES, CALIB_GAM_LAM_CANDIDATES)
-from utils.current_model import (preprocess_current, SplitterTrainerPredictor,
+from utils.model.current import (preprocess_current, SplitterTrainerPredictor,
                                  WINSOR_THRESHOLDS,
                                  CURRENT_MODEL_VARS, CENTRES)
 from utils.io import make_directory, load_object, save_object
-from utils.helpers import flatten_model_var_dict
+from utils.model.shared import flatten_model_var_dict
 from utils.split_data import drop_incomplete_cases
 from utils.evaluate import ModelScorer
 from utils.report import Reporter

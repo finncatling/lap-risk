@@ -4,7 +4,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from utils.helpers import flatten_model_var_dict
+from utils.model.shared import flatten_model_var_dict
 from utils.inspect import missingness_perc
 
 

@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 
 from utils.constants import RANDOM_SEED, DATA_DIR, STATS_OUTPUT_DIR
-from utils.current_model import CURRENT_MODEL_VARS
+from utils.model.current import CURRENT_MODEL_VARS
 from utils.io import make_directory
 from utils.io import save_object
 from utils.report import Reporter

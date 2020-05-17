@@ -6,9 +6,9 @@ import pandas as pd
 
 from utils.constants import (DATA_DIR, STATS_OUTPUT_DIR, INDICATION_PREFIX,
                              MISSING_IND_CATEGORY)
-from utils.helpers import flatten_model_var_dict
+from utils.model.shared import flatten_model_var_dict
 from utils.io import make_directory
-from utils.novel_model import (NOVEL_MODEL_VARS, MULTI_CATEGORY_LEVELS,
+from utils.model.novel import (NOVEL_MODEL_VARS, MULTI_CATEGORY_LEVELS,
                                preprocess_novel_pre_split, MISSINGNESS_VARS)
 from utils.report import Reporter
 
@@ -39,13 +39,14 @@ reporter.report('Removing variables not used in the novel model')
 df = df[flatten_model_var_dict(NOVEL_MODEL_VARS) + indications]
 
 
-reporter.report('Prepare details of discrete variables')
+reporter.report('Preparing details of discrete variables')
 multi_category_levels: Dict[str, Tuple] = copy.deepcopy(MULTI_CATEGORY_LEVELS)
 multi_category_levels[INDICATION_VAR_NAME] = tuple(indications)
 binary_vars = list(set(NOVEL_MODEL_VARS['cat']) -
                    set(multi_category_levels.keys()))
 
 
+reporter.report('Doing pre-train test split data preprocessing')
 df = preprocess_novel_pre_split(
     df,
     category_mapping={'S03ECG': {1.0: 0.0, 4.0: 1.0, 8.0: 1.0}},

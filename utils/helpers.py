@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List
+from typing import List
 
 import numpy as np
 
@@ -37,10 +37,3 @@ class GammaTransformer:
         arr[np.where(arr > self.high)] = self.high
         arr[np.where(arr < self.low)] = self.low
         return arr
-
-
-def flatten_model_var_dict(model_vars: Dict) -> List[str]:
-    """Flattens model variable name dict into single list. Function
-        placed in this file to avoid cyclical dependencies."""
-    return (list(model_vars['cat']) + list(model_vars['cont']) +
-            [model_vars['target']])
