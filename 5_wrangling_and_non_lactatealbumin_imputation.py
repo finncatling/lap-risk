@@ -10,6 +10,7 @@ from utils.model.shared import flatten_model_var_dict
 from utils.io import make_directory
 from utils.model.novel import (NOVEL_MODEL_VARS, MULTI_CATEGORY_LEVELS,
                                preprocess_novel_pre_split, MISSINGNESS_VARS)
+from utils.impute import calculate_mice_imputations
 from utils.report import Reporter
 
 
@@ -57,9 +58,7 @@ df = preprocess_novel_pre_split(
     multi_category_levels=multi_category_levels)
 
 
-print(df.columns)
-for i in range(0, df.shape[1], 3):
-    print(df[df.columns[i:i+3]].head())
+n_imputations, _ = calculate_mice_imputations(df)
 
 
 # TODO: Class to handle preprocessing loop for each train-test split
