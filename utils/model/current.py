@@ -7,6 +7,7 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.linear_model import LogisticRegression
 
 from utils.split_data import TrainTestSplitter, split_into_folds
+from utils.model.shared import Splitter
 
 """
 Web form for current NELA risk model includes Hb, but only uses this to
@@ -253,7 +254,7 @@ def preprocess_current(
     return df, label_binarizers
 
 
-class SplitterTrainerPredictor:
+class SplitterTrainerPredictor(Splitter):
     """Handles the process of repeated of train-test splitting, re-fitting the
         current NELA model using the training fold, and predicting mortality
         risk for each case in the test fold. Keeps track of relevant
@@ -264,11 +265,7 @@ class SplitterTrainerPredictor:
                  test_train_splitter: TrainTestSplitter,
                  target_variable_name: str,
                  random_seed):
-        self.df = df
-        self.tts = test_train_splitter
-        self.target_variable_name = target_variable_name
-        self.split_stats = {'n_total_train_cases': [],
-                            'n_included_train_cases': []}
+        super().__init__(df, test_train_splitter, target_variable_name)
         self.features: List[str] = ['intercept']
         self.coefficients: List[np.ndarray] = []
         self.y_test: List[np.ndarray] = []
@@ -277,27 +274,12 @@ class SplitterTrainerPredictor:
 
     def split_train_predict(self):
         for i in pb(range(self.tts.n_splits), prefix='STP iteration'):
-            X_train_df, y_train, X_test_df = self._split(i)
+            X_train_df, y_train, X_test_df, y_test = self._split(i)
             model = self._train(X_train_df, y_train)
+            self.y_test.append(y_test)
             self.y_pred.append(model.predict_proba(X_test_df.values)[:, 1])
+        self.features += X_train_df.columns.tolist()
         self._calculate_convenience_split_stats()
-
-    def _split(self, i: int) -> (pd.DataFrame, np.ndarray, pd.DataFrame):
-        """Train-test split, according to the pre-defined splits calculated
-            in 1_train_test_split.py"""
-        (X_train_df, y_train, X_test_df, y_test,
-         n_total_train_cases, n_included_train_cases) = split_into_folds(
-            self.df,
-            indices={'train': self.tts.train_i[i], 'test': self.tts.test_i[i]},
-            target_var_name=self.target_variable_name)
-        self.split_stats['n_total_train_cases'].append(
-            n_total_train_cases)
-        self.split_stats['n_included_train_cases'].append(
-            n_included_train_cases)
-        self.y_test.append(y_test)
-        if not i:  # only need to do this on first iteration
-            self.features += X_train_df.columns.tolist()
-        return X_train_df, y_train, X_test_df
 
     def _train(self,
                X_train_df: pd.DataFrame,
@@ -316,13 +298,3 @@ class SplitterTrainerPredictor:
         self.coefficients[-1][0] = model.intercept_
         self.coefficients[-1][1:] = coefficients
         return model
-
-    def _calculate_convenience_split_stats(self):
-        for stat in self.split_stats.keys():
-            self.split_stats[stat] = np.array(self.split_stats[stat])
-        self.split_stats['n_excluded_train_cases'] = (
-            self.split_stats['n_total_train_cases'] -
-            self.split_stats['n_included_train_cases'])
-        self.split_stats['fraction_excluded_train_cases'] = 1 - (
-            self.split_stats['n_included_train_cases'] /
-            self.split_stats['n_total_train_cases'])
