@@ -9,6 +9,7 @@ from utils.io import make_directory
 from utils.io import save_object
 from utils.report import Reporter
 from utils.split_data import TrainTestSplitter
+from utils.model.shared import flatten_model_var_dict
 
 
 reporter = Reporter()
@@ -30,10 +31,11 @@ reporter.report('Performing train-test split')
 tt_splitter_args = {'split_variable_name': 'TrustId.anon',
                     'test_fraction': 0.2,
                     'n_splits': 120}
-tt_splitter = TrainTestSplitter(df=df,
-                                current_nela_model_vars=CURRENT_MODEL_VARS,
-                                random_seed=RANDOM_SEED,
-                                **tt_splitter_args)
+tt_splitter = TrainTestSplitter(
+    df=df,
+    current_nela_model_vars=flatten_model_var_dict(CURRENT_MODEL_VARS),
+    random_seed=RANDOM_SEED,
+    **tt_splitter_args)
 tt_splitter.split()
 
 

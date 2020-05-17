@@ -5,8 +5,7 @@ from utils.split_data import TrainTestSplitter, split_into_folds
 
 
 def flatten_model_var_dict(model_vars: Dict) -> List[str]:
-    """Flattens model variable name dict into single list. Function
-        placed in this file to avoid cyclical dependencies."""
+    """Flattens model variable name dict into single list."""
     return (list(model_vars['cat']) + list(model_vars['cont']) +
             [model_vars['target']])
 

@@ -4,7 +4,6 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from utils.model.shared import flatten_model_var_dict
 from utils.inspect import missingness_perc
 
 
@@ -27,7 +26,7 @@ class TrainTestSplitter:
                  split_variable_name: str,
                  test_fraction: float,
                  n_splits: int,
-                 current_nela_model_vars: Dict,
+                 current_nela_model_vars: List[str],
                  random_seed):
         """Note that the indices for the each case in self.complete_case_df
             match the corresponding cases in self.df, i.e. we don't reset the
@@ -50,7 +49,7 @@ class TrainTestSplitter:
         self.test_fraction = test_fraction
         self.n_splits = n_splits
         self.rnd = np.random.RandomState(random_seed)
-        self.nela_vars = flatten_model_var_dict(current_nela_model_vars)
+        self.nela_vars = current_nela_model_vars
         self.df = self._preprocess_df(df)
         self.complete_case_df, self.drop_stats = drop_incomplete_cases(self.df)
         self._split_has_run = False
