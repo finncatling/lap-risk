@@ -44,7 +44,7 @@ common_single_inds: List[str] = ind_df.loc[ind_df.sum(1) == 1].sum(0)[
 
 
 print('The common single indications are',
-      [i[len(IND_PREFIX):] for i in common_single_inds])
+      ', '.join([i[len(IND_PREFIX):] for i in common_single_inds]))
 
 
 reporter.first('Making a new one-hot-encoded DataFrame containing just the '
@@ -92,9 +92,9 @@ new_ind_df.loc[ind_df.sum(1) == 0, MISSING_IND_CATEGORY] = 1.
 report_ohe_category_assignment(new_ind_df, 'indication')
 
 
-reporter.first('Assigning cases with >1 indication (which were not reassigned '
-               'earlier), at least one of which is a common single '
-               'indication, to the missing category.')
+reporter.first('Assigning cases with >1 indication, at least one of which is '
+               'a common single indication, and where the case was not '
+               'reassigned earlier, to the missing category.')
 new_ind_df.loc[((ind_df.sum(1) > 1) &
                 (ind_df[common_single_inds].sum(1) > 0) &
                 (new_ind_df.sum(1) == 0)),
@@ -110,12 +110,11 @@ new_ind_df.loc[new_ind_df.sum(1) == 0, f'{IND_PREFIX}Other'] = 1.
 report_ohe_category_assignment(new_ind_df, 'indication')
 
 
-reporter.first('Checking each case now has exactly one assigned indication '
-               "(remember this assignment may be 'indication missing')")
+reporter.first('Confirming each case now has exactly one assigned indication')
 assert new_ind_df.loc[new_ind_df.sum(1) == 1].shape[0] == new_ind_df.shape[0]
 
 
-reporter.first('Adding new indications encoding to existing data.')
+reporter.report('Adding new indications encoding to existing data.')
 df = df.drop(indications, axis=1)
 df_with_new_inds = pd.concat((df, new_ind_df), axis=1)
 
