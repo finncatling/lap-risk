@@ -4,7 +4,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from utils.helpers import flatten_nela_var_dict
+from utils.helpers import flatten_model_var_dict
 from utils.inspect import missingness_perc
 
 
@@ -50,7 +50,7 @@ class TrainTestSplitter:
         self.test_fraction = test_fraction
         self.n_splits = n_splits
         self.rnd = np.random.RandomState(random_seed)
-        self.nela_vars = flatten_nela_var_dict(current_nela_model_vars)
+        self.nela_vars = flatten_model_var_dict(current_nela_model_vars)
         self.df = self._preprocess_df(df)
         self.complete_case_df, self.drop_stats = drop_incomplete_cases(self.df)
         self._split_has_run = False

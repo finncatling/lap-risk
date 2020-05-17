@@ -6,12 +6,10 @@ from typing import List
 from utils.inspect import report_ohe_category_assignment
 from utils.report import Reporter
 from utils.io import make_directory, save_object
-from utils.constants import DATA_DIR, STATS_OUTPUT_DIR
+from utils.constants import (DATA_DIR, STATS_OUTPUT_DIR, INDICATION_PREFIX,
+                             MISSING_IND_CATEGORY)
 
 SINGLE_IND_FREQUENCY_THRESHOLD = 1200
-IND_PREFIX = 'S05Ind_'
-MISSING_IND_CATEGORY = f'{IND_PREFIX}Missing'
-
 
 reporter = Reporter()
 reporter.title('Rationalise indications for surgery (retaining common single '
@@ -32,7 +30,7 @@ df = pd.read_pickle(
 
 
 reporter.report('Isolating indication variables')
-indications = [c for c in df.columns if IND_PREFIX in c]
+indications = [c for c in df.columns if INDICATION_PREFIX in c]
 ind_df = df[indications].copy()
 
 
@@ -44,7 +42,7 @@ common_single_inds: List[str] = ind_df.loc[ind_df.sum(1) == 1].sum(0)[
 
 
 print('The common single indications are',
-      ', '.join([i[len(IND_PREFIX):] for i in common_single_inds]))
+      ', '.join([i[len(INDICATION_PREFIX):] for i in common_single_inds]))
 
 
 reporter.first('Making a new one-hot-encoded DataFrame containing just the '
@@ -65,9 +63,9 @@ for ind_pair, keep_ind_index in (
 ):
     print(f'Changing {ind_pair} to {ind_pair[keep_ind_index]}')
     new_ind_df.loc[((ind_df.sum(1) == 2) &
-                    (ind_df[f'{IND_PREFIX}{ind_pair[0]}'] == 1) &
-                    (ind_df[f'{IND_PREFIX}{ind_pair[1]}'] == 1)),
-                   f'{IND_PREFIX}{ind_pair[keep_ind_index]}'] = 1
+                    (ind_df[f'{INDICATION_PREFIX}{ind_pair[0]}'] == 1) &
+                    (ind_df[f'{INDICATION_PREFIX}{ind_pair[1]}'] == 1)),
+                   f'{INDICATION_PREFIX}{ind_pair[keep_ind_index]}'] = 1
     report_ohe_category_assignment(new_ind_df, 'indication')
 
 
@@ -78,10 +76,10 @@ for ind_trio, keep_ind_index in (
 ):
     print(f'Changing {ind_trio} to {ind_trio[keep_ind_index]}')
     new_ind_df.loc[((ind_df.sum(1) == 3) &
-                    (ind_df[f'{IND_PREFIX}{ind_trio[0]}'] == 1) &
-                    (ind_df[f'{IND_PREFIX}{ind_trio[1]}'] == 1) &
-                    (ind_df[f'{IND_PREFIX}{ind_trio[2]}'] == 1)),
-                   f'{IND_PREFIX}{ind_trio[keep_ind_index]}'] = 1
+                    (ind_df[f'{INDICATION_PREFIX}{ind_trio[0]}'] == 1) &
+                    (ind_df[f'{INDICATION_PREFIX}{ind_trio[1]}'] == 1) &
+                    (ind_df[f'{INDICATION_PREFIX}{ind_trio[2]}'] == 1)),
+                   f'{INDICATION_PREFIX}{ind_trio[keep_ind_index]}'] = 1
     report_ohe_category_assignment(new_ind_df, 'indication')
 
 
@@ -106,7 +104,7 @@ reporter.first('Assigning remaining cases (those with one or more indications '
                'in the original data, but where none of these indications is a '
                "common single indication) to the 'other indication' "
                'category')
-new_ind_df.loc[new_ind_df.sum(1) == 0, f'{IND_PREFIX}Other'] = 1.
+new_ind_df.loc[new_ind_df.sum(1) == 0, f'{INDICATION_PREFIX}Other'] = 1.
 report_ohe_category_assignment(new_ind_df, 'indication')
 
 

@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 
 from utils.constants import RANDOM_SEED, DATA_DIR, STATS_OUTPUT_DIR
-from utils.current_nela_model import CURRENT_NELA_MODEL_VARS
+from utils.current_model import CURRENT_MODEL_VARS
 from utils.io import make_directory
 from utils.io import save_object
 from utils.report import Reporter
@@ -31,7 +31,7 @@ tt_splitter_args = {'split_variable_name': 'TrustId.anon',
                     'test_fraction': 0.2,
                     'n_splits': 120}
 tt_splitter = TrainTestSplitter(df=df,
-                                current_nela_model_vars=CURRENT_NELA_MODEL_VARS,
+                                current_nela_model_vars=CURRENT_MODEL_VARS,
                                 random_seed=RANDOM_SEED,
                                 **tt_splitter_args)
 tt_splitter.split()

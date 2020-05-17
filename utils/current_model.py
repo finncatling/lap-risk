@@ -16,7 +16,7 @@ Winsorisation thresholds and centres are sourced from the appendix of
     Eugene et al. BJA 2018. Available at https://bit.ly/3dE9YS2
 """
 
-CURRENT_NELA_MODEL_VARS = {
+CURRENT_MODEL_VARS = {
     'cat': ('S01Sex',
             'S03ASAScore',
             'S03NCEPODUrgency',
