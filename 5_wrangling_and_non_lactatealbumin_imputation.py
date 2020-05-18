@@ -77,7 +77,7 @@ imputation_stages = (
                                 'and albumin) and non-binary discrete '
                                 'variables'),
                    df=mice_df,
-                   variables_to_impute=tuple(mice_df.columns))
+                   variables_to_impute=tuple(mice_df.columns)),
 )
 
 print(imputation_stages[0].__dict__)
