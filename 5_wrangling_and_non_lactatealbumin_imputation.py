@@ -75,20 +75,28 @@ mice_df = df.drop(list(multi_category_levels.keys()) +
 
 reporter.report('Define stages of imputation, and the number of imputations '
                 'needed at each stage')
-imputation_stages = (
-    ImputationInfo(description=('MICE for continuous variables (except lactate '
-                                'and albumin) and non-binary discrete '
-                                'variables'),
-                   df=mice_df,
-                   variables_to_impute=list(mice_df.columns)),
-    ImputationInfo(description='Non-binary discrete variables',
-                   df=df.drop(list(LACTATE_ALBUMIN_VARS) +
-                              [NOVEL_MODEL_VARS['target']], axis=1),
-                   variables_to_impute=list(multi_category_levels.keys())),
-    ImputationInfo(description='Lactate and albumin',
-                   df=df.drop(NOVEL_MODEL_VARS['target'], axis=1),
-                   variables_to_impute=[LACTATE_VAR_NAME, ALBUMIN_VAR_NAME]))
+imputation_stages = [ImputationInfo(
+    description=('MICE for continuous variables (except lactate and albumin) '
+                 'and non-binary discrete variables'),
+    df=mice_df,
+    variables_to_impute=list(mice_df.columns),
+    previous_stage_n_imputations=None)]
+imputation_stages.append(ImputationInfo(
+    description='Non-binary discrete variables',
+    df=df.drop(list(LACTATE_ALBUMIN_VARS) + [NOVEL_MODEL_VARS['target']],
+               axis=1),
+    variables_to_impute=list(multi_category_levels.keys()),
+    previous_stage_n_imputations=imputation_stages[-1].n_imputations))
+imputation_stages.append(ImputationInfo(
+    description='Lactate and albumin',
+    df=df.drop(NOVEL_MODEL_VARS['target'], axis=1),
+    variables_to_impute=[LACTATE_VAR_NAME, ALBUMIN_VAR_NAME],
+    previous_stage_n_imputations=imputation_stages[-1].n_imputations))
 # TODO: Save imputation_stages for later use
+
+
+for i_s in imputation_stages:
+    print(i_s.__dict__)
 
 
 reporter.report('Loading data needed for train-test splitting')
