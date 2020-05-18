@@ -58,8 +58,17 @@ df = preprocess_novel_pre_split(
     multi_category_levels=multi_category_levels)
 
 
-n_imputations, _ = calculate_mice_imputations(
-    df.drop(list(MISSINGNESS_VARS) + ['Indication'], axis=1))
+reporter.report('Calculate number of imputations needed for different variable'
+                ' subsets')
+print('All variables')
+calculate_mice_imputations(df)
+print('\nExcluding lactate & albumin')
+calculate_mice_imputations(df.drop(list(MISSINGNESS_VARS), axis=1))
+print('\nExcluding lactate, albumin and all non-binary discrete variables')
+calculate_mice_imputations(df.drop(
+    list(MISSINGNESS_VARS) + list(multi_category_levels.keys()), axis=1))
 
 
 # TODO: Class to handle preprocessing loop for each train-test split
+# TODO: Use fit imputation models from train set for test set. For MICE, will
+#    need to run the burn-in stages again
