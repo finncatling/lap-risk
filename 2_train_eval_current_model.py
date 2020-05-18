@@ -11,7 +11,7 @@ from utils.model.current import (preprocess_current, SplitterTrainerPredictor,
                                  CURRENT_MODEL_VARS, CENTRES)
 from utils.io import make_directory, load_object, save_object
 from utils.model.shared import flatten_model_var_dict
-from utils.split_data import drop_incomplete_cases
+from utils.split import drop_incomplete_cases
 from utils.evaluate import ModelScorer
 from utils.report import Reporter
 

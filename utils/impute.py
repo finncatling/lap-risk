@@ -1,5 +1,5 @@
 import copy
-from typing import List, Dict, Tuple
+from typing import List, Dict, Union
 
 import numpy as np
 import pandas as pd
@@ -8,13 +8,15 @@ from progressbar import progressbar as pb
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import RobustScaler
 
+from utils.split import Splitter
+
 
 def determine_n_imputations(df: pd.DataFrame) -> (int, float):
     """White et al recommend using 100 * f MICE imputations, where f is the
         fraction of incomplete cases in the DataFrame."""
-    frac_incomplete = 1 - (df.dropna(how='any').shape[0] / df.shape[0])
-    n_imputations = int(np.ceil(frac_incomplete * 100))
-    return n_imputations, frac_incomplete
+    fraction_incomplete = 1 - (df.dropna(how='any').shape[0] / df.shape[0])
+    n_imputations = int(np.ceil(fraction_incomplete * 100))
+    return n_imputations, fraction_incomplete
 
 
 def find_missing_indices(df: pd.DataFrame) -> Dict[str, np.ndarray]:
@@ -32,26 +34,50 @@ class ImputationInfo:
     def __init__(self,
                  description: str,
                  df: pd.DataFrame,
-                 variables_to_impute: Tuple[str]):
+                 variables_to_impute: List[str],
+                 previous_stage_n_imputations: Union[None, int]):
         """
         Args:
             description: Description of the imputation process
             df: Data used in this imputation process, i.e. variables to be
                 imputed and variables used as features in the imputation
-                model (in MICE these two variable sets intersect). Can also
-                contain complete variables which are unused in imputation
+                model (in MICE these two variable sets intersect). May also
+                contain complete variables which are unused in imputation (the
+                subset of self.all_vars actually used in imputation is specific
+                to the individual imputation process)
             variables_to_impute: Names of variables to be imputed in this
                 process
+            previous_stage_n_imputations: If this imputation process is one
+                stage in a sequential imputation pipeline, and the number of
+                imputations in this process should be a multiple of the number
+                performed in the previous stage, then enter the number of
+                imputations from the previous stage here
         """
         self.description = description
-        self.impute_vars = variables_to_impute
+        self.impute_vars = tuple(variables_to_impute)
         self.all_vars = tuple(df.columns)
-        self.n_imputations, self.frac_incomplete = determine_n_imputations(df)
+        self.previous_stage_n_imputations = previous_stage_n_imputations
+        (self.n_min_imputations,
+         self.fraction_incomplete) = determine_n_imputations(df)
+        self.n_imputations = self._amend_n_imputations()
         self._sanity_check()
 
     def _sanity_check(self):
         for var in self.impute_vars:
             assert var in self.all_vars
+
+    def _amend_n_imputations(self) -> int:
+        if self.previous_stage_n_imputations is None:
+            return self.n_min_imputations
+        else:
+            return int(np.ceil(self.n_min_imputations /
+                               self.previous_stage_n_imputations) *
+                       self.previous_stage_n_imputations)
+
+
+class SplitterMICE(Splitter):
+    """"""
+    pass
 
 
 class CategoricalImputer:
@@ -125,7 +151,7 @@ class CategoricalImputer:
 
     def _scale_mice_dfs(self):
         """We need to scale the continuous variables in order to use
-            fast solvers for multinomial logistic regression in sklearn:"""
+            fast solvers for multinomial logistic regression in sklearn"""
         for i in range(self.n_mice_dfs):
             s = RobustScaler()
             self.mice_dfs[i].loc[:, self.cont_vars] = s.fit_transform(
@@ -151,9 +177,9 @@ class CategoricalImputer:
         self._v[v]['y_train'] = self.odf.loc[self._v[v]['train_i'], v].values
 
     def _pred_y_missing_probs(self, v: str, i: int) -> (np.ndarray, np.ndarray):
-        """ 1st return is of shape (n_samples, n_classes), where each row
+        """1st return is of shape (n_samples, n_classes), where each row
             corresponds to a missing value of v, and each columns is
-            the predicted probabity that the missing value is that
+            the predicted probability that the missing value is that
             class."""
         lr = LogisticRegression(penalty='none', solver='sag', max_iter=3000,
                                 multi_class='multinomial', n_jobs=16,

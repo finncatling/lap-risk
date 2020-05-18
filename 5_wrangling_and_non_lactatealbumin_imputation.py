@@ -7,7 +7,7 @@ import pandas as pd
 from utils.constants import (DATA_DIR, STATS_OUTPUT_DIR, INDICATION_PREFIX,
                              MISSING_IND_CATEGORY)
 from utils.model.shared import flatten_model_var_dict
-from utils.io import make_directory
+from utils.io import make_directory, load_object
 from utils.model.novel import (NOVEL_MODEL_VARS, MULTI_CATEGORY_LEVELS,
                                LACTATE_VAR_NAME, ALBUMIN_VAR_NAME,
                                LACTATE_ALBUMIN_VARS,
@@ -60,34 +60,42 @@ df = preprocess_novel_pre_split(
     multi_category_levels=multi_category_levels)
 
 
-reporter.report('Check that there are no cases where all features are missing '
-                '(these cases would be dropped by statsmodels MICEData, which '
-                'could create problems with the post-imputation data '
+reporter.report('Checking that there are no cases where all features are '
+                'missing (these cases would be dropped by statsmodels MICEData,'
+                ' which could create problems with the post-imputation data '
                 'reconstruction)')
 assert df.shape[0] == df.dropna(axis=0, how='all').shape[0]
 
 
-reporter.report('Define stages of imputation, and the number of imputations '
-                'needed at each stage')
+reporter.report('Making DataFrame for use in MICE')
 mice_df = df.drop(list(multi_category_levels.keys()) +
                   list(LACTATE_ALBUMIN_VARS) +
-                  [NOVEL_MODEL_VARS['target']], axis=1)
+                  [NOVEL_MODEL_VARS['target']], axis=1).copy()
+
+
+reporter.report('Define stages of imputation, and the number of imputations '
+                'needed at each stage')
 imputation_stages = (
     ImputationInfo(description=('MICE for continuous variables (except lactate '
                                 'and albumin) and non-binary discrete '
                                 'variables'),
                    df=mice_df,
-                   variables_to_impute=tuple(mice_df.columns)),
-)
+                   variables_to_impute=list(mice_df.columns)),
+    ImputationInfo(description='Non-binary discrete variables',
+                   df=df.drop(list(LACTATE_ALBUMIN_VARS) +
+                              [NOVEL_MODEL_VARS['target']], axis=1),
+                   variables_to_impute=list(multi_category_levels.keys())),
+    ImputationInfo(description='Lactate and albumin',
+                   df=df.drop(NOVEL_MODEL_VARS['target'], axis=1),
+                   variables_to_impute=[LACTATE_VAR_NAME, ALBUMIN_VAR_NAME]))
+# TODO: Save imputation_stages for later use
 
-print(imputation_stages[0].__dict__)
 
-# n_imputations = {
-#     'mice': determine_n_imputations(df.drop(
-#         list(VARS_FOR_MISSINGNESS_INDICATORS) + list(multi_category_levels.keys()), axis=1)),
-#     'no_lactate_albumin': determine_n_imputations(df.drop(
-#         list(VARS_FOR_MISSINGNESS_INDICATORS), axis=1)),
-#     'all_variables': determine_n_imputations(df)}
+reporter.report('Loading data needed for train-test splitting')
+tt_splitter = load_object(os.path.join('outputs', 'train_test_splitter.pkl'))
+
+
+
 
 
 

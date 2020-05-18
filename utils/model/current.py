@@ -6,8 +6,7 @@ from progressbar import progressbar as pb
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.linear_model import LogisticRegression
 
-from utils.split_data import TrainTestSplitter, split_into_folds
-from utils.model.shared import Splitter
+from utils.split import TrainTestSplitter, Splitter
 
 """
 Web form for current NELA risk model includes Hb, but only uses this to

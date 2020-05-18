@@ -164,32 +164,4 @@ def preprocess_novel_pre_split(
     return df
 
 
-def drop_add_lactate_albumin_cols(
-        df: pd.DataFrame,
-        lac_alb_cols: List[str],
-        lac_alb_df: pd.DataFrame = None,
-        drop: bool = True) -> pd.DataFrame:
-    # TODO: Argument order has changed! Check order where called
-    # TODO: This function is a bit silly. Design it out?
-    """If drop is True, simply drops lac_alb_cols from df. If
-        drop is False, adds lac_alb_cols from lac_alb_df to df.
 
-        We need to temporarily remove variables related to lactate
-        and albumin, as we will be imputing these later using GAMs
-        and we don't want to use the missingness indicators to
-        inform MICE on the other variables."""
-    if drop:
-        return df.drop(lac_alb_cols, axis=1)
-    else:
-        return pd.concat([df, lac_alb_df[lac_alb_cols]], axis=1)
-
-
-def drop_multi_cat_cols(
-    df: pd.DataFrame,
-    multi_cat_cols: List[str]
-) -> pd.DataFrame:
-    # TODO: This function is a bit silly. Design it out?
-    """Drops non-binary categorical variables prior to
-        statsmodels MICE. These will be added back later by
-        CategoricalImputer."""
-    return df.drop(multi_cat_cols, axis=1)

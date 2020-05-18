@@ -8,7 +8,7 @@ from utils.model.current import CURRENT_MODEL_VARS
 from utils.io import make_directory
 from utils.io import save_object
 from utils.report import Reporter
-from utils.split_data import TrainTestSplitter
+from utils.split import TrainTestSplitter
 from utils.model.shared import flatten_model_var_dict
 
 
