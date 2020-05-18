@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
+
 NOVEL_MODEL_VARS = {
     'cat': ('S03ASAScore',
             'S03CardiacSigns',
@@ -26,6 +27,7 @@ NOVEL_MODEL_VARS = {
     # plus Indications variable
     'target': 'Target'}
 
+
 # Need to add levels for the Indications variable below, once they are derived
 MULTI_CATEGORY_LEVELS = {
     'S03ASAScore': (1., 2., 3., 4., 5.),
@@ -35,8 +37,13 @@ MULTI_CATEGORY_LEVELS = {
     'S03Pred_Peritsoil': (1., 2., 4., 8.)
 }
 
-MISSINGNESS_VARS = ('S03PreOpArterialBloodLactate', 'S03PreOpLowestAlbumin')
+LACTATE_VAR_NAME = 'S03PreOpArterialBloodLactate'
+ALBUMIN_VAR_NAME = 'S03PreOpLowestAlbumin'
 MISSINGNESS_SUFFIX = '_missing'
+LACTATE_ALBUMIN_VARS = (LACTATE_VAR_NAME,
+                        f'{LACTATE_VAR_NAME}{MISSINGNESS_SUFFIX}',
+                        ALBUMIN_VAR_NAME,
+                        f'{ALBUMIN_VAR_NAME}{MISSINGNESS_SUFFIX}')
 
 
 def combine_categories(
@@ -63,7 +70,7 @@ def combine_categories(
 
 
 def add_missingness_indicators(df: pd.DataFrame,
-                               variables: Tuple[str]) -> pd.DataFrame:
+                               variables: List[str]) -> pd.DataFrame:
     """Adds a missingness indicator column for each of the specified
         variables."""
     for v in variables:
@@ -140,7 +147,7 @@ def winsorize_novel(
 def preprocess_novel_pre_split(
         df: pd.DataFrame,
         category_mapping: Dict[str, Dict[float, float]],
-        missingness_indicator_variables: List[str],
+        add_missingness_indicators_for: List[str],
         indication_variable_name: str,
         indications: List[str],
         missing_indication_value: str,
@@ -151,7 +158,38 @@ def preprocess_novel_pre_split(
         splitting."""
     df = df.copy()
     df = combine_categories(df, category_mapping)
-    df = add_missingness_indicators(df, missingness_indicator_variables)
+    df = add_missingness_indicators(df, add_missingness_indicators_for)
     df = ohe_to_single_column(df, indication_variable_name, indications)
     df = label_encode(df, multi_category_levels, missing_indication_value)
     return df
+
+
+def drop_add_lactate_albumin_cols(
+        df: pd.DataFrame,
+        lac_alb_cols: List[str],
+        lac_alb_df: pd.DataFrame = None,
+        drop: bool = True) -> pd.DataFrame:
+    # TODO: Argument order has changed! Check order where called
+    # TODO: This function is a bit silly. Design it out?
+    """If drop is True, simply drops lac_alb_cols from df. If
+        drop is False, adds lac_alb_cols from lac_alb_df to df.
+
+        We need to temporarily remove variables related to lactate
+        and albumin, as we will be imputing these later using GAMs
+        and we don't want to use the missingness indicators to
+        inform MICE on the other variables."""
+    if drop:
+        return df.drop(lac_alb_cols, axis=1)
+    else:
+        return pd.concat([df, lac_alb_df[lac_alb_cols]], axis=1)
+
+
+def drop_multi_cat_cols(
+    df: pd.DataFrame,
+    multi_cat_cols: List[str]
+) -> pd.DataFrame:
+    # TODO: This function is a bit silly. Design it out?
+    """Drops non-binary categorical variables prior to
+        statsmodels MICE. These will be added back later by
+        CategoricalImputer."""
+    return df.drop(multi_cat_cols, axis=1)

@@ -1,5 +1,5 @@
 import copy
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -9,15 +9,49 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import RobustScaler
 
 
-def calculate_mice_imputations(df: pd.DataFrame) -> (int, float):
-    """White et al recommend using 100 * f MICE imputations,
-        where f is the fraction of incomplete cases in the
-        DataFrame."""
-    f = 1 - (df.dropna(how='any').shape[0] / df.shape[0])
-    n_imputations = int(np.ceil(f * 100))
-    print(f'{np.round(f * 100, 3)}% incomplete cases',
-          f'so running {n_imputations} MICE imputations')
-    return n_imputations, f
+def determine_n_imputations(df: pd.DataFrame) -> (int, float):
+    """White et al recommend using 100 * f MICE imputations, where f is the
+        fraction of incomplete cases in the DataFrame."""
+    frac_incomplete = 1 - (df.dropna(how='any').shape[0] / df.shape[0])
+    n_imputations = int(np.ceil(frac_incomplete * 100))
+    return n_imputations, frac_incomplete
+
+
+def find_missing_indices(df: pd.DataFrame) -> Dict[str, np.ndarray]:
+    """Finds indices of missing values for each variable in the DataFrame.
+        Adapted from implementation in statsmodels MICEData"""
+    missing_i = {}
+    for col in df.columns:
+        null = pd.isnull(df[col])
+        missing_i[col] = np.flatnonzero(null)
+    return missing_i
+
+
+class ImputationInfo:
+    """Hold info related to an imputation process."""
+    def __init__(self,
+                 description: str,
+                 df: pd.DataFrame,
+                 variables_to_impute: Tuple[str]):
+        """
+        Args:
+            description: Description of the imputation process
+            df: Data used in this imputation process, i.e. variables to be
+                imputed and variables used as features in the imputation
+                model (in MICE these two variable sets intersect). Can also
+                contain complete variables which are unused in imputation
+            variables_to_impute: Names of variables to be imputed in this
+                process
+        """
+        self.description = description
+        self.impute_vars = variables_to_impute
+        self.all_vars = tuple(df.columns)
+        self.n_imputations, self.frac_incomplete = determine_n_imputations(df)
+        self._sanity_check()
+
+    def _sanity_check(self):
+        for var in self.impute_vars:
+            assert var in self.all_vars
 
 
 class CategoricalImputer:
