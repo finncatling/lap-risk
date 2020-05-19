@@ -71,7 +71,7 @@ reporter.report('Making DataFrame and variable list for use in MICE')
 mice_df = df.drop(list(multi_category_levels.keys()) +
                   list(LACTATE_ALBUMIN_VARS) +
                   [NOVEL_MODEL_VARS['target']], axis=1).copy()
-mice_cont_vars = copy.deepcopy(NOVEL_MODEL_VARS['cont_vars'])
+mice_cont_vars = copy.deepcopy(NOVEL_MODEL_VARS['cont'])
 mice_cont_vars.remove(LACTATE_VAR_NAME)
 mice_cont_vars.remove(ALBUMIN_VAR_NAME)
 
