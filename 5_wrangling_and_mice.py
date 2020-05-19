@@ -22,8 +22,8 @@ INDICATION_VAR_NAME = 'Indication'
 
 reporter = Reporter()
 reporter.title('Wrangle NELA data in preparation for later input to the '
-               'novel model. Multiply impute missing values for all variables '
-               'apart from lactate and albumin')
+               'novel model. Perform MICE for continuous variables apart from '
+               'lactate and albumin, and for binary discrete variables')
 
 
 reporter.report("Creating output dirs (if they don't already exist)")
@@ -130,9 +130,9 @@ save_object(swm, os.path.join(NOVEL_MODEL_OUTPUT_DIR,
 reporter.last('Done.')
 
 
-# TODO: Non-binary discrete variable imputation
+# TODO: Non-binary discrete variable imputation. Use fit imputation models from
+#  train set for test set.
+
+# TODO: Save summary stats for external use
 
 # TODO: Perform winsorization for lactate and albumin
-
-# TODO: Use fit imputation models from train set for test set. This may not be
-#   practical for MICE
