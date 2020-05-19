@@ -113,6 +113,7 @@ swm = SplitterWinsorMICE(df=mice_df,
                          binary_variables=binary_vars,
                          n_burn_in=10,
                          n_skip=3)
+swm.run_mice()
 
 
 print(swm.__dict__)
