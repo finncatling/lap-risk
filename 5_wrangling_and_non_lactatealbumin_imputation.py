@@ -96,25 +96,26 @@ imputation_stages.add_stage(
 # TODO: Save imputation_stages for later use
 
 
-print(imputation_stages.__dict__)
+reporter.report('Loading data needed for train-test splitting')
+tt_splitter = load_object(os.path.join('outputs', 'train_test_splitter.pkl'))
 
 
-# reporter.report('Loading data needed for train-test splitting')
-# tt_splitter = load_object(os.path.join('outputs', 'train_test_splitter.pkl'))
-#
-#
-# reporter.report('Running MICE')
-# swm = SplitterWinsorMICE(df=mice_df,
-#                          test_train_splitter=tt_splitter,
-#                          target_variable_name=NOVEL_MODEL_VARS['target'],
-#                          winsor_variables=mice_cont_vars,
-#                          winsor_quantiles=(0.001, 0.999),
-#                          winsor_include={'S01AgeOnArrival': (False, True),
-#                                          'S03GlasgowComaScore': (False, False)},
-#                          n_imputations=imputation_stages.n_imputations[0],
-#                          binary_variables=binary_vars,
-#                          n_burn_in=10,
-#                          n_skip=3)
+reporter.report('Running MICE')
+swm = SplitterWinsorMICE(df=mice_df,
+                         test_train_splitter=tt_splitter,
+                         target_variable_name=NOVEL_MODEL_VARS['target'],
+                         winsor_variables=mice_cont_vars,
+                         winsor_quantiles=(0.001, 0.999),
+                         winsor_include={'S01AgeOnArrival': (False, True),
+                                         'S03GlasgowComaScore': (False, False)},
+                         n_imputations=2,
+                         # n_imputations=imputation_stages.n_imputations[0],
+                         binary_variables=binary_vars,
+                         n_burn_in=10,
+                         n_skip=3)
+
+
+print(swm.__dict__)
 
 
 # TODO: Perform winsorization for lactate and albumin
