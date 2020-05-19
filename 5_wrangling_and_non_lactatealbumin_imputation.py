@@ -105,14 +105,14 @@ swm = SplitterWinsorMICE(df=mice_df,
                          test_train_splitter=tt_splitter,
                          target_variable_name=NOVEL_MODEL_VARS['target'],
                          cont_variables=mice_cont_vars,
+                         binary_variables=binary_vars,
                          winsor_quantiles=(0.001, 0.999),
                          winsor_include={'S01AgeOnArrival': (False, True),
                                          'S03GlasgowComaScore': (False, False)},
-                         n_imputations=imputation_stages.n_imputations[0],
-                         binary_variables=binary_vars,
-                         n_burn_in=10,
-                         n_skip=3)
-swm.run_mice()
+                         n_mice_imputations=imputation_stages.n_imputations[0],
+                         n_mice_burn_in=10,
+                         n_mice_skip=3)
+swm.split_winsorize_mice()
 
 
 print(swm.__dict__)

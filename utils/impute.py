@@ -107,17 +107,17 @@ class SplitterWinsorMICE(Splitter):
                  binary_variables: List[str],
                  winsor_quantiles: Tuple[float, float],
                  winsor_include: Dict[str, Tuple[bool, bool]],
-                 n_imputations: int,
-                 n_burn_in: int,
-                 n_skip: int):
+                 n_mice_imputations: int,
+                 n_mice_burn_in: int,
+                 n_mice_skip: int):
         super().__init__(df, test_train_splitter, target_variable_name)
         self.cont_vars = cont_variables
         self.binary_vars = binary_variables
         self.winsor_quantiles = winsor_quantiles
         self.winsor_include = winsor_include
-        self.n_imputations = n_imputations
-        self.n_burn_in = n_burn_in
-        self.n_skip = n_skip
+        self.n_mice_imputations = n_mice_imputations
+        self.n_mice_burn_in = n_mice_burn_in
+        self.n_mice_skip = n_mice_skip
         self.winsor_thresholds: List[Dict[str, Tuple[float, float]]] = []
         self.missing_i: Dict[str, List[Dict[str, np.ndarray]]] = {
             'train': [], 'test': []}
@@ -133,8 +133,11 @@ class SplitterWinsorMICE(Splitter):
         for var in self.all_vars:
             assert var in self.df.columns
 
-    def run_mice(self):
-        """Runs MICE for train and test folds of all train-test splits."""
+    def split_winsorize_mice(self):
+        """Split df according to pre-defined train-test splits, perform
+            winsorization (using thresolds from train fold to winsorize test
+            fold), then run MICE for train and test folds of all train-test
+            splits."""
         # for i in pb(range(self.tts.n_splits), prefix='Split iteration'):
         # TODO: Change this line back (changed to shorter loop for testing)
         for i in pb(range(2), prefix='Split iteration'):
@@ -142,7 +145,7 @@ class SplitterWinsorMICE(Splitter):
             X_train_df, X_test_df = self._winsorize(X_train_df, X_test_df)
             X_dfs = {'train': X_train_df, 'test': X_test_df}
             for fold in ('train', 'test'):
-                self._single_df_mice(X_dfs[fold], fold)
+                self._single_fold_mice(X_dfs[fold], fold)
 
     # TODO: Method to reconstruct imputed dataframes
 
@@ -158,34 +161,38 @@ class SplitterWinsorMICE(Splitter):
         self.winsor_thresholds.append(winsor_thresholds)
         return X_train_df, X_test_df
 
-    def _single_df_mice(self, X_df: pd.DataFrame, fold: str):
-        """Run MICE for a single fold from a single train-test split."""
+    def _single_fold_mice(self, X_df: pd.DataFrame, fold: str):
+        """Set up and run MICE for a single fold from a single train-test
+            split."""
         mice_data = MICEData(X_df)
         self.missing_i[fold].append(copy.deepcopy(mice_data.ix_miss))
+        mice_data = self._set_mice_imputers(mice_data)
+        self.imputed[fold].append([])  # This list will hold the imputed values
+        self._run_mice_loop(mice_data, fold)
 
+    def _set_mice_imputers(self, mice_data: MICEData) -> MICEData:
         for var in self.cont_vars:
             mice_data.set_imputer(var, model_class=linear_model.OLS,
                                   fit_kwds={'disp': False})
         for var in self.binary_vars:
             mice_data.set_imputer(var, model_class=discrete_model.Logit,
                                   fit_kwds={'disp': False})
+        return mice_data
 
-        # Initial MICE 'burn in' imputations which we discard
-        for _ in range(self.n_burn_in):
+    def _run_mice_loop(self, mice_data: MICEData, fold: str):
+        """'Burn-in' and 'skip' imputations are discarded."""
+        for _ in range(self.n_mice_burn_in):
             mice_data.update_all()
-
-        self.imputed[fold].append([])
-        for i in range(self.n_imputations):
+        for i in range(self.n_mice_imputations):
             if i:
-                # skip some MICE imputations between the ones we keep
-                mice_data.update_all(self.n_skip + 1)
+                mice_data.update_all(self.n_mice_skip + 1)
             self._store_imputed(mice_data.data, fold)
 
     def _store_imputed(self, imp_df: pd.DataFrame, fold: str):
         """Store just the imputed values from a single MICE iteration."""
         self.imputed[fold][-1].append({})
         for col_name, missing_i in self.missing_i[fold][-1].items():
-            self.imputed[fold][-1][-1] = imp_df.iloc[
+            self.imputed[fold][-1][-1][col_name] = imp_df.iloc[
                 missing_i, imp_df.columns.get_loc(col_name)].values
 
 
