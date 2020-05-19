@@ -3,7 +3,8 @@ import os
 import pandas as pd
 from datetime import datetime
 
-from utils.constants import RANDOM_SEED, DATA_DIR, STATS_OUTPUT_DIR
+from utils.constants import (RANDOM_SEED, DATA_DIR, STATS_OUTPUT_DIR,
+                             INTERNAL_OUTPUT_DIR)
 from utils.model.current import CURRENT_MODEL_VARS
 from utils.io import make_directory
 from utils.io import save_object
@@ -40,7 +41,8 @@ tt_splitter.split()
 
 
 reporter.report('Saving TrainTestSplitter for use later in analysis')
-save_object(tt_splitter, os.path.join('outputs', 'train_test_splitter.pkl'))
+save_object(tt_splitter,
+            os.path.join(INTERNAL_OUTPUT_DIR, 'train_test_splitter.pkl'))
 
 
 reporter.report('Saving summary statistics for external use')

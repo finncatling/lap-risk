@@ -4,10 +4,11 @@ from typing import Tuple, Dict
 
 import pandas as pd
 
-from utils.constants import (DATA_DIR, STATS_OUTPUT_DIR, INDICATION_PREFIX,
+from utils.constants import (DATA_DIR, STATS_OUTPUT_DIR, INTERNAL_OUTPUT_DIR,
+                             NOVEL_MODEL_OUTPUT_DIR, INDICATION_PREFIX,
                              MISSING_IND_CATEGORY)
 from utils.model.shared import flatten_model_var_dict
-from utils.io import make_directory, load_object
+from utils.io import make_directory, load_object, save_object
 from utils.model.novel import (NOVEL_MODEL_VARS, MULTI_CATEGORY_LEVELS,
                                LACTATE_VAR_NAME, ALBUMIN_VAR_NAME,
                                LACTATE_ALBUMIN_VARS,
@@ -27,6 +28,7 @@ reporter.title('Wrangle NELA data in preparation for later input to the '
 
 reporter.report("Creating output dirs (if they don't already exist)")
 make_directory(STATS_OUTPUT_DIR)
+make_directory(NOVEL_MODEL_OUTPUT_DIR)
 
 
 reporter.report('Loading manually-wrangled NELA data')
@@ -93,11 +95,16 @@ imputation_stages.add_stage(
     description='Lactate and albumin',
     df=df.drop(NOVEL_MODEL_VARS['target'], axis=1),
     variables_to_impute=[LACTATE_VAR_NAME, ALBUMIN_VAR_NAME])
-# TODO: Save imputation_stages for later use
+
+
+reporter.report('Saving imputation stage information for later use')
+save_object(imputation_stages, os.path.join(NOVEL_MODEL_OUTPUT_DIR,
+                                            'imputation_stages.pkl'))
 
 
 reporter.report('Loading data needed for train-test splitting')
-tt_splitter = load_object(os.path.join('outputs', 'train_test_splitter.pkl'))
+tt_splitter = load_object(os.path.join(INTERNAL_OUTPUT_DIR,
+                                       'train_test_splitter.pkl'))
 
 
 reporter.report('Running MICE')
@@ -115,11 +122,15 @@ swm = SplitterWinsorMICE(df=mice_df,
 swm.split_winsorize_mice()
 
 
-print(swm.__dict__)
+reporter.report('Saving MICE imputations for later use')
+save_object(swm, os.path.join(NOVEL_MODEL_OUTPUT_DIR,
+                              'splitter_winsor_mice.pkl'))
 
-for i in range(6):
-    print(swm.get_imputed_df(0, 'train', i))
 
+reporter.last('Done.')
+
+
+# TODO: Non-binary discrete variable imputation
 
 # TODO: Perform winsorization for lactate and albumin
 

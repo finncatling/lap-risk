@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from datetime import datetime
 
-from utils.constants import (DATA_DIR, RANDOM_SEED,
+from utils.constants import (DATA_DIR, RANDOM_SEED, INTERNAL_OUTPUT_DIR,
                              STATS_OUTPUT_DIR, CURRENT_MODEL_OUTPUT_DIR,
                              CALIB_GAM_N_SPLINES, CALIB_GAM_LAM_CANDIDATES)
 from utils.model.current import (preprocess_current, SplitterTrainerPredictor,
@@ -82,7 +82,8 @@ preprocessed_df, _ = preprocess_current(df,
 
 
 reporter.report('Loading data needed for train-test splitting')
-tt_splitter = load_object(os.path.join('outputs', 'train_test_splitter.pkl'))
+tt_splitter = load_object(os.path.join(INTERNAL_OUTPUT_DIR,
+                                       'train_test_splitter.pkl'))
 
 
 reporter.report('Beginning train-test splitting and model fitting')
