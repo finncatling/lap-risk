@@ -138,6 +138,7 @@ class SplitterWinsorMICE(Splitter):
         return self.cont_vars + self.binary_vars
 
     def _sanity_check_variables(self):
+        print(self.all_vars, self.df.columns)
         assert len(self.all_vars) == len(self.df.columns)
         for var in self.all_vars:
             assert var in self.df.columns
