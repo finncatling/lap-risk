@@ -144,9 +144,7 @@ class SplitterWinsorMICE(Splitter):
             cont_vars=self.winsor_variables,
             quantiles=self.winsor_quantiles,
             include=self.winsor_include)
-        X_test_df, _ = winsorize_novel(X_test_df,
-                                       thresholds=winsor_thresholds,
-                                       cont_vars=self.winsor_variables)
+        X_test_df, _ = winsorize_novel(X_test_df, thresholds=winsor_thresholds)
         self.winsor_thresholds.append(winsor_thresholds)
         return X_train_df, X_test_df
 

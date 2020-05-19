@@ -109,8 +109,8 @@ def label_encode(
 
 def winsorize_novel(
         df: pd.DataFrame,
-        quantiles: Tuple[float, float],
         thresholds: Dict[str, Tuple[float, float]] = None,
+        quantiles: Tuple[float, float] = None,
         cont_vars: List[str] = None,
         include: Dict[str, Tuple[bool, bool]] = None
 ) -> (pd.DataFrame, Dict[str, Tuple[float, float]]):
@@ -120,6 +120,18 @@ def winsorize_novel(
         disabled using the include dict. Variables not specified in the include
         dict have Winsorization applied at upper and lower thresholds by
         default."""
+    if thresholds is None:
+        assert quantiles is not None
+        assert cont_vars is not None
+    else:
+        assert quantiles is None
+        assert cont_vars is None
+        assert include is None
+
+    if include is not None:
+        for v in include.keys():
+            assert v in cont_vars
+
     df = df.copy()
     ops = (operator.lt, operator.gt)
 
