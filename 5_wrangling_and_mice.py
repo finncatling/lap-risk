@@ -27,7 +27,6 @@ reporter.title('Wrangle NELA data in preparation for later input to the '
 
 
 reporter.report("Creating output dirs (if they don't already exist)")
-make_directory(STATS_OUTPUT_DIR)
 make_directory(NOVEL_MODEL_OUTPUT_DIR)
 
 
@@ -67,6 +66,16 @@ reporter.report('Checking that there are no cases where all features are '
                 ' which could create problems with the post-imputation data '
                 'reconstruction)')
 assert df.shape[0] == df.dropna(axis=0, how='all').shape[0]
+
+
+reporter.report('Saving preprocessed data for later use')
+df.to_pickle(os.path.join(DATA_DIR, 'df_preprocessed_for_novel_pre_split.pkl'))
+
+
+reporter.report('Saving levels of categorical variables (with indications '
+                'added) for later use')
+save_object(multi_category_levels, os.path.join(
+    NOVEL_MODEL_OUTPUT_DIR, 'multi_category_levels_with_indications.pkl'))
 
 
 reporter.report('Making DataFrame and variable list for use in MICE')
