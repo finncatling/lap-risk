@@ -125,7 +125,9 @@ class SplitterWinsorMICE(Splitter):
 
     def run_mice(self):
         """Runs MICE for train and test folds of all train-test splits."""
-        for i in pb(range(self.tts.n_splits), prefix='Split iteration'):
+        # for i in pb(range(self.tts.n_splits), prefix='Split iteration'):
+        # TODO: Change this line back (changed to shorter loop for testing)
+        for i in pb(range(2), prefix='Split iteration'):
             X_train_df, _, X_test_df, _ = self._split(i)
             X_train_df, X_test_df = self._winsorize(X_train_df, X_test_df)
             X_dfs = {'train': X_train_df, 'test': X_test_df}
@@ -142,7 +144,9 @@ class SplitterWinsorMICE(Splitter):
             cont_vars=self.winsor_variables,
             quantiles=self.winsor_quantiles,
             include=self.winsor_include)
-        X_test_df, _ = winsorize_novel(X_test_df, winsor_thresholds)
+        X_test_df, _ = winsorize_novel(X_test_df,
+                                       thresholds=winsor_thresholds,
+                                       cont_vars=self.winsor_variables)
         self.winsor_thresholds.append(winsor_thresholds)
         return X_train_df, X_test_df
 

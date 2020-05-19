@@ -49,7 +49,7 @@ binary_vars = list(set(NOVEL_MODEL_VARS['cat']) -
                    set(multi_category_levels.keys()))
 
 
-reporter.report('Doing pre-train test split data preprocessing')
+reporter.report('Doing pre-train-test-split data preprocessing')
 df = preprocess_novel_pre_split(
     df,
     category_mapping={'S03ECG': {1.0: 0.0, 4.0: 1.0, 8.0: 1.0}},
@@ -108,8 +108,7 @@ swm = SplitterWinsorMICE(df=mice_df,
                          winsor_quantiles=(0.001, 0.999),
                          winsor_include={'S01AgeOnArrival': (False, True),
                                          'S03GlasgowComaScore': (False, False)},
-                         n_imputations=2,
-                         # n_imputations=imputation_stages.n_imputations[0],
+                         n_imputations=imputation_stages.n_imputations[0],
                          binary_variables=binary_vars,
                          n_burn_in=10,
                          n_skip=3)

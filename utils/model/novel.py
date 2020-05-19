@@ -110,7 +110,7 @@ def label_encode(
 def winsorize_novel(
         df: pd.DataFrame,
         quantiles: Tuple[float, float],
-        thresholds_dict: Dict[str, Tuple[float, float]] = None,
+        thresholds: Dict[str, Tuple[float, float]] = None,
         cont_vars: List[str] = None,
         include: Dict[str, Tuple[bool, bool]] = None
 ) -> (pd.DataFrame, Dict[str, Tuple[float, float]]):
@@ -123,25 +123,25 @@ def winsorize_novel(
     df = df.copy()
     ops = (operator.lt, operator.gt)
 
-    if thresholds_dict:
-        for v, thresholds in thresholds_dict.items():
+    if thresholds:
+        for v, thresholds in thresholds.items():
             for i, threshold in enumerate(thresholds):
                 if threshold is not None:
                     df.loc[ops[i](df[v], threshold), v] = threshold
     else:
-        thresholds_dict = {}
+        thresholds = {}
         for v in cont_vars:
-            thresholds_dict[v] = list(df[v].quantile(quantiles))
-            for i, threshold in enumerate(thresholds_dict[v]):
+            thresholds[v] = list(df[v].quantile(quantiles))
+            for i, threshold in enumerate(thresholds[v]):
                 try:
                     if include[v][i]:
                         df.loc[ops[i](df[v], threshold), v] = threshold
                     else:
-                        thresholds_dict[v][i] = None
+                        thresholds[v][i] = None
                 except KeyError:
                     df.loc[ops[i](df[v], threshold), v] = threshold
 
-    return df, thresholds_dict
+    return df, thresholds
 
 
 def preprocess_novel_pre_split(
