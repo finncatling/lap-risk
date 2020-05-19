@@ -138,8 +138,8 @@ class SplitterWinsorMICE(Splitter):
         return self.cont_vars + self.binary_vars
 
     def _sanity_check_variables(self):
-        """Check that, apart from target, df only contains the continuous and
-            binary variables specified."""
+        """Check that, apart from target (accounted for with the minus 1), df
+            only contains the continuous and binary variables specified."""
         assert len(self.all_vars) == len(self.df.columns) - 1
         for var in self.all_vars:
             assert var in self.df.columns
@@ -219,8 +219,8 @@ class SplitterWinsorMICE(Splitter):
 
 
 class CategoricalImputer:
-    """Imputes missing values of non-binary categorical
-        variables in MICE DataFrames."""
+    """Imputes missing values of non-binary categorical variables in MICE
+        DataFrames."""
 
     def __init__(self,
                  original_df: pd.DataFrame,
