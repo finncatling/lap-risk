@@ -104,7 +104,7 @@ reporter.report('Running MICE')
 swm = SplitterWinsorMICE(df=mice_df,
                          test_train_splitter=tt_splitter,
                          target_variable_name=NOVEL_MODEL_VARS['target'],
-                         winsor_variables=mice_cont_vars,
+                         cont_variables=mice_cont_vars,
                          winsor_quantiles=(0.001, 0.999),
                          winsor_include={'S01AgeOnArrival': (False, True),
                                          'S03GlasgowComaScore': (False, False)},

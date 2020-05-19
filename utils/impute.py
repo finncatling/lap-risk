@@ -8,6 +8,7 @@ from progressbar import progressbar as pb
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import RobustScaler
 from statsmodels.imputation.mice import MICEData
+from statsmodels.regression import linear_model
 from statsmodels.discrete import discrete_model
 
 from utils.split import Splitter, TrainTestSplitter
@@ -102,19 +103,19 @@ class SplitterWinsorMICE(Splitter):
                  df: pd.DataFrame,
                  test_train_splitter: TrainTestSplitter,
                  target_variable_name: str,
-                 winsor_variables: List[str],
+                 cont_variables: List[str],
+                 binary_variables: List[str],
                  winsor_quantiles: Tuple[float, float],
                  winsor_include: Dict[str, Tuple[bool, bool]],
                  n_imputations: int,
-                 binary_variables: List[str],
                  n_burn_in: int,
                  n_skip: int):
         super().__init__(df, test_train_splitter, target_variable_name)
-        self.winsor_variables = winsor_variables
+        self.cont_vars = cont_variables
+        self.binary_vars = binary_variables
         self.winsor_quantiles = winsor_quantiles
         self.winsor_include = winsor_include
         self.n_imputations = n_imputations
-        self.binary_vars = binary_variables
         self.n_burn_in = n_burn_in
         self.n_skip = n_skip
         self.winsor_thresholds: List[Dict[str, Tuple[float, float]]] = []
@@ -122,6 +123,15 @@ class SplitterWinsorMICE(Splitter):
             'train': [], 'test': []}
         self.imputed: Dict[str, List[List[Dict[str, np.ndarray]]]] = {
             'train': [], 'test': []}
+
+    @property
+    def all_vars(self):
+        return self.cont_vars + self.binary_vars
+
+    def _sanity_check_variables(self):
+        assert len(self.all_vars) == len(self.df.columns)
+        for var in self.all_vars:
+            assert var in self.df.columns
 
     def run_mice(self):
         """Runs MICE for train and test folds of all train-test splits."""
@@ -141,7 +151,7 @@ class SplitterWinsorMICE(Splitter):
     ) -> (pd.DataFrame, pd.DataFrame):
         X_train_df, winsor_thresholds = winsorize_novel(
             X_train_df,
-            cont_vars=self.winsor_variables,
+            cont_vars=self.cont_vars,
             quantiles=self.winsor_quantiles,
             include=self.winsor_include)
         X_test_df, _ = winsorize_novel(X_test_df, thresholds=winsor_thresholds)
@@ -152,8 +162,13 @@ class SplitterWinsorMICE(Splitter):
         """Run MICE for a single fold from a single train-test split."""
         mice_data = MICEData(X_df)
         self.missing_i[fold].append(copy.deepcopy(mice_data.ix_miss))
-        for v in self.binary_vars:
-            mice_data.set_imputer(v, model_class=discrete_model.Logit)
+
+        for var in self.cont_vars:
+            mice_data.set_imputer(var, model_class=linear_model.OLS,
+                                  fit_kwds={'disp': False})
+        for var in self.binary_vars:
+            mice_data.set_imputer(var, model_class=discrete_model.Logit,
+                                  fit_kwds={'disp': False})
 
         # Initial MICE 'burn in' imputations which we discard
         for _ in range(self.n_burn_in):
