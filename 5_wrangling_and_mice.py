@@ -128,11 +128,3 @@ save_object(swm, os.path.join(NOVEL_MODEL_OUTPUT_DIR,
 
 
 reporter.last('Done.')
-
-
-# TODO: Non-binary discrete variable imputation. Use fit imputation models from
-#  train set for test set.
-
-# TODO: Save summary stats for external use
-
-# TODO: Perform winsorization for lactate and albumin
