@@ -4,7 +4,7 @@ from typing import Tuple, Dict
 
 import pandas as pd
 
-from utils.constants import (DATA_DIR, STATS_OUTPUT_DIR, INTERNAL_OUTPUT_DIR,
+from utils.constants import (DATA_DIR, INTERNAL_OUTPUT_DIR,
                              NOVEL_MODEL_OUTPUT_DIR, INDICATION_PREFIX,
                              MISSING_IND_CATEGORY)
 from utils.model.shared import flatten_model_var_dict
