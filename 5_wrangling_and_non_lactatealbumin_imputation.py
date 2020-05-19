@@ -69,8 +69,7 @@ assert df.shape[0] == df.dropna(axis=0, how='all').shape[0]
 
 reporter.report('Making DataFrame and variable list for use in MICE')
 mice_df = df.drop(list(multi_category_levels.keys()) +
-                  list(LACTATE_ALBUMIN_VARS) +
-                  [NOVEL_MODEL_VARS['target']], axis=1).copy()
+                  list(LACTATE_ALBUMIN_VARS), axis=1).copy()
 mice_cont_vars = list(NOVEL_MODEL_VARS['cont'])
 mice_cont_vars.remove(LACTATE_VAR_NAME)
 mice_cont_vars.remove(ALBUMIN_VAR_NAME)
@@ -82,7 +81,7 @@ imputation_stages = ImputationInfo()
 imputation_stages.add_stage(
     description=('MICE for continuous variables (except lactate and albumin) '
                  'and non-binary discrete variables'),
-    df=mice_df,
+    df=mice_df.drop(NOVEL_MODEL_VARS['target'], axis=1),
     variables_to_impute=list(mice_df.columns))
 imputation_stages.add_stage(
     description='Non-binary discrete variables',
