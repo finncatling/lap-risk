@@ -113,16 +113,25 @@ class SplitterWinsorMICE(Splitter):
         super().__init__(df, test_train_splitter, target_variable_name)
         self.cont_vars = cont_variables
         self.binary_vars = binary_variables
+        self._sanity_check_variables()
         self.winsor_quantiles = winsor_quantiles
         self.winsor_include = winsor_include
         self.n_mice_imputations = n_mice_imputations
         self.n_mice_burn_in = n_mice_burn_in
         self.n_mice_skip = n_mice_skip
-        self.winsor_thresholds: List[Dict[str, Tuple[float, float]]] = []
-        self.missing_i: Dict[str, List[Dict[str, np.ndarray]]] = {
-            'train': [], 'test': []}
-        self.imputed: Dict[str, List[List[Dict[str, np.ndarray]]]] = {
-            'train': [], 'test': []}
+        self.winsor_thresholds: Dict[int,  # train-test split index
+                                     Dict[str, Tuple[float, float]]] = {}
+        self.missing_i: Dict[str,  # fold name
+                             Dict[int,  # train-test split index
+                                  Dict[str,  # variable name
+                                       np.ndarray]]] = {'train': {},
+                                                        'test': {}}
+        self.imputed: Dict[str,  # fold name
+                           Dict[int,  # train-test split index
+                                Dict[int,  # MICE imputation index
+                                     Dict[str,  # variable name
+                                          np.ndarray]]]] = {'train': {},
+                                                            'test': {}}
 
     @property
     def all_vars(self):
@@ -142,15 +151,27 @@ class SplitterWinsorMICE(Splitter):
         # TODO: Change this line back (changed to shorter loop for testing)
         for i in pb(range(2), prefix='Split iteration'):
             X_train_df, _, X_test_df, _ = self._split(i)
-            X_train_df, X_test_df = self._winsorize(X_train_df, X_test_df)
+            X_train_df, X_test_df = self._winsorize(i, X_train_df, X_test_df)
             X_dfs = {'train': X_train_df, 'test': X_test_df}
             for fold in ('train', 'test'):
-                self._single_fold_mice(X_dfs[fold], fold)
+                self._single_fold_mice(i, fold, X_dfs[fold])
 
-    # TODO: Method to reconstruct imputed dataframes
+    def get_imputed_df(self, split_i: int, fold: str, imputation_i: int):
+        """Construct imputed DataFrame from a given imputation iteration, for a
+            given fold, from a given train-test split."""
+        if fold == 'train':
+            imp_df, _, _, _ = self._split(split_i)
+        elif fold == 'test':
+            _, _, imp_df, _ = self._split(split_i)
+        else:
+            raise Exception("fold not in ('train', 'test')")
+        for var_name, missing_i in self.missing_i[fold][split_i].items():
+            imp_df.iloc[missing_i, imp_df.columns.get_loc(var_name)] = (
+                self.imputed[fold][split_i][imputation_i][var_name])
+        return imp_df
 
     def _winsorize(
-        self, X_train_df: pd.DataFrame, X_test_df: pd.DataFrame
+        self, split_i: int, X_train_df: pd.DataFrame, X_test_df: pd.DataFrame
     ) -> (pd.DataFrame, pd.DataFrame):
         X_train_df, winsor_thresholds = winsorize_novel(
             X_train_df,
@@ -158,17 +179,17 @@ class SplitterWinsorMICE(Splitter):
             quantiles=self.winsor_quantiles,
             include=self.winsor_include)
         X_test_df, _ = winsorize_novel(X_test_df, thresholds=winsor_thresholds)
-        self.winsor_thresholds.append(winsor_thresholds)
+        self.winsor_thresholds[split_i] = winsor_thresholds
         return X_train_df, X_test_df
 
-    def _single_fold_mice(self, X_df: pd.DataFrame, fold: str):
+    def _single_fold_mice(self, split_i: int, fold: str, X_df: pd.DataFrame):
         """Set up and run MICE for a single fold from a single train-test
             split."""
         mice_data = MICEData(X_df)
-        self.missing_i[fold].append(copy.deepcopy(mice_data.ix_miss))
+        self.missing_i[fold][split_i] = copy.deepcopy(mice_data.ix_miss)
         mice_data = self._set_mice_imputers(mice_data)
-        self.imputed[fold].append([])  # This list will hold the imputed values
-        self._run_mice_loop(mice_data, fold)
+        self.imputed[fold][split_i] = {}  # dict will hold fold's imputed values
+        self._run_mice_loop(split_i, fold, mice_data)
 
     def _set_mice_imputers(self, mice_data: MICEData) -> MICEData:
         for var in self.cont_vars:
@@ -179,21 +200,22 @@ class SplitterWinsorMICE(Splitter):
                                   fit_kwds={'disp': False})
         return mice_data
 
-    def _run_mice_loop(self, mice_data: MICEData, fold: str):
+    def _run_mice_loop(self, split_i: int, fold: str, mice_data: MICEData):
         """'Burn-in' and 'skip' imputations are discarded."""
         for _ in range(self.n_mice_burn_in):
             mice_data.update_all()
-        for i in range(self.n_mice_imputations):
-            if i:
+        for imputation_i in range(self.n_mice_imputations):
+            if imputation_i:
                 mice_data.update_all(self.n_mice_skip + 1)
-            self._store_imputed(mice_data.data, fold)
+            self._store_imputed(split_i, fold, imputation_i, mice_data.data)
 
-    def _store_imputed(self, imp_df: pd.DataFrame, fold: str):
+    def _store_imputed(self, split_i: int, fold: str, imputation_i: int,
+                       imp_df: pd.DataFrame):
         """Store just the imputed values from a single MICE iteration."""
-        self.imputed[fold][-1].append({})
-        for col_name, missing_i in self.missing_i[fold][-1].items():
-            self.imputed[fold][-1][-1][col_name] = imp_df.iloc[
-                missing_i, imp_df.columns.get_loc(col_name)].values
+        self.imputed[fold][split_i][imputation_i] = {}
+        for var_name, missing_i in self.missing_i[fold][split_i].items():
+            self.imputed[fold][split_i][imputation_i][var_name] = imp_df.iloc[
+                missing_i, imp_df.columns.get_loc(var_name)].copy().values
 
 
 class CategoricalImputer:

@@ -278,7 +278,6 @@ class SplitterTrainerPredictor(Splitter):
             self.y_test.append(y_test)
             self.y_pred.append(model.predict_proba(X_test_df.values)[:, 1])
         self.features += X_train_df.columns.tolist()
-        self._calculate_convenience_split_stats()
 
     def _train(self,
                X_train_df: pd.DataFrame,

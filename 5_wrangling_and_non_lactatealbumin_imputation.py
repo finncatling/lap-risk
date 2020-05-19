@@ -117,6 +117,9 @@ swm.split_winsorize_mice()
 
 print(swm.__dict__)
 
+for i in range(2):
+    print(swm.get_imputed_df(0, 'test', i)[INDICATION_VAR_NAME])
+
 
 # TODO: Perform winsorization for lactate and albumin
 
