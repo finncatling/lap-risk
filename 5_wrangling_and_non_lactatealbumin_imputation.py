@@ -82,7 +82,7 @@ imputation_stages.add_stage(
     description=('MICE for continuous variables (except lactate and albumin) '
                  'and non-binary discrete variables'),
     df=mice_df.drop(NOVEL_MODEL_VARS['target'], axis=1),
-    variables_to_impute=list(mice_df.columns))
+    variables_to_impute=list(mice_df.drop(NOVEL_MODEL_VARS['target'].columns)))
 imputation_stages.add_stage(
     description='Non-binary discrete variables',
     df=df.drop(list(LACTATE_ALBUMIN_VARS) + [NOVEL_MODEL_VARS['target']],
