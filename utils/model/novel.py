@@ -109,8 +109,8 @@ def label_encode(
 
 def winsorize_novel(
         df: pd.DataFrame,
+        quantiles: Tuple[float, float],
         thresholds_dict: Dict[str, Tuple[float, float]] = None,
-        quantiles: Tuple[float, float] = (0.001, 0.999),
         cont_vars: List[str] = None,
         include: Dict[str, Tuple[bool, bool]] = None
 ) -> (pd.DataFrame, Dict[str, Tuple[float, float]]):

@@ -12,7 +12,7 @@ from utils.model.novel import (NOVEL_MODEL_VARS, MULTI_CATEGORY_LEVELS,
                                LACTATE_VAR_NAME, ALBUMIN_VAR_NAME,
                                LACTATE_ALBUMIN_VARS,
                                preprocess_novel_pre_split)
-from utils.impute import ImputationInfo
+from utils.impute import ImputationInfo, SplitterWinsorMICE
 from utils.report import Reporter
 
 
@@ -67,10 +67,13 @@ reporter.report('Checking that there are no cases where all features are '
 assert df.shape[0] == df.dropna(axis=0, how='all').shape[0]
 
 
-reporter.report('Making DataFrame for use in MICE')
+reporter.report('Making DataFrame and variable list for use in MICE')
 mice_df = df.drop(list(multi_category_levels.keys()) +
                   list(LACTATE_ALBUMIN_VARS) +
                   [NOVEL_MODEL_VARS['target']], axis=1).copy()
+mice_cont_vars = copy.deepcopy(NOVEL_MODEL_VARS['cont_vars'])
+mice_cont_vars.remove(LACTATE_VAR_NAME)
+mice_cont_vars.remove(ALBUMIN_VAR_NAME)
 
 
 reporter.report('Define stages of imputation, and the number of imputations '
@@ -95,19 +98,26 @@ imputation_stages.append(ImputationInfo(
 # TODO: Save imputation_stages for later use
 
 
-for i_s in imputation_stages:
-    print(i_s.__dict__)
-
-
 reporter.report('Loading data needed for train-test splitting')
 tt_splitter = load_object(os.path.join('outputs', 'train_test_splitter.pkl'))
 
 
+reporter.report('Running MICE')
+swm = SplitterWinsorMICE(df=mice_df,
+                         test_train_splitter=tt_splitter,
+                         target_variable_name=NOVEL_MODEL_VARS['target'],
+                         winsor_variables=mice_cont_vars,
+                         winsor_quantiles=(0.001, 0.999),
+                         winsor_include={'S01AgeOnArrival': (False, True),
+                                         'S03GlasgowComaScore': (False, False)},
+                         n_imputations=imputation_stages[0].n_imputations,
+                         binary_variables=binary_vars,
+                         n_burn_in=10,
+                         n_skip=3)
 
 
 
-
-
+# TODO: Perform winsorization
 
 # TODO: Class to handle preprocessing loop for each train-test split
 
