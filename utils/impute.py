@@ -33,49 +33,61 @@ def find_missing_indices(df: pd.DataFrame) -> Dict[str, np.ndarray]:
 
 
 class ImputationInfo:
-    """Hold info related to an imputation process."""
-    def __init__(self,
-                 description: str,
-                 df: pd.DataFrame,
-                 variables_to_impute: List[str],
-                 previous_stage_n_imputations: Union[None, int]):
-        """
+    """Hold info related to a (possibly multi-stage) imputation process.
+        The number of imputations calculated for a subsequent stage is always
+        a multiple of the number needed in the previous stage."""
+    def __init__(self, overall_description: Union[None, str] = None):
+        self.overall_description = overall_description
+        self.descriptions: List[str] = []
+        self.impute_vars: List[List[str]] = []
+        self.all_vars: List[List[str]] = []
+        self.n_min_imputations: List[int] = []
+        self.fraction_incomplete: List[float] = []
+        self.n_imputations: List[int] = []
+
+    def add_stage(self,
+                  description: str,
+                  df: pd.DataFrame,
+                  variables_to_impute: List[str]) -> None:
+        """Add information about an imputation stage, and calculate the number
+            of imputations it will require.
+
         Args:
-            description: Description of the imputation process
-            df: Data used in this imputation process, i.e. variables to be
+            description: Description of this imputation stage
+            df: Data used in this imputation stage, i.e. variables to be
                 imputed and variables used as features in the imputation
                 model (in MICE these two variable sets intersect). May also
-                contain complete variables which are unused in imputation (the
-                subset of self.all_vars actually used in imputation is specific
-                to the individual imputation process)
+                contain complete variables which are unused as imputation
+                features
             variables_to_impute: Names of variables to be imputed in this
-                process
-            previous_stage_n_imputations: If this imputation process is one
-                stage in a sequential imputation pipeline, and the number of
-                imputations in this process should be a multiple of the number
-                performed in the previous stage, then enter the number of
-                imputations from the previous stage here
+                stage
         """
-        self.description = description
-        self.impute_vars = tuple(variables_to_impute)
-        self.all_vars = tuple(df.columns)
-        self.previous_stage_n_imputations = previous_stage_n_imputations
-        (self.n_min_imputations,
-         self.fraction_incomplete) = determine_n_imputations(df)
-        self.n_imputations = self._amend_n_imputations()
-        self._sanity_check()
+        all_vars = list(df.columns)
+        self._sanity_check(variables_to_impute, all_vars)
+        self.descriptions.append(description)
+        self.impute_vars.append(variables_to_impute)
+        self.all_vars.append(all_vars)
+        self._determine_adjusted_n_imputations(df)
 
-    def _sanity_check(self):
-        for var in self.impute_vars:
-            assert var in self.all_vars
+    @staticmethod
+    def _sanity_check(impute_vars: List[str], all_vars: List[str]):
+        for var in impute_vars:
+            assert var in all_vars
 
-    def _amend_n_imputations(self) -> int:
-        if self.previous_stage_n_imputations is None:
-            return self.n_min_imputations
+    def _determine_adjusted_n_imputations(self, df: pd.DataFrame):
+        """If there is a previous imputation stage, increase n_imputations (the
+            number of imputations required for this stage according to White et
+            al) so that it is a multiple of n_imputations from the previous
+            stage."""
+        n_min_imputations, fraction_incomplete = determine_n_imputations(df)
+        self.n_min_imputations.append(n_min_imputations)
+        self.fraction_incomplete.append(fraction_incomplete)
+        if len(self.n_imputations):
+            self.n_imputations.append(
+                int(np.ceil(n_min_imputations / self.n_imputations[-1]) *
+                    self.n_imputations[-1]))
         else:
-            return int(np.ceil(self.n_min_imputations /
-                               self.previous_stage_n_imputations) *
-                       self.previous_stage_n_imputations)
+            self.n_imputations.append(n_min_imputations)
 
 
 class SplitterWinsorMICE(Splitter):

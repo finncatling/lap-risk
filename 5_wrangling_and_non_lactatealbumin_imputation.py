@@ -78,50 +78,46 @@ mice_cont_vars.remove(ALBUMIN_VAR_NAME)
 
 reporter.report('Define stages of imputation, and the number of imputations '
                 'needed at each stage')
-imputation_stages = [ImputationInfo(
+imputation_stages = ImputationInfo()
+imputation_stages.add_stage(
     description=('MICE for continuous variables (except lactate and albumin) '
                  'and non-binary discrete variables'),
     df=mice_df,
-    variables_to_impute=list(mice_df.columns),
-    previous_stage_n_imputations=None)]
-imputation_stages.append(ImputationInfo(
+    variables_to_impute=list(mice_df.columns))
+imputation_stages.add_stage(
     description='Non-binary discrete variables',
     df=df.drop(list(LACTATE_ALBUMIN_VARS) + [NOVEL_MODEL_VARS['target']],
                axis=1),
-    variables_to_impute=list(multi_category_levels.keys()),
-    previous_stage_n_imputations=imputation_stages[-1].n_imputations))
-imputation_stages.append(ImputationInfo(
+    variables_to_impute=list(multi_category_levels.keys()))
+imputation_stages.add_stage(
     description='Lactate and albumin',
     df=df.drop(NOVEL_MODEL_VARS['target'], axis=1),
-    variables_to_impute=[LACTATE_VAR_NAME, ALBUMIN_VAR_NAME],
-    previous_stage_n_imputations=imputation_stages[-1].n_imputations))
+    variables_to_impute=[LACTATE_VAR_NAME, ALBUMIN_VAR_NAME])
 # TODO: Save imputation_stages for later use
 
 
-reporter.report('Loading data needed for train-test splitting')
-tt_splitter = load_object(os.path.join('outputs', 'train_test_splitter.pkl'))
+print(imputation_stages.__dict__)
 
 
-reporter.report('Running MICE')
-swm = SplitterWinsorMICE(df=mice_df,
-                         test_train_splitter=tt_splitter,
-                         target_variable_name=NOVEL_MODEL_VARS['target'],
-                         winsor_variables=mice_cont_vars,
-                         winsor_quantiles=(0.001, 0.999),
-                         winsor_include={'S01AgeOnArrival': (False, True),
-                                         'S03GlasgowComaScore': (False, False)},
-                         n_imputations=imputation_stages[0].n_imputations,
-                         binary_variables=binary_vars,
-                         n_burn_in=10,
-                         n_skip=3)
+# reporter.report('Loading data needed for train-test splitting')
+# tt_splitter = load_object(os.path.join('outputs', 'train_test_splitter.pkl'))
+#
+#
+# reporter.report('Running MICE')
+# swm = SplitterWinsorMICE(df=mice_df,
+#                          test_train_splitter=tt_splitter,
+#                          target_variable_name=NOVEL_MODEL_VARS['target'],
+#                          winsor_variables=mice_cont_vars,
+#                          winsor_quantiles=(0.001, 0.999),
+#                          winsor_include={'S01AgeOnArrival': (False, True),
+#                                          'S03GlasgowComaScore': (False, False)},
+#                          n_imputations=imputation_stages.n_imputations[0],
+#                          binary_variables=binary_vars,
+#                          n_burn_in=10,
+#                          n_skip=3)
 
 
+# TODO: Perform winsorization for lactate and albumin
 
-# TODO: Perform winsorization
-
-# TODO: Class to handle preprocessing loop for each train-test split
-
-# TODO: Use fit imputation models from train set for test set. For MICE, will
-#    need to run the burn-in stages again
-
-# TODO: Keep track of per-case-per-variable missing data indices, so that
+# TODO: Use fit imputation models from train set for test set. This may not be
+#   practical for MICE
