@@ -12,7 +12,7 @@ from statsmodels.regression import linear_model
 from statsmodels.discrete import discrete_model
 
 from utils.split import Splitter, TrainTestSplitter
-from utils.model.novel import winsorize_folds_novel
+from utils.model.novel import winsorize_novel
 
 
 def determine_n_imputations(df: pd.DataFrame) -> (int, float):
@@ -152,15 +152,9 @@ class SplitterWinsorMICE(Splitter):
             fold), then run MICE for train and test folds of all train-test
             splits."""
         for i in pb(range(self.tts.n_splits), prefix='Split iteration'):
-            X_train_df, _, X_test_df, _ = self._split(i)
-            X_train_df, X_test_df, winsor_thresholds = winsorize_folds_novel(
-                X_train_df,
-                X_test_df,
-                cont_vars=self.cont_vars,
-                quantiles=self.winsor_quantiles,
-                include=self.winsor_include)
-            self.winsor_thresholds[i] = winsor_thresholds
-            X_dfs = {'train': X_train_df, 'test': X_test_df}
+            X_train, _, X_test, _ = self._split(i)
+            X_train, X_test = self._winsorize(i, X_train, X_test)
+            X_dfs = {'train': X_train, 'test': X_test}
             for fold in ('train', 'test'):
                 self._single_fold_mice(i, fold, X_dfs[fold])
 
@@ -177,6 +171,18 @@ class SplitterWinsorMICE(Splitter):
             imp_df.iloc[missing_i, imp_df.columns.get_loc(var_name)] = (
                 self.imputed[fold][split_i][imputation_i][var_name])
         return imp_df
+
+    def _winsorize(
+        self, split_i: int, X_train: pd.DataFrame, X_test: pd.DataFrame
+    ) -> (pd.DataFrame, pd.DataFrame):
+        X_train, winsor_thresholds = winsorize_novel(
+            X_train,
+            cont_vars=self.cont_vars,
+            quantiles=self.winsor_quantiles,
+            include=self.winsor_include)
+        X_test, _ = winsorize_novel(X_test, thresholds=winsor_thresholds)
+        self.winsor_thresholds[split_i] = winsor_thresholds
+        return X_train, X_test
 
     def _single_fold_mice(self, split_i: int, fold: str, X_df: pd.DataFrame):
         """Set up and run MICE for a single fold from a single train-test
@@ -251,21 +257,31 @@ class CategoricalImputer(Splitter):
         self.imp_multiple = n_imputations_per_mice
         self.random_seed = random_seed
         self._v = {}  # TODO: rename and add typing
-        self._rnd = self._init_rnd()
         self.missing_i: Dict[str,  # fold name
                              Dict[int,  # train-test split index
                                   Dict[str,  # variable name
                                        np.ndarray]]] = {'train': {},
                                                         'test': {}}
+        self._rnd = self._init_rnd()
         # TODO: get_imputed_df method
 
-    def fit_all_imputers(self):
+    def fit_imputers(self):
         for i in pb(range(self.tts.n_splits), prefix='Split iteration'):
-            X_train_df, _, X_test_df, _ = self._split(i)
-            # TODO: winsorise
-            # TODO: finish method
+            X_train, _, X_test, _ = self._split(i)
+            X_train, X_test = self._winsorize(i, X_train, X_test)
+            self._fit_single_tts(X_train, X_test)
 
+    def _winsorize(
+        self, split_i: int, X_train: pd.DataFrame, X_test: pd.DataFrame
+    ) -> (pd.DataFrame, pd.DataFrame):
+        X_train, _ = winsorize_novel(
+            X_train, thresholds=self.swm.winsor_thresholds[split_i])
+        X_test, _ = winsorize_novel(
+            X_test, thresholds=self.swm.winsor_thresholds[split_i])
+        return X_train, X_test
 
+    def _fit_single_tts(self, X_train: pd.DataFrame, X_test: pd.DataFrame):
+        pass
 
     # @property
     # def n_mice_dfs(self) -> int:

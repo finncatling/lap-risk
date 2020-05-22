@@ -273,14 +273,14 @@ class SplitterTrainerPredictor(Splitter):
 
     def split_train_predict(self):
         for i in pb(range(self.tts.n_splits), prefix='STP iteration'):
-            X_train_df, y_train, X_test_df, y_test = self._split(i)
-            model = self._train(X_train_df, y_train)
+            X_train, y_train, X_test, y_test = self._split(i)
+            model = self._train(X_train, y_train)
             self.y_test.append(y_test)
-            self.y_pred.append(model.predict_proba(X_test_df.values)[:, 1])
-        self.features += X_train_df.columns.tolist()
+            self.y_pred.append(model.predict_proba(X_test.values)[:, 1])
+        self.features += X_train.columns.tolist()
 
     def _train(self,
-               X_train_df: pd.DataFrame,
+               X_train: pd.DataFrame,
                y_train: np.ndarray) -> LogisticRegression:
         """We use the liblinear solver, as the unscaled features would slow the
             convergence of the other solvers. The current NELA model is
@@ -290,7 +290,7 @@ class SplitterTrainerPredictor(Splitter):
             avoid any meaningful regularisation."""
         model = LogisticRegression(C=10 ** 50, solver='liblinear',
                                    random_state=self.rnd)
-        model.fit(X_train_df.values, y_train)
+        model.fit(X_train.values, y_train)
         coefficients = model.coef_.flatten()
         self.coefficients.append(np.zeros(coefficients.shape[0] + 1))
         self.coefficients[-1][0] = model.intercept_

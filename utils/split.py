@@ -209,11 +209,11 @@ class Splitter:
                                  pd.DataFrame, np.ndarray):
         """Train-test split, according to the pre-defined splits calculated
             in 1_train_test_split.py"""
-        (X_train_df, y_train, X_test_df, y_test,
+        (X_train, y_train, X_test, y_test,
          n_total_train_cases, n_included_train_cases) = split_into_folds(
             self.df,
             indices={'train': self.tts.train_i[i], 'test': self.tts.test_i[i]},
             target_var_name=self.target_variable_name)
         self.split_stats['n_total_train_cases'][i] = n_total_train_cases
         self.split_stats['n_included_train_cases'][i] = n_included_train_cases
-        return X_train_df, y_train, X_test_df, y_test
+        return X_train, y_train, X_test, y_test

@@ -156,24 +156,6 @@ def winsorize_novel(
     return df, thresholds
 
 
-def winsorize_folds_novel(
-        X_train_df: pd.DataFrame,
-        X_test_df: pd.DataFrame,
-        cont_vars: List[str] = None,
-        quantiles: Tuple[float, float] = None,
-        include: Dict[str, Tuple[bool, bool]] = None
-) -> (pd.DataFrame, pd.DataFrame, Dict[str, Tuple[float, float]]):
-    """Thin wrapper around winsorize_novel. Winsorizes train fold and fits
-        winsor_thresholds in the process, then uses these thresholds to
-        winsorize test fold."""
-    X_train_df, winsor_thresholds = winsorize_novel(X_train_df,
-                                                    cont_vars=cont_vars,
-                                                    quantiles=quantiles,
-                                                    include=include)
-    X_test_df, _ = winsorize_novel(X_test_df, thresholds=winsor_thresholds)
-    return X_train_df, X_test_df, winsor_thresholds
-
-
 def preprocess_novel_pre_split(
         df: pd.DataFrame,
         category_mapping: Dict[str, Dict[float, float]],
