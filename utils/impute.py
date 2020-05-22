@@ -45,6 +45,7 @@ class ImputationInfo:
         self.n_min_imputations: List[int] = []
         self.fraction_incomplete: List[float] = []
         self.n_imputations: List[int] = []
+        self.multiple_of_previous_n_imputations: List[int] = []
 
     def add_stage(self,
                   description: str,
@@ -83,12 +84,13 @@ class ImputationInfo:
         n_min_imputations, fraction_incomplete = determine_n_imputations(df)
         self.n_min_imputations.append(n_min_imputations)
         self.fraction_incomplete.append(fraction_incomplete)
+        multiple = 1
         if len(self.n_imputations):
-            self.n_imputations.append(
-                int(np.ceil(n_min_imputations / self.n_imputations[-1]) *
-                    self.n_imputations[-1]))
+            multiple = int(np.ceil(n_min_imputations / self.n_imputations[-1]))
+            self.n_imputations.append(multiple * self.n_imputations[-1])
         else:
             self.n_imputations.append(n_min_imputations)
+        self.multiple_of_previous_n_imputations.append(multiple)
 
 
 class SplitterWinsorMICE(Splitter):
@@ -219,33 +221,40 @@ class SplitterWinsorMICE(Splitter):
 
 
 class CategoricalImputer:
-    """Imputes missing values of non-binary categorical variables in MICE
-        DataFrames."""
+    """Imputes missing values of non-binary categorical variables, using
+        output of earlier MICE."""
 
     def __init__(self,
-                 original_df: pd.DataFrame,
-                 mice_dfs: List[pd.DataFrame],
+                 df: pd.DataFrame,
+                 splitter_winsor_mice: SplitterWinsorMICE,
+                 # mice_dfs: List[pd.DataFrame],
                  cont_vars: List[str],
                  binary_vars: List[str],
                  cat_vars: List[str],
+                 n_imputations_per_mice: int,
                  random_seed):
         """Args:
-            original_df: DataFrame containing all variables
-                prior to imputation i.e. with all missing
-                values still present. 
-            mice_dfs: Output of (previously run) statsmodels MICE
-                for continuous and binary variables, i.e. each DataFrame
-                has columns for each variable in cont_vars and
-                binary_vars only
-            cont_vars: Continuous variables
-            binary_vars: Binary variables
-            cat_vars: Non-binary categorical variables
-            random_seed: Should produce consistent results
-                between runs, providing input arguments are
-                the same
+            df: DataFrame containing all continuous variables (except lactate-
+                and albumin-related variables), all binary variables, the
+                non-binary discrete variables for imputation at this stage, and
+                the target (mortality labels). This DataFrame still contains all
+                its missing values, i.e. no imputation yet
+            splitter_winsor_mice: Pickled SplitterWinsorMice object containing
+                the results of MICE for the continuous variables (except lactate
+                and albumin) and the binary variables
+            # mice_dfs: Output of (previously run) statsmodels MICE
+            #     for continuous and binary variables, i.e. each DataFrame
+            #     has columns for each variable in cont_vars and
+            #     binary_vars only
+            cont_vars: Continuous variables (excluding lactate and albumin)
+            binary_vars: Binary variables (excluding lactate and albumin
+                missingness indicators)
+            cat_vars: Non-binary categorical variables for imputation
+            random_seed: For reproducibility
         """
-        self.odf = original_df.copy()
-        self.mice_dfs = copy.deepcopy(mice_dfs)
+        self.df = df.copy()
+
+        # self.mice_dfs = copy.deepcopy(mice_dfs)
         self.cont_vars = cont_vars
         self.binary_vars = binary_vars
         self.cat_vars = cat_vars
@@ -269,7 +278,7 @@ class CategoricalImputer:
         self._scale_mice_dfs()
 
     def _reset_df_indices(self):
-        self.odf = self.odf.reset_index(drop=True)
+        self.df = self.df.reset_index(drop=True)
         for i in range(len(self.mice_dfs)):
             self.mice_dfs[i] = self.mice_dfs[i].reset_index(drop=True)
 
@@ -277,10 +286,10 @@ class CategoricalImputer:
         """Reordering isn't strictly necessary here, but allows us to
             check that we don't have additional / missing columns in
             the input DataFrames."""
-        n_cols = len(self.odf.columns)
-        self.odf = self.odf[self.cont_vars + self.binary_vars +
-                            self.cat_vars]
-        assert (n_cols == self.odf.shape[1])
+        n_cols = len(self.df.columns)
+        self.df = self.df[self.cont_vars + self.binary_vars +
+                          self.cat_vars]
+        assert (n_cols == self.df.shape[1])
         for i in range(len(self.mice_dfs)):
             n_cols = len(self.mice_dfs[i].columns)
             self.mice_dfs[i] = self.mice_dfs[i][self.cont_vars +
@@ -308,11 +317,11 @@ class CategoricalImputer:
         self._update_imputed_dfs(v)
 
     def _get_train_missing_i(self, v: str):
-        self._v[v]['train_i'] = self.odf.loc[self.odf[v].notnull()].index
-        self._v[v]['missing_i'] = self.odf.loc[self.odf[v].isnull()].index
+        self._v[v]['train_i'] = self.df.loc[self.df[v].notnull()].index
+        self._v[v]['missing_i'] = self.df.loc[self.df[v].isnull()].index
 
     def _get_y_train(self, v: str):
-        self._v[v]['y_train'] = self.odf.loc[self._v[v]['train_i'], v].values
+        self._v[v]['y_train'] = self.df.loc[self._v[v]['train_i'], v].values
 
     def _pred_y_missing_probs(self, v: str, i: int) -> (np.ndarray, np.ndarray):
         """1st return is of shape (n_samples, n_classes), where each row
