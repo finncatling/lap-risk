@@ -89,7 +89,7 @@ tt_splitter = load_object(os.path.join(INTERNAL_OUTPUT_DIR,
 reporter.report('Beginning train-test splitting and model fitting')
 stp = SplitterTrainerPredictor(
     df,
-    test_train_splitter=tt_splitter,
+    train_test_splitter=tt_splitter,
     target_variable_name=CURRENT_MODEL_VARS['target'],
     random_seed=RANDOM_SEED)
 stp.split_train_predict()

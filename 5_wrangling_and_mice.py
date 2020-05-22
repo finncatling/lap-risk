@@ -118,7 +118,7 @@ tt_splitter = load_object(os.path.join(INTERNAL_OUTPUT_DIR,
 
 reporter.report('Running MICE')
 swm = SplitterWinsorMICE(df=mice_df,
-                         test_train_splitter=tt_splitter,
+                         train_test_splitter=tt_splitter,
                          target_variable_name=NOVEL_MODEL_VARS['target'],
                          cont_variables=mice_cont_vars,
                          binary_variables=binary_vars,

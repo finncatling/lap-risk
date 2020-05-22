@@ -261,10 +261,10 @@ class SplitterTrainerPredictor(Splitter):
 
     def __init__(self,
                  df: pd.DataFrame,
-                 test_train_splitter: TrainTestSplitter,
+                 train_test_splitter: TrainTestSplitter,
                  target_variable_name: str,
                  random_seed):
-        super().__init__(df, test_train_splitter, target_variable_name)
+        super().__init__(df, train_test_splitter, target_variable_name)
         self.features: List[str] = ['intercept']
         self.coefficients: List[np.ndarray] = []
         self.y_test: List[np.ndarray] = []

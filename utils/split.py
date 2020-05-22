@@ -197,10 +197,10 @@ class Splitter:
         pre-defined splits in passed TrainTestSplitter."""
     def __init__(self,
                  df: pd.DataFrame,
-                 test_train_splitter: TrainTestSplitter,
+                 train_test_splitter: TrainTestSplitter,
                  target_variable_name: str):
         self.df = df
-        self.tts = test_train_splitter
+        self.tts = train_test_splitter
         self.target_variable_name = target_variable_name
         self.split_stats: Dict[str, Dict[int, int]] = {
             'n_total_train_cases': {}, 'n_included_train_cases': {}}

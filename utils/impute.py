@@ -12,7 +12,7 @@ from statsmodels.regression import linear_model
 from statsmodels.discrete import discrete_model
 
 from utils.split import Splitter, TrainTestSplitter
-from utils.model.novel import winsorize_novel
+from utils.model.novel import winsorize_folds_novel
 
 
 def determine_n_imputations(df: pd.DataFrame) -> (int, float):
@@ -103,7 +103,7 @@ class SplitterWinsorMICE(Splitter):
         so the MICE outputs will differ each of each run"""
     def __init__(self,
                  df: pd.DataFrame,
-                 test_train_splitter: TrainTestSplitter,
+                 train_test_splitter: TrainTestSplitter,
                  target_variable_name: str,
                  cont_variables: List[str],
                  binary_variables: List[str],
@@ -112,7 +112,7 @@ class SplitterWinsorMICE(Splitter):
                  n_mice_imputations: int,
                  n_mice_burn_in: int,
                  n_mice_skip: int):
-        super().__init__(df, test_train_splitter, target_variable_name)
+        super().__init__(df, train_test_splitter, target_variable_name)
         self.cont_vars = cont_variables
         self.binary_vars = binary_variables
         self._sanity_check_variables()
@@ -153,7 +153,13 @@ class SplitterWinsorMICE(Splitter):
             splits."""
         for i in pb(range(self.tts.n_splits), prefix='Split iteration'):
             X_train_df, _, X_test_df, _ = self._split(i)
-            X_train_df, X_test_df = self._winsorize(i, X_train_df, X_test_df)
+            X_train_df, X_test_df, winsor_thresholds = winsorize_folds_novel(
+                X_train_df,
+                X_test_df,
+                cont_vars=self.cont_vars,
+                quantiles=self.winsor_quantiles,
+                include=self.winsor_include)
+            self.winsor_thresholds[i] = winsor_thresholds
             X_dfs = {'train': X_train_df, 'test': X_test_df}
             for fold in ('train', 'test'):
                 self._single_fold_mice(i, fold, X_dfs[fold])
@@ -171,18 +177,6 @@ class SplitterWinsorMICE(Splitter):
             imp_df.iloc[missing_i, imp_df.columns.get_loc(var_name)] = (
                 self.imputed[fold][split_i][imputation_i][var_name])
         return imp_df
-
-    def _winsorize(
-        self, split_i: int, X_train_df: pd.DataFrame, X_test_df: pd.DataFrame
-    ) -> (pd.DataFrame, pd.DataFrame):
-        X_train_df, winsor_thresholds = winsorize_novel(
-            X_train_df,
-            cont_vars=self.cont_vars,
-            quantiles=self.winsor_quantiles,
-            include=self.winsor_include)
-        X_test_df, _ = winsorize_novel(X_test_df, thresholds=winsor_thresholds)
-        self.winsor_thresholds[split_i] = winsor_thresholds
-        return X_train_df, X_test_df
 
     def _single_fold_mice(self, split_i: int, fold: str, X_df: pd.DataFrame):
         """Set up and run MICE for a single fold from a single train-test
@@ -220,14 +214,15 @@ class SplitterWinsorMICE(Splitter):
                 missing_i, imp_df.columns.get_loc(var_name)].copy().values
 
 
-class CategoricalImputer:
+class CategoricalImputer(Splitter):
     """Imputes missing values of non-binary categorical variables, using
         output of earlier MICE."""
 
     def __init__(self,
                  df: pd.DataFrame,
+                 train_test_splitter: TrainTestSplitter,
+                 target_variable_name: str,
                  splitter_winsor_mice: SplitterWinsorMICE,
-                 # mice_dfs: List[pd.DataFrame],
                  cont_vars: List[str],
                  binary_vars: List[str],
                  cat_vars: List[str],
@@ -242,118 +237,113 @@ class CategoricalImputer:
             splitter_winsor_mice: Pickled SplitterWinsorMice object containing
                 the results of MICE for the continuous variables (except lactate
                 and albumin) and the binary variables
-            # mice_dfs: Output of (previously run) statsmodels MICE
-            #     for continuous and binary variables, i.e. each DataFrame
-            #     has columns for each variable in cont_vars and
-            #     binary_vars only
             cont_vars: Continuous variables (excluding lactate and albumin)
             binary_vars: Binary variables (excluding lactate and albumin
                 missingness indicators)
             cat_vars: Non-binary categorical variables for imputation
             random_seed: For reproducibility
         """
-        self.df = df.copy()
-
-        # self.mice_dfs = copy.deepcopy(mice_dfs)
+        super().__init__(df, train_test_splitter, target_variable_name)
+        self.swm = splitter_winsor_mice
         self.cont_vars = cont_vars
         self.binary_vars = binary_vars
         self.cat_vars = cat_vars
+        self.imp_multiple = n_imputations_per_mice
         self.random_seed = random_seed
-        self._v = {}
-        self.imputed_dfs = copy.deepcopy(mice_dfs)
+        self._v = {}  # TODO: rename and add typing
         self._rnd = self._init_rnd()
+        self.missing_i: Dict[str,  # fold name
+                             Dict[int,  # train-test split index
+                                  Dict[str,  # variable name
+                                       np.ndarray]]] = {'train': {},
+                                                        'test': {}}
+        # TODO: get_imputed_df method
 
-    @property
-    def n_mice_dfs(self) -> int:
-        return len(self.mice_dfs)
+    def fit_all_imputers(self):
+        for i in pb(range(self.tts.n_splits), prefix='Split iteration'):
+            X_train_df, _, X_test_df, _ = self._split(i)
+            # TODO: winsorise
+            # TODO: finish method
 
-    def impute_all(self):
-        self._preprocess_dfs()
-        for v in self.cat_vars:
-            self._impute_v(v)
 
-    def _preprocess_dfs(self):
-        self._reset_df_indices()
-        self._reorder_df_columns()
-        self._scale_mice_dfs()
 
-    def _reset_df_indices(self):
-        self.df = self.df.reset_index(drop=True)
-        for i in range(len(self.mice_dfs)):
-            self.mice_dfs[i] = self.mice_dfs[i].reset_index(drop=True)
-
-    def _reorder_df_columns(self):
-        """Reordering isn't strictly necessary here, but allows us to
-            check that we don't have additional / missing columns in
-            the input DataFrames."""
-        n_cols = len(self.df.columns)
-        self.df = self.df[self.cont_vars + self.binary_vars +
-                          self.cat_vars]
-        assert (n_cols == self.df.shape[1])
-        for i in range(len(self.mice_dfs)):
-            n_cols = len(self.mice_dfs[i].columns)
-            self.mice_dfs[i] = self.mice_dfs[i][self.cont_vars +
-                                                self.binary_vars]
-            assert (n_cols == self.mice_dfs[i].shape[1])
-
-    def _scale_mice_dfs(self):
-        """We need to scale the continuous variables in order to use
-            fast solvers for multinomial logistic regression in sklearn"""
-        for i in range(self.n_mice_dfs):
-            s = RobustScaler()
-            self.mice_dfs[i].loc[:, self.cont_vars] = s.fit_transform(
-                self.mice_dfs[i].loc[:, self.cont_vars].values)
-
-    def _impute_v(self, v: str):
-        self._v[v] = {'imp': []}
-        self._get_train_missing_i(v)
-        self._get_y_train(v)
-        if self._v[v]['missing_i'].shape[0]:
-            for i in pb(range(self.n_mice_dfs), prefix=f'{v}'):
-                y_missing_probs, y_classes = self._pred_y_missing_probs(v, i)
-                self._impute_y(v, i, y_missing_probs, y_classes)
-        else:
-            print(f'Skipping {v} imputation as no missing values')
-        self._update_imputed_dfs(v)
-
-    def _get_train_missing_i(self, v: str):
-        self._v[v]['train_i'] = self.df.loc[self.df[v].notnull()].index
-        self._v[v]['missing_i'] = self.df.loc[self.df[v].isnull()].index
-
-    def _get_y_train(self, v: str):
-        self._v[v]['y_train'] = self.df.loc[self._v[v]['train_i'], v].values
-
-    def _pred_y_missing_probs(self, v: str, i: int) -> (np.ndarray, np.ndarray):
-        """1st return is of shape (n_samples, n_classes), where each row
-            corresponds to a missing value of v, and each columns is
-            the predicted probability that the missing value is that
-            class."""
-        lr = LogisticRegression(penalty='none', solver='sag', max_iter=3000,
-                                multi_class='multinomial', n_jobs=16,
-                                random_state=self._rnd['lr'])
-        lr.fit(self.mice_dfs[i].loc[self._v[v]['train_i']].values,
-               self._v[v]['y_train'])
-        return (lr.predict_proba(self.mice_dfs[i].loc[
-                                     self._v[v]['missing_i']].values),
-                lr.classes_)
-
-    def _impute_y(self, v: str, i: int, y_missing_probs, y_classes):
-        """Rather than imputing each missing value using
-            idxmax(y_missing_probs), we impute each missing value
-            probabilistically using the predicted probabilities."""
-        self._v[v]['imp'].append(np.zeros(self._v[v]['missing_i'].shape[0]))
-        for j in range(self._v[v]['imp'][i].shape[0]):
-            self._v[v]['imp'][i][j] = self._rnd['choice'].choice(
-                y_classes, p=y_missing_probs[j, :])
-
-    def _update_imputed_dfs(self, v):
-        for i in range(self.n_mice_dfs):
-            self.imputed_dfs[i][v] = np.zeros(self.imputed_dfs[i].shape[0])
-            self.imputed_dfs[i].loc[
-                self._v[v]['train_i'], v] = self._v[v]['y_train']
-            if self._v[v]['missing_i'].shape[0]:
-                self.imputed_dfs[i].loc[
-                    self._v[v]['missing_i'], v] = self._v[v]['imp'][i]
+    # @property
+    # def n_mice_dfs(self) -> int:
+    #     return len(self.mice_dfs)
+    #
+    # def impute_all(self):
+    #     self._preprocess_dfs()
+    #     for v in self.cat_vars:
+    #         self._impute_v(v)
+    #
+    # def _preprocess_dfs(self):
+    #     self._reset_df_indices()
+    #     self._reorder_df_columns()
+    #     self._scale_mice_dfs()
+    #
+    # def _reset_df_indices(self):
+    #     self.df = self.df.reset_index(drop=True)
+    #     for i in range(len(self.mice_dfs)):
+    #         self.mice_dfs[i] = self.mice_dfs[i].reset_index(drop=True)
+    #
+    # def _scale_mice_dfs(self):
+    #     """We need to scale the continuous variables in order to use
+    #         fast solvers for multinomial logistic regression in sklearn"""
+    #     for i in range(self.n_mice_dfs):
+    #         s = RobustScaler()
+    #         self.mice_dfs[i].loc[:, self.cont_vars] = s.fit_transform(
+    #             self.mice_dfs[i].loc[:, self.cont_vars].values)
+    #
+    # def _impute_v(self, v: str):
+    #     self._v[v] = {'imp': []}
+    #     self._get_train_missing_i(v)
+    #     self._get_y_train(v)
+    #     if self._v[v]['missing_i'].shape[0]:
+    #         for i in pb(range(self.n_mice_dfs), prefix=f'{v}'):
+    #             y_missing_probs, y_classes = self._pred_y_missing_probs(v, i)
+    #             self._impute_y(v, i, y_missing_probs, y_classes)
+    #     else:
+    #         print(f'Skipping {v} imputation as no missing values')
+    #     self._update_imputed_dfs(v)
+    #
+    # def _get_train_missing_i(self, v: str):
+    #     self._v[v]['train_i'] = self.df.loc[self.df[v].notnull()].index
+    #     self._v[v]['missing_i'] = self.df.loc[self.df[v].isnull()].index
+    #
+    # def _get_y_train(self, v: str):
+    #     self._v[v]['y_train'] = self.df.loc[self._v[v]['train_i'], v].values
+    #
+    # def _pred_y_missing_probs(self, v: str, i: int) -> (np.ndarray, np.ndarray):
+    #     """1st return is of shape (n_samples, n_classes), where each row
+    #         corresponds to a missing value of v, and each columns is
+    #         the predicted probability that the missing value is that
+    #         class."""
+    #     lr = LogisticRegression(penalty='none', solver='sag', max_iter=3000,
+    #                             multi_class='multinomial', n_jobs=16,
+    #                             random_state=self._rnd['lr'])
+    #     lr.fit(self.mice_dfs[i].loc[self._v[v]['train_i']].values,
+    #            self._v[v]['y_train'])
+    #     return (lr.predict_proba(self.mice_dfs[i].loc[
+    #                                  self._v[v]['missing_i']].values),
+    #             lr.classes_)
+    #
+    # def _impute_y(self, v: str, i: int, y_missing_probs, y_classes):
+    #     """Rather than imputing each missing value using
+    #         idxmax(y_missing_probs), we impute each missing value
+    #         probabilistically using the predicted probabilities."""
+    #     self._v[v]['imp'].append(np.zeros(self._v[v]['missing_i'].shape[0]))
+    #     for j in range(self._v[v]['imp'][i].shape[0]):
+    #         self._v[v]['imp'][i][j] = self._rnd['choice'].choice(
+    #             y_classes, p=y_missing_probs[j, :])
+    #
+    # def _update_imputed_dfs(self, v):
+    #     for i in range(self.n_mice_dfs):
+    #         self.imputed_dfs[i][v] = np.zeros(self.imputed_dfs[i].shape[0])
+    #         self.imputed_dfs[i].loc[
+    #             self._v[v]['train_i'], v] = self._v[v]['y_train']
+    #         if self._v[v]['missing_i'].shape[0]:
+    #             self.imputed_dfs[i].loc[
+    #                 self._v[v]['missing_i'], v] = self._v[v]['imp'][i]
 
     def _init_rnd(self) -> Dict[str, RandomState]:
         return {'lr': RandomState(self.random_seed),
