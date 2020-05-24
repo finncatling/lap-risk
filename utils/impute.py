@@ -320,6 +320,7 @@ class CategoricalImputer(Splitter):
             train_cont_bin, thresholds=self.swm.winsor_thresholds[split_i])
         self._fit_scalers(split_i, mice_imp_i, train_cont_bin)
         train_cont_bin = self._scale(split_i, mice_imp_i, train_cont_bin)
+        self._imputers[split_i][mice_imp_i] = {}
         for cat_var_name in self.cat_vars:
             self._fit_imputer(split_i, mice_imp_i, train_cont_bin,
                               train_cat[cat_var_name])
