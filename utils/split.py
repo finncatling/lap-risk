@@ -7,6 +7,71 @@ import pandas as pd
 from utils.inspect import missingness_perc
 
 
+def drop_incomplete_cases(df: pd.DataFrame) -> (pd.DataFrame, Dict[str, float]):
+    """Drops incomplete rows in input DataFrame, keeping track of pre- and
+        post-drop case numbers and calculating some convenience stats."""
+    drop_stats = {'n_total_cases': df.shape[0]}
+    df = df.dropna()  # DON'T reset index
+    drop_stats['n_complete_cases'] = df.shape[0]
+    drop_stats['n_dropped_cases'] = (drop_stats['n_total_cases'] -
+                                     drop_stats['n_complete_cases'])
+    drop_stats['fraction_dropped'] = (1 - drop_stats['n_complete_cases'] /
+                                      drop_stats['n_total_cases'])
+    return df, drop_stats
+
+
+def split_into_folds(
+        df: pd.DataFrame,
+        indices: Dict[str, np.ndarray],
+        target_var_name: str
+) -> (pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray, int, int):
+    """Splits supplied DataFrame into train and test folds, such that the test
+        fold is the cases from the test trusts which are complete for the
+        variables in the current NELA risk model, and the train fold is all
+        the available cases from the train trusts. Two things to note:
+
+        1) The train fold will be different between models as for the current
+        NELA model it will only contain complete cases, whereas for our novel
+        model it will also contain the cases that were incomplete prior to
+        imputation.
+
+        2) The test fold will be the same for all models, i.e. the current-NELA-
+        model incomplete cases from the test fold trusts will not be used in
+        training or testing of any of the models.
+
+    Args:
+        df: NELA data
+        indices: Of the form {'train': [train_fold_indices...],
+                              'test': [test_fold_indices...]}
+        target_var_name: Name of DataFrame column containing mortality status
+
+    Returns:
+        Training features
+        Training targets
+        Testing features
+        Testing targets
+        Number of cases in unabridged train fold
+        Number of train-fold cases available in the input DataFrame, i.e. the
+            number of cases in the returned training data.
+    """
+    n_total_train_cases = indices['train'].shape[0]
+    indices['train'] = np.array([i for i in indices['train'] if i in df.index])
+    n_intersection_train_cases = indices['train'].shape[0]
+
+    split = {}
+    for fold in ('train', 'test'):
+        split[fold] = {'X_df': df.loc[
+            indices[fold]].copy().reset_index(drop=True)}
+        split[fold]['y'] = split[fold]['X_df'][target_var_name].values
+        split[fold]['X_df'] = split[fold]['X_df'].drop(target_var_name, axis=1)
+
+    assert split['test']['X_df'].shape[0] == indices['test'].shape[0]
+
+    return (split['train']['X_df'], split['train']['y'],
+            split['test']['X_df'], split['test']['y'],
+            n_total_train_cases, n_intersection_train_cases)
+
+
 class TrainTestSplitter:
     """Splits NELA data into training and testing folds. Splitting uses the
         anonymised institution (trusts or hospital) IDs such that the training
@@ -125,71 +190,6 @@ class TrainTestSplitter:
             self.test_i[-1].shape[0] / self.drop_stats['n_complete_cases'])
         self.split_stats['test_fraction_of_total_cases'].append(
             self.test_i[-1].shape[0] / self.drop_stats['n_total_cases'])
-
-
-def drop_incomplete_cases(df: pd.DataFrame) -> (pd.DataFrame, Dict[str, float]):
-    """Drops incomplete rows in input DataFrame, keeping track of pre- and
-        post-drop case numbers and calculating some convenience stats."""
-    drop_stats = {'n_total_cases': df.shape[0]}
-    df = df.dropna()  # DON'T reset index
-    drop_stats['n_complete_cases'] = df.shape[0]
-    drop_stats['n_dropped_cases'] = (drop_stats['n_total_cases'] -
-                                     drop_stats['n_complete_cases'])
-    drop_stats['fraction_dropped'] = (1 - drop_stats['n_complete_cases'] /
-                                      drop_stats['n_total_cases'])
-    return df, drop_stats
-
-
-def split_into_folds(
-        df: pd.DataFrame,
-        indices: Dict[str, np.ndarray],
-        target_var_name: str
-) -> (pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray, int, int):
-    """Splits supplied DataFrame into train and test folds, such that the test
-        fold is the cases from the test trusts which are complete for the
-        variables in the current NELA risk model, and the train fold is all
-        the available cases from the train trusts. Two things to note:
-
-        1) The train fold will be different between models as for the current
-        NELA model it will only contain complete cases, whereas for our novel
-        model it will also contain the cases that were incomplete prior to
-        imputation.
-
-        2) The test fold will be the same for all models, i.e. the current-NELA-
-        model incomplete cases from the test fold trusts will not be used in
-        training or testing of any of the models.
-
-    Args:
-        df: NELA data
-        indices: Of the form {'train': [train_fold_indices...],
-                              'test': [test_fold_indices...]}
-        target_var_name: Name of DataFrame column containing mortality status
-
-    Returns:
-        Training features
-        Training targets
-        Testing features
-        Testing targets
-        Number of cases in unabridged train fold
-        Number of train-fold cases available in the input DataFrame, i.e. the
-            number of cases in the returned training data.
-    """
-    n_total_train_cases = indices['train'].shape[0]
-    indices['train'] = np.array([i for i in indices['train'] if i in df.index])
-    n_intersection_train_cases = indices['train'].shape[0]
-
-    split = {}
-    for fold in ('train', 'test'):
-        split[fold] = {'X_df': df.loc[
-            indices[fold]].copy().reset_index(drop=True)}
-        split[fold]['y'] = split[fold]['X_df'][target_var_name].values
-        split[fold]['X_df'] = split[fold]['X_df'].drop(target_var_name, axis=1)
-
-    assert split['test']['X_df'].shape[0] == indices['test'].shape[0]
-
-    return (split['train']['X_df'], split['train']['y'],
-            split['test']['X_df'], split['test']['y'],
-            n_total_train_cases, n_intersection_train_cases)
 
 
 class Splitter:
