@@ -14,6 +14,7 @@ from utils.model.novel import (NOVEL_MODEL_VARS, MULTI_CATEGORY_LEVELS,
                                LACTATE_ALBUMIN_VARS,
                                preprocess_novel_pre_split)
 from utils.impute import ImputationInfo, SplitterWinsorMICE
+from utils.split import TrainTestSplitter
 from utils.report import Reporter
 
 
@@ -112,8 +113,8 @@ save_object(imputation_stages, os.path.join(NOVEL_MODEL_OUTPUT_DIR,
 
 
 reporter.report('Loading data needed for train-test splitting')
-tt_splitter = load_object(os.path.join(INTERNAL_OUTPUT_DIR,
-                                       'train_test_splitter.pkl'))
+tt_splitter: TrainTestSplitter = load_object(
+    os.path.join(INTERNAL_OUTPUT_DIR, 'train_test_splitter.pkl'))
 
 
 reporter.report('Running MICE')

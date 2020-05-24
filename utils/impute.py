@@ -112,6 +112,25 @@ class SplitterWinsorMICE(Splitter):
                  n_mice_imputations: int,
                  n_mice_burn_in: int,
                  n_mice_skip: int):
+        """
+        Args:
+            df: DataFrame containing all continuous variables (except lactate-
+                and albumin-related variables), all binary variables, the
+                non-binary discrete variables for imputation at this stage, and
+                the target (mortality labels). This DataFrame still contains all
+                its missing values, i.e. no imputation yet
+            train_test_splitter: Pickled TrainTestSplitter object fit in earlier
+                parts of the analysis
+            target_variable_name: Name of the mortality variable
+            cont_vars: Continuous variables (excluding lactate and albumin)
+            binary_vars: Binary variables (excluding lactate and albumin
+                missingness indicators)
+            winsor_quantiles:
+            winsor_include:
+            n_mice_imputations:
+            n_mice_burn_in:
+            n_mice_skip:
+        """
         super().__init__(df, train_test_splitter, target_variable_name)
         self.cont_vars = cont_variables
         self.binary_vars = binary_variables
@@ -226,11 +245,7 @@ class CategoricalImputer(Splitter):
 
     def __init__(self,
                  df: pd.DataFrame,
-                 train_test_splitter: TrainTestSplitter,
-                 target_variable_name: str,
                  splitter_winsor_mice: SplitterWinsorMICE,
-                 cont_vars: List[str],
-                 binary_vars: List[str],
                  cat_vars: List[str],
                  n_imputations_per_mice: int,
                  random_seed):
@@ -240,25 +255,18 @@ class CategoricalImputer(Splitter):
                 non-binary discrete variables for imputation at this stage, and
                 the target (mortality labels). This DataFrame still contains all
                 its missing values, i.e. no imputation yet
-            train_test_splitter: Pickled TrainTestSplitter object fit in earlier
-                parts of the analysis
-            target_variable_name: Name of the mortality variable
             splitter_winsor_mice: Pickled SplitterWinsorMice object containing
                 the results of MICE for the continuous variables (except lactate
                 and albumin) and the binary variables
-            cont_vars: Continuous variables (excluding lactate and albumin)
-            binary_vars: Binary variables (excluding lactate and albumin
-                missingness indicators)
             cat_vars: Non-binary categorical variables for imputation
             n_imputations_per_mice: Number of imputed datasets that will need to
                 be produced by this class, expressed as a multiple of the
                 number of MICE imputations already carried out
             random_seed: For reproducibility
         """
-        super().__init__(df, train_test_splitter, target_variable_name)
+        super().__init__(df, splitter_winsor_mice.tts,
+                         splitter_winsor_mice.target_variable_name)
         self.swm = splitter_winsor_mice
-        self.cont_vars = cont_vars
-        self.binary_vars = binary_vars
         self.cat_vars = cat_vars
         self.imp_multiple = n_imputations_per_mice
         self.random_seed = random_seed
@@ -323,14 +331,14 @@ class CategoricalImputer(Splitter):
             sklearn."""
         self._scalers[split_i][mice_imp_i] = RobustScaler()
         self._scalers[split_i][mice_imp_i].fit(
-            train_cont_bin.loc[:, self.cont_vars].values)
+            train_cont_bin.loc[:, self.swm.cont_vars].values)
 
     def _scale(self, split_i: int, mice_imp_i: int,
                X: pd.DataFrame) -> pd.DataFrame:
         """Scale continuous features."""
         # TODO: Is it redundant to return X here? Would it get modified anyway?
-        X.loc[:, self.cont_vars] = self._scalers[split_i][mice_imp_i].transform(
-            X.loc[:, self.cont_vars].values)
+        X.loc[:, self.swm.cont_vars] = self._scalers[split_i][
+            mice_imp_i].transform(X.loc[:, self.swm.cont_vars].values)
         return X
 
     def _fit_imputer(self, split_i: int, mice_imp_i: int,

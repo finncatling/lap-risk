@@ -11,7 +11,7 @@ from utils.model.current import (preprocess_current, SplitterTrainerPredictor,
                                  CURRENT_MODEL_VARS, CENTRES)
 from utils.io import make_directory, load_object, save_object
 from utils.model.shared import flatten_model_var_dict
-from utils.split import drop_incomplete_cases
+from utils.split import TrainTestSplitter, drop_incomplete_cases
 from utils.evaluate import ModelScorer
 from utils.report import Reporter
 
@@ -82,8 +82,8 @@ preprocessed_df, _ = preprocess_current(df,
 
 
 reporter.report('Loading data needed for train-test splitting')
-tt_splitter = load_object(os.path.join(INTERNAL_OUTPUT_DIR,
-                                       'train_test_splitter.pkl'))
+tt_splitter: TrainTestSplitter = load_object(
+    os.path.join(INTERNAL_OUTPUT_DIR, 'train_test_splitter.pkl'))
 
 
 reporter.report('Beginning train-test splitting and model fitting')
