@@ -12,7 +12,6 @@ from statsmodels.discrete import discrete_model
 
 from utils.split import Splitter, TrainTestSplitter
 from utils.model.novel import winsorize_novel
-from utils.misc import validate_string_arg
 
 
 def determine_n_imputations(df: pd.DataFrame) -> (int, float):
