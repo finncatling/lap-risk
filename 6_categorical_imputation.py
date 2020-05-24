@@ -34,7 +34,7 @@ multi_category_levels: Dict[str, Tuple] = load_object(
 
 reporter.report('Fitting imputers for non-binary categorical variables')
 cat_imputer = CategoricalImputer(
-    df=df.drop(LACTATE_ALBUMIN_VARS, axis=1),
+    df=df.drop(list(LACTATE_ALBUMIN_VARS), axis=1),
     splitter_winsor_mice=swm,
     cat_vars=list(multi_category_levels.keys()),
     n_imputations_per_mice=imp_stages.multiple_of_previous_n_imputations[1],
