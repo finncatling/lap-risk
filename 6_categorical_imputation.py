@@ -39,6 +39,7 @@ cat_imputer = CategoricalImputer(
     n_imputations_per_mice=imp_stages.multiple_of_previous_n_imputations[1],
     random_seed=RANDOM_SEED)
 cat_imputer.tts.n_splits = 2  # TODO: remove this testing line later
+cat_imputer.fit()
 print(cat_imputer.__dict__)
 
 
