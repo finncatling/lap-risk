@@ -6,7 +6,7 @@ import pandas as pd
 from utils.constants import (DATA_DIR, NOVEL_MODEL_OUTPUT_DIR, STATS_OUTPUT_DIR,
                              RANDOM_SEED)
 from utils.impute import ImputationInfo, SplitterWinsorMICE, CategoricalImputer
-from utils.io import make_directory, load_object
+from utils.io import make_directory, load_object, save_object
 from utils.report import Reporter
 
 
@@ -40,13 +40,31 @@ cat_imputer = CategoricalImputer(
     random_seed=RANDOM_SEED)
 cat_imputer.tts.n_splits = 2  # TODO: remove this testing line later
 cat_imputer.fit()
-print(cat_imputer.__dict__)
 
 
-# TODO: Impute categorical variables
+reporter.report('Imputing a dataframe')
+cat_imp_df_0 = cat_imputer.impute_X_df('train', 1, 3, 0)
+
+
+reporter.report('Imputing another dataframe')
+cat_imp_df_1 = cat_imputer.impute_X_df('train', 1, 3, 1)
+
+
+reporter.report('Inspecting')
+print(cat_imp_df_0.columns)
+print('Shapes:', cat_imp_df_0.shape, cat_imp_df_1.shape)
+print('Dropna shape:'. cat_imp_df.dropna(how='any').shape)
+print(cat_imp_df_0.head())
+print(cat_imp_df_1.head())
+print(cat_imp_df_0.equals(cat_imp_df_1))
+
+
+reporter.report('Saving temporary cat imputer')
+save_object(cat_imputer, os.path.join(NOVEL_MODEL_OUTPUT_DIR,
+                                      'temp_cat_imputer.pkl'))
+
 
 # TODO: Save summary stats (including those from MICE) for external use
-
 # TODO: Perform winsorization for lactate and albumin
 
 
