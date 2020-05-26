@@ -441,41 +441,70 @@ class CategoricalImputer(Splitter):
 
 
 class LactateAlbuminImputer(Splitter):
+    # TODO: Finish this class!
     """Imputes missing values of lactate or albumin."""
 
     def __init__(self,
                  df: pd.DataFrame,
                  categorical_imputer: CategoricalImputer,
                  imputation_target: str,
-                 model: GAM):
+                 imputation_model: GAM):
         """
         Args:
-            df: Should (for storage efficiency) just contain the variable to
+            df: Must (for storage efficiency) just contain the variable to
                 impute, plus the mortality target variable (needed for
                 compatibility with Splitter).
             categorical_imputer: With pre-fit imputers for all categorical
                 variables
             imputation_target: Name of lactate or albumin variable
-            model: Model of the transformed var_to_impute
+            imputation_model: Model of the transformed imputation target
         """
         super().__init__(df, categorical_imputer.tts,
                          categorical_imputer.target_variable_name)
         self.cat_imputer = categorical_imputer
         self.imp_target = imputation_target
-        self.model = model
+        self.model = imputation_model
+        self._check_df(df)
         self.missing_i: Dict[str,  # fold name
                              Dict[int,  # train-test split index
                                   np.ndarray]] = {'train': {}, 'test': {}}
         self._transformers: Dict[
             int,  # train-test split index
             Union[GammaTransformer, QuantileTransformer]] = {}
-        self._fit_models: Dict[int,  # train-test split index
-                               GAM] = {}
+        self._imputers: Dict[int,  # train-test split index
+                             GAM] = {}
 
-    # TODO: Combine GAMs
+    def _check_df(self, df: pd.DataFrame):
+        """Check that passed DataFrame has correct columns, and no others."""
+        assert len(df.columns) == 2
+        for col in (self.target_variable_name, self.imp_target):
+            assert col in df.columns
 
     def fit(self):
-        raise NotImplementedError
+        """Fit albumin/lactate imputation models for every train-test split."""
+        for i in pb(range(self.tts.n_splits), prefix='Split iteration'):
+            self._single_train_test_split(i)
+
+    def _single_train_test_split(self, split_i: int):
+        """Fit albumin/lactate imputation models for a single train-test
+            split."""
+        X_train, _, X_test, _ = self._split(split_i)
+        self._find_missing_indices(split_i, X_train, X_test)
+        # TODO: Winsorize (will need attribute to store the thresholds in)
+        # TODO: Fit transformer
+        # TODO: Fit GAMs for each mice_imp / cat_imp
+        # TODO: Combine GAMs
+
+    def _find_missing_indices(self, split_i: int,
+                              X_train: pd.DataFrame, X_test: pd.DataFrame):
+        """Find the indices (for this train-test split) of the missing values
+            of the imputation target. We find these indices for the train and
+            test folds, although the test-fold indices aren't used until later
+            imputation."""
+        fold_dfs = {'train': X_train, 'test': X_test}
+        for fold, df in fold_dfs.items():
+            missing_i = find_missing_indices(df)
+            self.missing_i[fold][split_i] = missing_i[self.imp_target]
 
     def _winsorize(self):
         raise NotImplementedError
@@ -490,78 +519,78 @@ class LactateAlbuminImputer(Splitter):
 
 
 # TODO: Class which takes CategoricalImputer and LactateAlbuminImputers for
-#   lactate and albumin, and yields complete DataFrames
+#   lactate and albumin, and yields complete X DataFrames plus mortality labels
 
 
-class ContImpPreprocessor:
-    """Prepares output from notebook 4 (list of DataFrames from MICE and
-        categorical imputation) for input to GAMs for imputation of
-        remaining unimputed variables, e.g. lactate, albumin."""
-
-    def __init__(self,
-                 imp_dfs: List[pd.DataFrame],
-                 target: str,
-                 drop_vars: List[str]):
-        """Args: 
-            imp_dfs: Output of imputation in notebook 4. Each DataFrame
-                contains complete columns for all variables except a select
-                few that have missing values and will be imputed in production
-                if missing, e.g. lactate, albumin.                
-            target: The variable from imp_dfs for imputation. The indices of
-                the missing values for target are assumed to be consistent
-                across imp_dfs
-            drop_vars: Variables from imp_dfs not to include in the imputation
-                models
-        """
-        self.imp_dfs = copy.deepcopy(imp_dfs)
-        self.target = target
-        self.drop_vars = drop_vars
-        self._i = None
-        self.X = {'train': [], 'missing': []}
-        self.y_train = None
-        self.y_train_trans = None
-
-    @property
-    def n_imp_dfs(self) -> int:
-        return len(self.imp_dfs)
-
-    def preprocess(self):
-        self._i = self._get_train_missing_i()
-        self._y_train_split()
-        for i in pb(range(self.n_imp_dfs)):
-            self._drop_unused_variables(i)
-            self._X_train_missing_split(i)
-
-    def yield_train_X_y(self, i, trans_y=False):
-        """Optionally yields a transformed version of y (this
-            transformation currently has to occur by some
-            method external to this class."""
-        if trans_y:
-            return self.X['train'][i].values, self.y_train_trans
-        else:
-            return self.X['train'][i].values, self.y_train
-
-    def _get_train_missing_i(self) -> Dict[str, pd.Int64Index]:
-        return {'train': self.imp_dfs[0].loc[self.imp_dfs[0][
-            self.target].notnull()].index,
-                'missing': self.imp_dfs[0].loc[self.imp_dfs[0][
-                    self.target].isnull()].index}
-
-    def _drop_unused_variables(self, i: int):
-        self.imp_dfs[i] = self.imp_dfs[i].drop(self.drop_vars, axis=1)
-
-    def _y_train_split(self):
-        """y hasn't been imputed yet, so should be the same in all
-            imp_dfs."""
-        self.y_train = copy.deepcopy(
-            self.imp_dfs[0].loc[self._i['train'], self.target].values)
-        for i in range(1, self.n_imp_dfs):  # Check that all y are same
-            assert ((self.y_train ==
-                     self.imp_dfs[i].loc[self._i['train'],
-                                         self.target].values).all())
-
-    def _X_train_missing_split(self, i: int):
-        for fold in self.X.keys():
-            self.X[fold].append(self.imp_dfs[i].loc[
-                                    self._i[fold]].drop(self.target,
-                                                        axis=1).copy())
+# class ContImpPreprocessor:
+#     """Prepares output from notebook 4 (list of DataFrames from MICE and
+#         categorical imputation) for input to GAMs for imputation of
+#         remaining unimputed variables, e.g. lactate, albumin."""
+#
+#     def __init__(self,
+#                  imp_dfs: List[pd.DataFrame],
+#                  target: str,
+#                  drop_vars: List[str]):
+#         """Args:
+#             imp_dfs: Output of imputation in notebook 4. Each DataFrame
+#                 contains complete columns for all variables except a select
+#                 few that have missing values and will be imputed in production
+#                 if missing, e.g. lactate, albumin.
+#             target: The variable from imp_dfs for imputation. The indices of
+#                 the missing values for target are assumed to be consistent
+#                 across imp_dfs
+#             drop_vars: Variables from imp_dfs not to include in the imputation
+#                 models
+#         """
+#         self.imp_dfs = copy.deepcopy(imp_dfs)
+#         self.target = target
+#         self.drop_vars = drop_vars
+#         self._i = None
+#         self.X = {'train': [], 'missing': []}
+#         self.y_train = None
+#         self.y_train_trans = None
+#
+#     @property
+#     def n_imp_dfs(self) -> int:
+#         return len(self.imp_dfs)
+#
+#     def preprocess(self):
+#         self._i = self._get_train_missing_i()
+#         self._y_train_split()
+#         for i in pb(range(self.n_imp_dfs)):
+#             self._drop_unused_variables(i)
+#             self._X_train_missing_split(i)
+#
+#     def yield_train_X_y(self, i, trans_y=False):
+#         """Optionally yields a transformed version of y (this
+#             transformation currently has to occur by some
+#             method external to this class."""
+#         if trans_y:
+#             return self.X['train'][i].values, self.y_train_trans
+#         else:
+#             return self.X['train'][i].values, self.y_train
+#
+#     def _get_train_missing_i(self) -> Dict[str, pd.Int64Index]:
+#         return {'train': self.imp_dfs[0].loc[self.imp_dfs[0][
+#             self.target].notnull()].index,
+#                 'missing': self.imp_dfs[0].loc[self.imp_dfs[0][
+#                     self.target].isnull()].index}
+#
+#     def _drop_unused_variables(self, i: int):
+#         self.imp_dfs[i] = self.imp_dfs[i].drop(self.drop_vars, axis=1)
+#
+#     def _y_train_split(self):
+#         """y hasn't been imputed yet, so should be the same in all
+#             imp_dfs."""
+#         self.y_train = copy.deepcopy(
+#             self.imp_dfs[0].loc[self._i['train'], self.target].values)
+#         for i in range(1, self.n_imp_dfs):  # Check that all y are same
+#             assert ((self.y_train ==
+#                      self.imp_dfs[i].loc[self._i['train'],
+#                                          self.target].values).all())
+#
+#     def _X_train_missing_split(self, i: int):
+#         for fold in self.X.keys():
+#             self.X[fold].append(self.imp_dfs[i].loc[
+#                                     self._i[fold]].drop(self.target,
+#                                                         axis=1).copy())
