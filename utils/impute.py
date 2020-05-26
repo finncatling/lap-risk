@@ -121,14 +121,19 @@ class SplitterWinsorMICE(Splitter):
             train_test_splitter: Pickled TrainTestSplitter object fit in earlier
                 parts of the analysis
             target_variable_name: Name of the mortality variable
-            cont_vars: Continuous variables (excluding lactate and albumin)
-            binary_vars: Binary variables (excluding lactate and albumin
+            cont_variables: Continuous variables (excluding lactate and albumin)
+            binary_variables: Binary variables (excluding lactate and albumin
                 missingness indicators)
-            winsor_quantiles:
-            winsor_include:
-            n_mice_imputations:
-            n_mice_burn_in:
-            n_mice_skip:
+            winsor_quantiles: Lower and upper quantiles to winsorize
+                continuous variables at by default
+            winsor_include: Optionally disables winsorization at lower and/or
+                upper quantiles for specified variables
+            n_mice_imputations: Number of MICE-imputed DataFrames that will be
+                retained for later use after running .split_winsor_mice()
+            n_mice_burn_in: Number of MICE-imputed DataFrames that will be
+                discarded before the first retained DataFrame
+            n_mice_skip: Number of MICE-imputed DataFrames that will be
+                discarded betweem retained DataFrames
         """
         super().__init__(df, train_test_splitter, target_variable_name)
         self.cont_vars = cont_variables
