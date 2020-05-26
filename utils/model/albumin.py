@@ -1,20 +1,12 @@
-import os
 from typing import List
 
 import numpy as np
 
 
-def check_system_resources():
-    mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
-    print('{:.1f} GB RAM'.format(mem_bytes / (1024 ** 3)))
-    print('{} CPUs'.format(os.cpu_count()))
-
-
 class GammaTransformer:
-    """Transforms variable to more closely approximate
-        (in the case of albumin) a gamma distribution.
-        All that is required to fit the transformer
-        is the winsor thresholds."""
+    """Transforms variable to more closely approximate (in the case of albumin)
+        a gamma distribution. All that is required to fit the transformer is the
+        winsor thresholds."""
 
     def __init__(self,
                  winsor_thresholds: List[float],

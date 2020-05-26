@@ -9,9 +9,12 @@ from sklearn.preprocessing import RobustScaler
 from statsmodels.imputation.mice import MICEData
 from statsmodels.regression import linear_model
 from statsmodels.discrete import discrete_model
+from pygam import GAM
 
 from utils.split import Splitter, TrainTestSplitter
 from utils.model.novel import winsorize_novel
+from utils.model.albumin import GammaTransformer
+from sklearn.preprocessing import QuantileTransformer
 
 
 def determine_n_imputations(df: pd.DataFrame) -> (int, float):
@@ -435,6 +438,59 @@ class CategoricalImputer(Splitter):
                                              p=pred_probs[i, :])
             cat_df.loc[missing_i, cat_var_name] = pred_classes
         return cat_df
+
+
+class LactateAlbuminImputer(Splitter):
+    """Imputes missing values of lactate or albumin."""
+
+    def __init__(self,
+                 df: pd.DataFrame,
+                 categorical_imputer: CategoricalImputer,
+                 imputation_target: str,
+                 model: GAM):
+        """
+        Args:
+            df: Should (for storage efficiency) just contain the variable to
+                impute, plus the mortality target variable (needed for
+                compatibility with Splitter).
+            categorical_imputer: With pre-fit imputers for all categorical
+                variables
+            imputation_target: Name of lactate or albumin variable
+            model: Model of the transformed var_to_impute
+        """
+        super().__init__(df, categorical_imputer.tts,
+                         categorical_imputer.target_variable_name)
+        self.cat_imputer = categorical_imputer
+        self.imp_target = imputation_target
+        self.model = model
+        self.missing_i: Dict[str,  # fold name
+                             Dict[int,  # train-test split index
+                                  np.ndarray]] = {'train': {}, 'test': {}}
+        self._transformers: Dict[
+            int,  # train-test split index
+            Union[GammaTransformer, QuantileTransformer]] = {}
+        self._fit_models: Dict[int,  # train-test split index
+                               GAM] = {}
+
+    # TODO: Combine GAMs
+
+    def fit(self):
+        raise NotImplementedError
+
+    def _winsorize(self):
+        raise NotImplementedError
+
+    def _fit_transformer(self):
+        raise NotImplementedError
+        # TODO: Separate mixins for lactate / albumin transformation methods
+
+    def impute(self, fold: str, split_i: int, mice_imp_i: int, cat_imp_i: int,
+               lac_alb_imp_i: int) -> pd.Series:
+        raise NotImplementedError
+
+
+# TODO: Class which takes CategoricalImputer and LactateAlbuminImputers for
+#   lactate and albumin, and yields complete DataFrames
 
 
 class ContImpPreprocessor:
