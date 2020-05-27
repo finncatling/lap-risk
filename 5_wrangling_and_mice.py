@@ -5,21 +5,17 @@ from typing import Tuple, Dict
 import pandas as pd
 
 from utils.constants import (DATA_DIR, INTERNAL_OUTPUT_DIR,
-                             NOVEL_MODEL_OUTPUT_DIR, INDICATION_PREFIX,
-                             MISSING_IND_CATEGORY)
+                             NOVEL_MODEL_OUTPUT_DIR)
 from utils.model.shared import flatten_model_var_dict
 from utils.io import make_directory, load_object, save_object
 from utils.model.novel import (NOVEL_MODEL_VARS, MULTI_CATEGORY_LEVELS,
                                LACTATE_VAR_NAME, ALBUMIN_VAR_NAME,
-                               LACTATE_ALBUMIN_VARS,
-                               preprocess_novel_pre_split)
+                               LACTATE_ALBUMIN_VARS, preprocess_novel_pre_split,
+                               INDICATION_VAR_NAME, INDICATION_PREFIX,
+                               MISSING_IND_CATEGORY, WINSOR_QUANTILES)
 from utils.impute import ImputationInfo, SplitterWinsorMICE
 from utils.split import TrainTestSplitter
 from utils.report import Reporter
-
-
-INDICATION_VAR_NAME = 'Indication'
-
 
 reporter = Reporter()
 reporter.title('Wrangle NELA data in preparation for later input to the '
@@ -123,7 +119,7 @@ swm = SplitterWinsorMICE(df=mice_df,
                          target_variable_name=NOVEL_MODEL_VARS['target'],
                          cont_variables=mice_cont_vars,
                          binary_variables=binary_vars,
-                         winsor_quantiles=(0.001, 0.999),
+                         winsor_quantiles=WINSOR_QUANTILES,
                          winsor_include={'S01AgeOnArrival': (False, True),
                                          'S03GlasgowComaScore': (False, False)},
                          n_mice_imputations=imputation_stages.n_imputations[0],

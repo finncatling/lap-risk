@@ -1,5 +1,5 @@
 import copy
-from typing import List, Dict, Union, Tuple
+from typing import List, Dict, Union, Tuple, Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -10,11 +10,12 @@ from statsmodels.imputation.mice import MICEData
 from statsmodels.regression import linear_model
 from statsmodels.discrete import discrete_model
 from pygam import GAM
+from sklearn.preprocessing import QuantileTransformer
 
 from utils.split import Splitter, TrainTestSplitter
 from utils.model.novel import winsorize_novel
 from utils.model.albumin import GammaTransformer
-from sklearn.preprocessing import QuantileTransformer
+from utils.gam import combine_mi_gams
 
 
 def determine_n_imputations(df: pd.DataFrame) -> (int, float):
@@ -441,33 +442,48 @@ class CategoricalImputer(Splitter):
 
 
 class LactateAlbuminImputer(Splitter):
-    # TODO: Finish this class!
-    """Imputes missing values of lactate or albumin."""
+    """Impute missing values of target (lactate or albumin)."""
 
     def __init__(self,
                  df: pd.DataFrame,
                  categorical_imputer: CategoricalImputer,
                  imputation_target: str,
-                 imputation_model: GAM,
-                 winsor_quantiles: Tuple[float, float]):
+                 imputation_model_factory: Callable[
+                     [pd.Index, Dict[str, Tuple], str], GAM],
+                 winsor_quantiles: Tuple[float, float],
+                 transformer: Union[GammaTransformer, QuantileTransformer],
+                 transformer_args: Dict[str, Any],
+                 multi_cat_vars: Dict[str, Tuple],
+                 indication_var_name: str):
         """
         Args:
-            df: Must (for storage efficiency) just contain the variable to
-                impute, plus the mortality target variable (needed for
-                compatibility with Splitter).
+            df: Must just contain the variable to impute, plus the mortality
+                variable (latter needed for compatibility with Splitter).
             categorical_imputer: With pre-fit imputers for all categorical
                 variables
             imputation_target: Name of lactate or albumin variable
-            imputation_model: Model of the transformed imputation target
+            imputation_model_factory: Function which returns specified (but not
+                yet fitted) models of the transformed imputation target
             winsor_quantiles: Lower and upper quantiles to winsorize
                 continuous variables at by default
+            transformer: class that will be used to transform
+                imputation_target
+            transformer_args: arguments to pass to transformer class on
+                instantiation
+            multi_cat_vars: Keys are non-binary discrete variables, values are
+                the categories (excluding null values) prior to integer encoding
+            indication_var_name: Name of the indication column
         """
         super().__init__(df, categorical_imputer.tts,
                          categorical_imputer.target_variable_name)
         self.cat_imputer = categorical_imputer
         self.imp_target = imputation_target
-        self.model = imputation_model
+        self.model_factory = imputation_model_factory
         self.winsor_quantiles = winsor_quantiles
+        self.trans = transformer
+        self.trans_args = transformer_args
+        self.multi_cat_vars = multi_cat_vars
+        self.ind_var_name = indication_var_name
         self._check_df(df)
         self.missing_i: Dict[str,  # fold name
                              Dict[int,  # train-test split index
@@ -492,53 +508,79 @@ class LactateAlbuminImputer(Splitter):
             self._single_train_test_split(i)
 
     def _single_train_test_split(self, split_i: int):
-        """Fit albumin/lactate imputation models for a single train-test
-            split."""
-        X_train, _, X_test, _ = self._split(split_i)
-        for X in (X_train, X_test):  # TODO: Remove these 2 test lines
+        """Fit target (albumin or lactate) imputation models for a single
+            train-test split. target_train and target_test are DataFrames with
+            a single column."""
+        target_train, _, target_test, _ = self._split(split_i)
+        for X in (target_train, target_test):  # TODO: Remove these 2 lines
             assert isinstance(X, pd.DataFrame)
-        self._find_missing_indices(split_i, X_train, X_test)
-        X_train = self._winsorize(split_i, X_train)
-        # TODO: Fit transformer
-        # TODO: Fit GAMs for each mice_imp / cat_imp
-        # TODO: Combine GAMs
+        self._find_missing_indices(split_i, target_train, target_test)
+        obs_target_train = self._get_observed_values(
+            'train', split_i, target_train).values
+        obs_target_train = self._winsorize(split_i, obs_target_train)
+        obs_target_train = self._fit_transform(split_i, obs_target_train)
+        self._fit_combine_gams(split_i, obs_target_train)
 
-    def _find_missing_indices(self, split_i: int,
-                              X_train: pd.DataFrame, X_test: pd.DataFrame):
+    def _find_missing_indices(self, split_i: int, target_train: pd.DataFrame,
+                              target_test: pd.DataFrame):
         """Find the indices (for this train-test split) of the missing values
             of the imputation target. We find these indices for the train and
             test folds, although the test-fold indices aren't used until later
             imputation."""
-        fold_dfs = {'train': X_train, 'test': X_test}
+        fold_dfs = {'train': target_train, 'test': target_test}
         for fold, df in fold_dfs.items():
             missing_i = find_missing_indices(df)
             self.missing_i[fold][split_i] = missing_i[self.imp_target]
 
-    def _winsorize(self, split_i: int, X: pd.DataFrame) -> pd.DataFrame:
+    def _get_observed_values(self, fold: str, split_i: int,
+                             X: pd.DataFrame) -> pd.DataFrame:
+        return X.loc[X.index.difference(self.missing_i[fold][split_i])]
+
+    def _winsorize(self, split_i: int, target: pd.DataFrame) -> pd.DataFrame:
         """Winsorizes the only column in X. Also fits winsor_thresholds for this
-            train-test split if not already fit."""
+            train-test split if not already fit (this fitting should happen on
+            the train fold)."""
         try:
-            X, _ = winsorize_novel(X, thresholds={
+            target, _ = winsorize_novel(target, thresholds={
                 self.imp_target: self._winsor_thresholds[split_i]})
         except KeyError:
             X_train, w_thresholds = winsorize_novel(
-                X,
-                cont_vars=[self.imp_target],
+                target, cont_vars=[self.imp_target],
                 quantiles=self.winsor_quantiles)
             self._winsor_thresholds[split_i] = w_thresholds[self.imp_target]
-        return X
+        return target
 
-    def _fit_transformer(self):
-        raise NotImplementedError
-        # TODO: Separate mixins for lactate / albumin transformation methods
+    def _fit_transform(self, split_i: int,
+                       target_train: pd.DataFrame) -> pd.DataFrame:
+        self._transformers[split_i] = self.trans(**self.trans_args)
+        self._transformers[split_i].fit(target_train.values)
+        target_train[self.imp_target] = self._transformers[split_i].transform(
+            target_train.values)
+        return target_train
+
+    def _fit_combine_gams(self, split_i: int, obs_target_train: pd.DataFrame):
+        gams = []
+        for mice_imp_i in range(self.cat_imputer.swm.n_mice_imputations):
+            for cat_imp_i in range(self.cat_imputer.imp_multiple):
+                features_train = self.cat_imputer.impute_X_df(
+                    'train', split_i, mice_imp_i, cat_imp_i)
+                obs_features_train = self._get_observed_values(
+                    'train', split_i, features_train)
+                gam = self.model_factory(obs_features_train.columns,
+                                         self.multi_cat_vars,
+                                         self.ind_var_name)
+                gam.fit(obs_features_train.values, obs_target_train.values)
+                gams.append(gam)
+        self._imputers[split_i] = combine_mi_gams(gams)
 
     def impute(self, fold: str, split_i: int, mice_imp_i: int, cat_imp_i: int,
                lac_alb_imp_i: int) -> pd.Series:
+        # TODO: Remember to inverse transform imputer's predictions
         raise NotImplementedError
 
 
-# TODO: Class which takes CategoricalImputer and LactateAlbuminImputers for
-#   lactate and albumin, and yields complete X DataFrames plus mortality labels
+# TODO: Class which takes CategoricalImputer and LactateImputer / AlbuminImputer
+#   for and yields complete X DataFrames plus mortality labels
 
 
 # class ContImpPreprocessor:

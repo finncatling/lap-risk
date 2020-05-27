@@ -7,15 +7,13 @@ from pygam import GAM
 
 
 def combine_mi_gams(gams: List[GAM]) -> GAM:
-    """Given a list of GAMs fitted to different datasets
-        outputted from some multiple imputation procedure,
-        combines these using Rubin's rules. See
+    """Given a list of GAMs fitted to different datasets outputted from some
+        multiple imputation procedure, combines these using Rubin's rules. See
         https://bit.ly/37BgOEh for more details.
 
-        Each GAM, and the terms within it, should have
-        the same parameters. E.g. spline terms for the
-        same feature should have the same number and
-        order of splines."""
+        Each GAM, and the terms within it, should have the same parameters. E.g.
+        spline terms for the same feature should have the same number and order
+        of splines."""
     comb = copy.deepcopy(gams[0])
 
     # Average coefficients

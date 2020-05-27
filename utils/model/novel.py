@@ -37,6 +37,10 @@ MULTI_CATEGORY_LEVELS = {
     'S03Pred_Peritsoil': (1., 2., 4., 8.)
 }
 
+
+WINSOR_QUANTILES = (0.001, 0.999)
+
+
 LACTATE_VAR_NAME = 'S03PreOpArterialBloodLactate'
 ALBUMIN_VAR_NAME = 'S03PreOpLowestAlbumin'
 MISSINGNESS_SUFFIX = '_missing'
@@ -44,6 +48,9 @@ LACTATE_ALBUMIN_VARS = (LACTATE_VAR_NAME,
                         f'{LACTATE_VAR_NAME}{MISSINGNESS_SUFFIX}',
                         ALBUMIN_VAR_NAME,
                         f'{ALBUMIN_VAR_NAME}{MISSINGNESS_SUFFIX}')
+INDICATION_VAR_NAME = 'Indication'
+INDICATION_PREFIX = 'S05Ind_'
+MISSING_IND_CATEGORY = f'{INDICATION_PREFIX}Missing'
 
 
 def combine_categories(
@@ -174,6 +181,3 @@ def preprocess_novel_pre_split(
     df = ohe_to_single_column(df, indication_variable_name, indications)
     df = label_encode(df, multi_category_levels, missing_indication_value)
     return df
-
-
-

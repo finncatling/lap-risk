@@ -16,10 +16,6 @@ EXTERNAL_OUTPUT_DIR = os.path.join(os.pardir, 'lap-risk-outputs')
 STATS_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, 'statistics')
 FIGURES_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, 'figures')
 
-# For use with the indication for surgery variables in the NELA data
-INDICATION_PREFIX = 'S05Ind_'
-MISSING_IND_CATEGORY = f'{INDICATION_PREFIX}Missing'
-
 # For use in model evaluation
 CALIB_GAM_N_SPLINES = 5
 CALIB_GAM_LAM_CANDIDATES = np.logspace(-3, 3)

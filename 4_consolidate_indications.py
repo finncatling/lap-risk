@@ -6,8 +6,8 @@ from typing import List
 from utils.inspect import report_ohe_category_assignment
 from utils.report import Reporter
 from utils.io import make_directory, save_object
-from utils.constants import (DATA_DIR, STATS_OUTPUT_DIR, INDICATION_PREFIX,
-                             MISSING_IND_CATEGORY)
+from utils.constants import (DATA_DIR, STATS_OUTPUT_DIR)
+from utils.model.novel import INDICATION_PREFIX, MISSING_IND_CATEGORY
 
 SINGLE_IND_FREQUENCY_THRESHOLD = 1200
 
