@@ -50,6 +50,7 @@ alb_imputer = LactateAlbuminImputer(
     multi_cat_vars=multi_category_levels,
     indication_var_name=INDICATION_VAR_NAME)
 alb_imputer.tts.n_splits = 2  # TODO: Remove this testing line
+alb_imputer.fit()
 print(alb_imputer.__dict__)
 
 
