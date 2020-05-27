@@ -448,7 +448,8 @@ class LactateAlbuminImputer(Splitter):
                  df: pd.DataFrame,
                  categorical_imputer: CategoricalImputer,
                  imputation_target: str,
-                 imputation_model: GAM):
+                 imputation_model: GAM,
+                 winsor_quantiles: Tuple[float, float]):
         """
         Args:
             df: Must (for storage efficiency) just contain the variable to
@@ -458,16 +459,21 @@ class LactateAlbuminImputer(Splitter):
                 variables
             imputation_target: Name of lactate or albumin variable
             imputation_model: Model of the transformed imputation target
+            winsor_quantiles: Lower and upper quantiles to winsorize
+                continuous variables at by default
         """
         super().__init__(df, categorical_imputer.tts,
                          categorical_imputer.target_variable_name)
         self.cat_imputer = categorical_imputer
         self.imp_target = imputation_target
         self.model = imputation_model
+        self.winsor_quantiles = winsor_quantiles
         self._check_df(df)
         self.missing_i: Dict[str,  # fold name
                              Dict[int,  # train-test split index
                                   np.ndarray]] = {'train': {}, 'test': {}}
+        self._winsor_thresholds: Dict[int,  # train-test split index
+                                      Tuple[float, float]] = {}
         self._transformers: Dict[
             int,  # train-test split index
             Union[GammaTransformer, QuantileTransformer]] = {}
@@ -489,8 +495,10 @@ class LactateAlbuminImputer(Splitter):
         """Fit albumin/lactate imputation models for a single train-test
             split."""
         X_train, _, X_test, _ = self._split(split_i)
+        for X in (X_train, X_test):  # TODO: Remove these 2 test lines
+            assert isinstance(X, pd.DataFrame)
         self._find_missing_indices(split_i, X_train, X_test)
-        # TODO: Winsorize (will need attribute to store the thresholds in)
+        X_train = self._winsorize(split_i, X_train)
         # TODO: Fit transformer
         # TODO: Fit GAMs for each mice_imp / cat_imp
         # TODO: Combine GAMs
@@ -506,8 +514,19 @@ class LactateAlbuminImputer(Splitter):
             missing_i = find_missing_indices(df)
             self.missing_i[fold][split_i] = missing_i[self.imp_target]
 
-    def _winsorize(self):
-        raise NotImplementedError
+    def _winsorize(self, split_i: int, X: pd.DataFrame) -> pd.DataFrame:
+        """Winsorizes the only column in X. Also fits winsor_thresholds for this
+            train-test split if not already fit."""
+        try:
+            X, _ = winsorize_novel(X, thresholds={
+                self.imp_target: self._winsor_thresholds[split_i]})
+        except KeyError:
+            X_train, w_thresholds = winsorize_novel(
+                X,
+                cont_vars=[self.imp_target],
+                quantiles=self.winsor_quantiles)
+            self._winsor_thresholds[split_i] = w_thresholds[self.imp_target]
+        return X
 
     def _fit_transformer(self):
         raise NotImplementedError
