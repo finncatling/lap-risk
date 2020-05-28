@@ -1,5 +1,5 @@
 import copy
-from typing import List, Dict, Union, Tuple, Any, Callable
+from typing import List, Dict, Union, Tuple, Any, Callable, Type
 
 import numpy as np
 import pandas as pd
@@ -451,7 +451,8 @@ class LactateAlbuminImputer(Splitter):
                  imputation_model_factory: Callable[
                      [pd.Index, Dict[str, Tuple], str], GAM],
                  winsor_quantiles: Tuple[float, float],
-                 transformer: Union[GammaTransformer, QuantileTransformer],
+                 transformer: Type[
+                     Union[GammaTransformer, QuantileTransformer]],
                  transformer_args: Dict[str, Any],
                  multi_cat_vars: Dict[str, Tuple],
                  indication_var_name: str):
@@ -544,7 +545,7 @@ class LactateAlbuminImputer(Splitter):
             target, _ = winsorize_novel(target, thresholds={
                 self.imp_target: self._winsor_thresholds[split_i]})
         except KeyError:
-            X_train, w_thresholds = winsorize_novel(
+            target, w_thresholds = winsorize_novel(
                 target, cont_vars=[self.imp_target],
                 quantiles=self.winsor_quantiles)
             self._winsor_thresholds[split_i] = w_thresholds[self.imp_target]
