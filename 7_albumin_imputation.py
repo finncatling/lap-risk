@@ -109,6 +109,9 @@ save_object(alb_pdp_terms, os.path.join(NOVEL_MODEL_OUTPUT_DIR,
                                         'alb_pdp_specification.pkl'))
 
 
+# TODO: Flip axes given that albumin is transformed?
+
+
 reporter.report('Plotting albumin imputer partial dependence plot')
 plot_saver(plot_partial_dependence,
            gam=alb_imputer._imputers[0],
