@@ -48,11 +48,9 @@ def plot_partial_dependence(
     for pdp_term in pdp_terms:
         row_for_this_term = pdp_term.gs_pos[0]
         if isinstance(row_for_this_term, slice):
-            row_for_this_term = row_for_this_term.stop
+            row_for_this_term = row_for_this_term.stop - 2
         if n_rows < row_for_this_term + 1:
             n_rows = row_for_this_term + 1
-    n_rows = int(np.ceil((len(terms)) / n_cols))
-    print('N rows =', n_rows)
 
     fig = plt.figure(figsize=(12, row_height * n_rows))
     gs = fig.add_gridspec(n_rows, n_cols)
@@ -61,7 +59,6 @@ def plot_partial_dependence(
     n_cis = len(cis)
 
     for i, term in enumerate(terms):
-        print(pdp_terms[i].name)  # TODO: Remove this testing line
         if pdp_terms[i].view_3d is None:
             ax = fig.add_subplot(gs[pdp_terms[i].gs_pos])
             ax.set_title(pdp_terms[i].pretty_name)
