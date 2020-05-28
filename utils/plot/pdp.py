@@ -52,6 +52,7 @@ def plot_partial_dependence(
         if n_rows < row_for_this_term + 1:
             n_rows = row_for_this_term + 1
     n_rows = int(np.ceil((len(terms)) / n_cols))
+    print('N rows =', n_rows)
 
     fig = plt.figure(figsize=(12, row_height * n_rows))
     gs = fig.add_gridspec(n_rows, n_cols)

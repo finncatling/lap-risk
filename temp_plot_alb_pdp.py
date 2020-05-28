@@ -60,7 +60,7 @@ alb_pdp_terms = [
             'upper left'),
     PDPTerm(INDICATION_VAR_NAME,
             'Indication',
-            (slice(4, 6), slice(0, 2)),
+            (slice(3, 5), slice(1, 3)),
             [sanitize_indication(s) for s in
              multi_category_levels[INDICATION_VAR_NAME]],
             ['No CT', 'CT'],
