@@ -43,7 +43,16 @@ def plot_partial_dependence(
     terms = gam.terms.info['terms'][:-1]
     mid_cat_i = int((ticks_per_cat - 1) / 2)
 
+    # calculate number of rows needed
+    n_rows = 0
+    for pdp_term in pdp_terms:
+        row_for_this_term = pdp_term.gs_pos
+        if isinstance(row_for_this_term, slice):
+            row_for_this_term = row_for_this_term.stop - 1
+        if n_rows < row_for_this_term + 1:
+            n_rows = row_for_this_term + 1
     n_rows = int(np.ceil((len(terms)) / n_cols))
+
     fig = plt.figure(figsize=(12, row_height * n_rows))
     gs = fig.add_gridspec(n_rows, n_cols)
 
