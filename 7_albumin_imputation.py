@@ -109,6 +109,8 @@ save_object(alb_pdp_terms, os.path.join(NOVEL_MODEL_OUTPUT_DIR,
                                         'alb_pdp_specification.pkl'))
 
 
+# TODO: Variables don't look winsorized on the plots - explore why
+# TODO: Indications should be more regularised
 # TODO: Flip axes given that albumin is transformed?
 
 
