@@ -22,16 +22,15 @@ def albumin_model_factory(
         s(columns.get_loc('S03SystolicBloodPressure'), lam=400) +
         s(columns.get_loc('S03GlasgowComaScore'), lam=150, n_splines=13) +
         f(columns.get_loc('S03ASAScore'), coding='dummy') +
-        f(columns.get_loc('S03Pred_Peritsoil'), coding='dummy') +
         te(columns.get_loc('S03Pred_Peritsoil'),
            columns.get_loc('S02PreOpCTPerformed'),
-           lam=(400, 200),
+           lam=(2, 1),
            n_splines=(len(multi_cat_levels['S03Pred_Peritsoil']), 2),
            spline_order=(0, 0),
            dtype=('categorical', 'categorical')) +
         te(columns.get_loc(indication_var_name),
            columns.get_loc('S02PreOpCTPerformed'),
-           lam=(2, 1.0),
+           lam=(2, 1),
            n_splines=(len(multi_cat_levels[indication_var_name]), 2),
            spline_order=(0, 0),
            dtype=('categorical', 'categorical')) +
