@@ -48,7 +48,7 @@ def plot_partial_dependence(
     for pdp_term in pdp_terms:
         row_for_this_term = pdp_term.gs_pos[0]
         if isinstance(row_for_this_term, slice):
-            row_for_this_term = row_for_this_term.stop - 1
+            row_for_this_term = row_for_this_term.stop
         if n_rows < row_for_this_term + 1:
             n_rows = row_for_this_term + 1
     n_rows = int(np.ceil((len(terms)) / n_cols))
