@@ -46,7 +46,7 @@ def inspect_transformed_lac_alb(
     target = {'train': target_train, 'test': target_test}
 
     for i, fold in enumerate(('train', 'test')):
-        obs_target = imputer._get_observed_values(
+        target[fold] = imputer._get_observed_values(
             fold, train_test_split_i, target[fold])
         obs_target = imputer._winsorize(train_test_split_i, target[fold])
         ax[i].hist(obs_target.values.flatten(), label='original', **hist_args)
