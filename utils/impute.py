@@ -517,7 +517,7 @@ class LactateAlbuminImputer(Splitter):
             assert isinstance(X, pd.DataFrame)
         self._find_missing_indices(split_i, target_train, target_test)
         obs_target_train = self._get_observed_values(
-            'train', split_i, target_train).values
+            'train', split_i, target_train)
         obs_target_train = self._winsorize(split_i, obs_target_train)
         obs_target_train = self._fit_transform(split_i, obs_target_train)
         self._fit_combine_gams(split_i, obs_target_train)
