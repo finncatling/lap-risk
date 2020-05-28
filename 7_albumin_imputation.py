@@ -111,6 +111,7 @@ save_object(alb_pdp_terms, os.path.join(NOVEL_MODEL_OUTPUT_DIR,
 
 reporter.report('Plotting albumin imputer partial dependence plot')
 plot_saver(plot_partial_dependence,
+           gam=alb_imputer._imputers[0],
            pdp_terms=alb_pdp_terms,
            output_dir=FIGURES_OUTPUT_DIR,
            output_filename='alb_imputer_pdp')
