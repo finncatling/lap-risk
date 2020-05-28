@@ -157,7 +157,7 @@ def winsorize_novel(
                         df.loc[ops[i](df[v], threshold), v] = threshold
                     else:
                         thresholds[v][i] = None
-                except (KeyError, TypeError) as _:
+                except (KeyError, TypeError):
                     df.loc[ops[i](df[v], threshold), v] = threshold
 
     return df, thresholds
