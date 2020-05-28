@@ -1,56 +1,26 @@
-from typing import Dict, Tuple
 import os
-import pandas as pd
+from typing import Dict, Tuple
 
-from utils.report import Reporter
-from utils.constants import DATA_DIR, NOVEL_MODEL_OUTPUT_DIR, FIGURES_OUTPUT_DIR
-from utils.io import make_directory, save_object, load_object
-from utils.impute import CategoricalImputer, LactateAlbuminImputer
-from utils.model.novel import (ALBUMIN_VAR_NAME, NOVEL_MODEL_VARS,
-                               WINSOR_QUANTILES, INDICATION_VAR_NAME)
-from utils.model.albumin import albumin_model_factory, GammaTransformer
-from utils.plot.pdp import PDPTerm, plot_partial_dependence
+from utils.constants import NOVEL_MODEL_OUTPUT_DIR, FIGURES_OUTPUT_DIR
+from utils.io import make_directory, load_object
+from utils.model.novel import (INDICATION_VAR_NAME)
 from utils.plot.helpers import sanitize_indication, plot_saver
-
+from utils.plot.pdp import PDPTerm, plot_partial_dependence
+from utils.report import Reporter
 
 reporter = Reporter()
-reporter.title('Fit albumin imputation models')
-
+reporter.title('Plot albumin PDP')
 
 reporter.report("Creating output dirs (if they don't already exist)")
 make_directory(NOVEL_MODEL_OUTPUT_DIR)
 make_directory(FIGURES_OUTPUT_DIR)
 
-
 reporter.report('Loading previous analysis outputs needed for imputation')
-df = pd.read_pickle(
-    os.path.join(DATA_DIR, 'df_preprocessed_for_novel_pre_split.pkl'))
-cat_imputer: CategoricalImputer = load_object(
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, 'categorical_imputer.pkl'))
 multi_category_levels: Dict[str, Tuple] = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR,
                  'multi_category_levels_with_indications.pkl'))
-
-
-reporter.report('Fitting imputers for albumin')
-alb_imputer = LactateAlbuminImputer(
-    df=df.loc[:, [ALBUMIN_VAR_NAME, NOVEL_MODEL_VARS['target']]],
-    categorical_imputer=cat_imputer,
-    imputation_target=ALBUMIN_VAR_NAME,
-    imputation_model_factory=albumin_model_factory,
-    winsor_quantiles=WINSOR_QUANTILES,
-    transformer=GammaTransformer,
-    transformer_args={},
-    multi_cat_vars=multi_category_levels,
-    indication_var_name=INDICATION_VAR_NAME)
-alb_imputer.tts.n_splits = 1  # TODO: Remove this testing line
-alb_imputer.fit()
-
-
-reporter.report('Saving draft albumin imputer for later use')
-save_object(alb_imputer, os.path.join(NOVEL_MODEL_OUTPUT_DIR,
-                                      'draft_albumin_imputer.pkl'))
-
+alb_imputer = load_object(os.path.join(NOVEL_MODEL_OUTPUT_DIR,
+                                       'draft_albumin_imputer.pkl'))
 
 reporter.report('Specifying properties of albumin GAM partial dependence plot')
 alb_pdp_terms = [
@@ -103,12 +73,6 @@ alb_pdp_terms = [
             'lower right')
 ]
 
-
-reporter.report('Saving albumin PDP specification')
-save_object(alb_pdp_terms, os.path.join(NOVEL_MODEL_OUTPUT_DIR,
-                                        'alb_pdp_specification.pkl'))
-
-
 # TODO: Flip axes given that albumin is transformed?
 
 
@@ -119,7 +83,4 @@ plot_saver(plot_partial_dependence,
            output_dir=FIGURES_OUTPUT_DIR,
            output_filename='alb_imputer_pdp')
 
-
 reporter.last('Done.')
-
-# TODO: Save summary stats (including those from MICE) for external use

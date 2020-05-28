@@ -1,13 +1,13 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from pygam import GAM
-from matplotlib.figure import Figure
-from matplotlib.axes import Axes
-from matplotlib.lines import Line2D
-from mpl_toolkits import mplot3d
-from mpl_toolkits.mplot3d import Axes3D
 from typing import Tuple, List, Union
+
+import matplotlib.pyplot as plt
+import numpy as np
 from dataclasses import dataclass
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
+from pygam import GAM
+
 from utils.constants import GAM_CONFIDENCE_INTERVALS
 from utils.plot.helpers import generate_ci_quantiles
 
@@ -51,6 +51,7 @@ def plot_partial_dependence(
     n_cis = len(cis)
 
     for i, term in enumerate(terms):
+        print(pdp_terms[i].name)  # TODO: Remove this testing line
         if pdp_terms[i].view_3d is None:
             ax = fig.add_subplot(gs[pdp_terms[i].gs_pos])
             ax.set_title(pdp_terms[i].pretty_name)
@@ -94,7 +95,8 @@ def plot_partial_dependence(
                                         alpha=1 / n_cis, color=colours[l])
 
                     lines.append(Line2D([0], [0], color=colours[l]))
-                ax.legend(lines, pdp_terms[i].strata, loc=pdp_terms[i].legend_loc)
+                ax.legend(lines, pdp_terms[i].strata,
+                          loc=pdp_terms[i].legend_loc)
 
                 if pdp_terms[i].labels is not None:
                     ax.set_xticks(
