@@ -33,11 +33,6 @@ multi_category_levels: Dict[str, Tuple] = load_object(
                  'multi_category_levels_with_indications.pkl'))
 
 
-reporter.report('Inspecting category encoding order for non-binary discrete '
-                'variables')
-print(multi_category_levels)
-
-
 reporter.report('Fitting imputers for albumin')
 alb_imputer = LactateAlbuminImputer(
     df=df.loc[:, [ALBUMIN_VAR_NAME, NOVEL_MODEL_VARS['target']]],
