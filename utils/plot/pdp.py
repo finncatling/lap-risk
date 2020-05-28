@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pygam import GAM
 from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
 from mpl_toolkits import mplot3d
 from mpl_toolkits.mplot3d import Axes3D
@@ -37,7 +38,7 @@ def plot_partial_dependence(
         row_height: float = 3.0,
         ticks_per_cat: int = 21,
         confidence_intervals: Tuple = GAM_CONFIDENCE_INTERVALS
-) -> Figure:
+) -> Tuple[Figure, Axes]:
     """Plot partial dependence for each GAM feature."""
     terms = gam.terms.info['terms'][:-1]
     mid_cat_i = int((ticks_per_cat - 1) / 2)
@@ -113,4 +114,4 @@ def plot_partial_dependence(
                 ax.set_ylabel(pdp_terms[i].pretty_name[1])
 
     fig.tight_layout()
-    return fig
+    return fig, ax
