@@ -1,10 +1,12 @@
 import os
-from typing import Tuple, Dict, List, Callable
+from typing import Tuple, Dict, List, Callable, Any, Union
 
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+
+from utils.impute import LactateAlbuminImputer
 
 
 def generate_ci_quantiles(cis: Tuple[float]) -> np.ndarray:
@@ -31,11 +33,40 @@ def plot_saver(plot_func: Callable,
                     format=ext, bbox_inches='tight')
 
 
+def inspect_transformed_lac_alb(
+        imputer: LactateAlbuminImputer,
+        train_test_split_i: int,
+        hist_args: Dict[str, Any] = {'bins': 20, 'alpha': 0.5}
+) -> Tuple[Figure, Axes]:
+    """Compare original target (albumin or lactate) and its transformation."""
+    fig, ax = plt.subplots(1, 2, figsize=(8, 3))
+    ax = ax.ravel()
+
+    target_train, _, target_test, _ = imputer._split(train_test_split_i)
+    target = {'train': target_train, 'test': target_test}
+
+    for i, fold in enumerate(('train', 'test')):
+        obs_target = imputer._get_observed_values(
+            fold, train_test_split_i, target[fold])
+        obs_target = imputer._winsorize(train_test_split_i, target[fold])
+        ax[i].hist(obs_target.values.flatten(), label='original', **hist_args)
+
+        obs_target_trans = imputer._transformers[train_test_split_i].transform(
+            obs_target)
+        ax[i].hist(obs_target_trans.values.flatten(),
+                   label='transformed', **hist_args)
+
+        ax[i].set(title=fold)
+        ax[i].legend()
+
+    return fig, ax
+
+
 def plot_stratified_risk_distributions(
         y_true: np.ndarray,
         y_pred: np.ndarray,
-        hist_args: Dict = {'bins': 50, 'density': True, 'alpha': 0.5,
-                           'range': (0, 1)}
+        hist_args: Dict[str, Any] = {'bins': 50, 'density': True, 'alpha': 0.5,
+                                     'range': (0, 1)}
 ) -> Tuple[Figure, Axes]:
     """Plots predicted risks, stratified by mortality label."""
     fig, ax = plt.subplots()
