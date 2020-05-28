@@ -10,20 +10,24 @@ def albumin_model_factory(
         indication_var_name: str
 ) -> GammaGAM:
     # TODO: Check creatinine features in DataFrame - why is it causing
-    #  divergence?
+    #  divergence? Should it interact with urea?
     # TODO: Should GCS splines have lower order?
     # TODO: Consider edge knots
     # TODO: Consider reducing n_splines for most continuous variables
     return GammaGAM(
         s(columns.get_loc('S01AgeOnArrival'), lam=500) +
-        # s(columns.get_loc('S03SerumCreatinine'), lam=500) +
         s(columns.get_loc('S03Sodium'), lam=400) +
         s(columns.get_loc('S03Potassium'), lam=300) +
         s(columns.get_loc('S03Urea'), lam=400) +
         s(columns.get_loc('S03WhiteCellCount'), lam=400) +
         s(columns.get_loc('S03SystolicBloodPressure'), lam=400) +
-        s(columns.get_loc('S03GlasgowComaScore'), lam=150, n_splines=13) +
         f(columns.get_loc('S03ASAScore'), coding='dummy') +
+        te(columns.get_loc('S03DiagnosedMalignancy'),
+           columns.get_loc('S02PreOpCTPerformed'),
+           lam=(2, 1),
+           n_splines=(len(multi_cat_levels['S03DiagnosedMalignancy']), 2),
+           spline_order=(0, 0),
+           dtype=('categorical', 'categorical')) +
         te(columns.get_loc('S03Pred_Peritsoil'),
            columns.get_loc('S02PreOpCTPerformed'),
            lam=(2, 1),

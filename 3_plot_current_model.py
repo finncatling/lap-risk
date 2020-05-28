@@ -1,7 +1,8 @@
 import os
 import numpy as np
-from utils.plot import (plot_calibration, plot_stratified_risk_distributions,
-                        plot_saver)
+from utils.plot.evaluate import (plot_calibration,
+                                 plot_stratified_risk_distributions)
+from utils.plot.helpers import plot_saver
 from utils.report import Reporter
 from utils.constants import FIGURES_OUTPUT_DIR, CURRENT_MODEL_OUTPUT_DIR
 from utils.io import load_object, make_directory
@@ -14,7 +15,7 @@ reporter.title('Make plots related to the current NELA emergency laparotomy '
 
 
 reporter.report("Creating output dirs (if they don't already exist)")
-make_directory(os.path.join(FIGURES_OUTPUT_DIR))
+make_directory(FIGURES_OUTPUT_DIR)
 
 
 reporter.report('Loading results of model scoring')

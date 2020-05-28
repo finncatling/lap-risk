@@ -22,6 +22,3 @@ CALIB_GAM_LAM_CANDIDATES = np.logspace(-3, 3)
 
 # For use when plotting gam output
 GAM_CONFIDENCE_INTERVALS = (95, 70, 45, 20)
-# TODO: switch from below to above plus generate_ci_quantiles()
-# N_GAM_CONFIDENCE_INTERVALS = 5
-# GAM_OUTER_CONFIDENCE_INTERVALS = (0.025, 0.975)
