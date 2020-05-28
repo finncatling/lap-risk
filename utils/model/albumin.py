@@ -9,31 +9,34 @@ def albumin_model_factory(
         multi_cat_levels: Dict[str, Tuple],
         indication_var_name: str
 ) -> GammaGAM:
+    # TODO: Should GCS splines have lower order?
+    # TODO: Consider edge knots
+    # TODO: Consider reducing n_splines for most continuous variables
     return GammaGAM(
-        s(columns.get_loc['S01AgeOnArrival'], lam=500) +
-        s(columns.get_loc['S03SerumCreatinine'], lam=300) +
-        s(columns.get_loc['S03Sodium'], lam=400) +
-        s(columns.get_loc['S03Potassium'], lam=300) +
-        s(columns.get_loc['S03Urea'], lam=400) +
-        s(columns.get_loc['S03WhiteCellCount'], lam=400) +
-        s(columns.get_loc['S03SystolicBloodPressure'], lam=400) +
-        s(columns.get_loc['S03GlasgowComaScore'], lam=150, n_splines=13) +
-        f(columns.get_loc['S03ASAScore'], coding='dummy') +
-        f(columns.get_loc['S03Pred_Peritsoil'], coding='dummy') +
-        te(columns.get_loc['S03Pred_Peritsoil'],
-           columns.get_loc['S02PreOpCTPerformed'],
+        s(columns.get_loc('S01AgeOnArrival'), lam=500) +
+        s(columns.get_loc('S03SerumCreatinine'), lam=300) +
+        s(columns.get_loc('S03Sodium'), lam=400) +
+        s(columns.get_loc('S03Potassium'), lam=300) +
+        s(columns.get_loc('S03Urea'), lam=400) +
+        s(columns.get_loc('S03WhiteCellCount'), lam=400) +
+        s(columns.get_loc('S03SystolicBloodPressure'), lam=400) +
+        s(columns.get_loc('S03GlasgowComaScore'), lam=150, n_splines=13) +
+        f(columns.get_loc('S03ASAScore'), coding='dummy') +
+        f(columns.get_loc('S03Pred_Peritsoil'), coding='dummy') +
+        te(columns.get_loc('S03Pred_Peritsoil'),
+           columns.get_loc('S02PreOpCTPerformed'),
            lam=(400, 200),
            n_splines=(len(multi_cat_levels['S03Pred_Peritsoil']), 2),
            spline_order=(0, 0),
            dtype=('categorical', 'categorical')) +
-        te(columns.get_loc[indication_var_name],
-           columns.get_loc['S02PreOpCTPerformed'],
+        te(columns.get_loc(indication_var_name),
+           columns.get_loc('S02PreOpCTPerformed'),
            lam=(2, 1.0),
            n_splines=(len(multi_cat_levels[indication_var_name]), 2),
            spline_order=(0, 0),
            dtype=('categorical', 'categorical')) +
-        te(columns.get_loc['S03Pulse'],
-           columns.get_loc['S03ECG'],
+        te(columns.get_loc('S03Pulse'),
+           columns.get_loc('S03ECG'),
            lam=(400, 2),
            n_splines=(20, 2),
            spline_order=(3, 0),
