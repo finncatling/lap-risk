@@ -14,7 +14,7 @@ def albumin_model_factory(
     # TODO: Consider reducing n_splines for most continuous variables
     return GammaGAM(
         s(columns.get_loc('S01AgeOnArrival'), lam=500) +
-        s(columns.get_loc('S03SerumCreatinine'), lam=300)
+        s(columns.get_loc('S03SerumCreatinine'), lam=500)
         # s(columns.get_loc('S03Sodium'), lam=400) +
         # s(columns.get_loc('S03Potassium'), lam=300) +
         # s(columns.get_loc('S03Urea'), lam=400) +
