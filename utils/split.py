@@ -10,20 +10,20 @@ from utils.inspect import missingness_perc
 def drop_incomplete_cases(df: pd.DataFrame) -> (pd.DataFrame, Dict[str, float]):
     """Drops incomplete rows in input DataFrame, keeping track of pre- and
         post-drop case numbers and calculating some convenience stats."""
-    drop_stats = {'n_total_cases': df.shape[0]}
+    drop_stats = {"n_total_cases": df.shape[0]}
     df = df.dropna()  # DON'T reset index
-    drop_stats['n_complete_cases'] = df.shape[0]
-    drop_stats['n_dropped_cases'] = (drop_stats['n_total_cases'] -
-                                     drop_stats['n_complete_cases'])
-    drop_stats['fraction_dropped'] = (1 - drop_stats['n_complete_cases'] /
-                                      drop_stats['n_total_cases'])
+    drop_stats["n_complete_cases"] = df.shape[0]
+    drop_stats["n_dropped_cases"] = (
+        drop_stats["n_total_cases"] - drop_stats["n_complete_cases"]
+    )
+    drop_stats["fraction_dropped"] = (
+        1 - drop_stats["n_complete_cases"] / drop_stats["n_total_cases"]
+    )
     return df, drop_stats
 
 
 def split_into_folds(
-        df: pd.DataFrame,
-        indices: Dict[str, np.ndarray],
-        target_var_name: str
+    df: pd.DataFrame, indices: Dict[str, np.ndarray], target_var_name: str
 ) -> (pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray, int, int):
     """Splits supplied DataFrame into train and test folds, such that the test
         fold is the cases from the test trusts which are complete for the
@@ -54,22 +54,26 @@ def split_into_folds(
         Number of train-fold cases available in the input DataFrame, i.e. the
             number of cases in the returned training data.
     """
-    n_total_train_cases = indices['train'].shape[0]
-    indices['train'] = np.array([i for i in indices['train'] if i in df.index])
-    n_intersection_train_cases = indices['train'].shape[0]
+    n_total_train_cases = indices["train"].shape[0]
+    indices["train"] = np.array([i for i in indices["train"] if i in df.index])
+    n_intersection_train_cases = indices["train"].shape[0]
 
     split = {}
-    for fold in ('train', 'test'):
-        split[fold] = {'X_df': df.loc[
-            indices[fold]].copy().reset_index(drop=True)}
-        split[fold]['y'] = split[fold]['X_df'][target_var_name].values
-        split[fold]['X_df'] = split[fold]['X_df'].drop(target_var_name, axis=1)
+    for fold in ("train", "test"):
+        split[fold] = {"X_df": df.loc[indices[fold]].copy().reset_index(drop=True)}
+        split[fold]["y"] = split[fold]["X_df"][target_var_name].values
+        split[fold]["X_df"] = split[fold]["X_df"].drop(target_var_name, axis=1)
 
-    assert split['test']['X_df'].shape[0] == indices['test'].shape[0]
+    assert split["test"]["X_df"].shape[0] == indices["test"].shape[0]
 
-    return (split['train']['X_df'], split['train']['y'],
-            split['test']['X_df'], split['test']['y'],
-            n_total_train_cases, n_intersection_train_cases)
+    return (
+        split["train"]["X_df"],
+        split["train"]["y"],
+        split["test"]["X_df"],
+        split["test"]["y"],
+        n_total_train_cases,
+        n_intersection_train_cases,
+    )
 
 
 class TrainTestSplitter:
@@ -86,13 +90,15 @@ class TrainTestSplitter:
             to be systemically different from the incomplete cases.
     """
 
-    def __init__(self,
-                 df: pd.DataFrame,
-                 split_variable_name: str,
-                 test_fraction: float,
-                 n_splits: int,
-                 current_nela_model_vars: List[str],
-                 random_seed):
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        split_variable_name: str,
+        test_fraction: float,
+        n_splits: int,
+        current_nela_model_vars: List[str],
+        random_seed,
+    ):
         """Note that the indices for the each case in self.complete_case_df
             match the corresponding cases in self.df, i.e. we don't reset the
             index of self.complete_case_df after dropping the incomplete cases.
@@ -122,9 +128,11 @@ class TrainTestSplitter:
         self.test_institution_ids: List[np.ndarray] = []
         self.train_i: List[np.ndarray] = []
         self.test_i: List[np.ndarray] = []
-        self.split_stats = {'n_test_cases': [],
-                            'test_fraction_of_complete_cases': [],
-                            'test_fraction_of_total_cases': []}
+        self.split_stats = {
+            "n_test_cases": [],
+            "test_fraction_of_complete_cases": [],
+            "test_fraction_of_total_cases": [],
+        }
 
     @property
     def n_institutions(self) -> int:
@@ -157,7 +165,7 @@ class TrainTestSplitter:
             cases.
         """
         if self._split_has_run:
-            warnings.warn('Train-test splitting has already run.')
+            warnings.warn("Train-test splitting has already run.")
         else:
             for _ in range(self.n_splits):
                 self._split_institutions()
@@ -167,53 +175,80 @@ class TrainTestSplitter:
 
     def _split_institutions(self):
         """Randomly split institution IDs into train and test subsets."""
-        self.test_institution_ids.append(np.sort(self.rnd.choice(
-            self.institution_ids, self.n_test_institutions, replace=False)))
-        self.train_institution_ids.append(np.array(list(
-            set(self.institution_ids) - set(self.test_institution_ids[-1]))))
+        self.test_institution_ids.append(
+            np.sort(
+                self.rnd.choice(
+                    self.institution_ids, self.n_test_institutions, replace=False
+                )
+            )
+        )
+        self.train_institution_ids.append(
+            np.array(
+                list(set(self.institution_ids) - set(self.test_institution_ids[-1]))
+            )
+        )
 
     def _split_cases(self):
         """Finds indices of train fold cases (includes incomplete cases, which
             can be removed later using the split_into_folds function) and
             indices of test fold cases (excludes current-NELA-model-variable
             incomplete cases)."""
-        self.train_i.append(self.df.index[self.df[
-            self.split_variable_name].isin(
-            self.train_institution_ids[-1])].to_numpy())
-        self.test_i.append(self.complete_case_df.index[self.complete_case_df[
-            self.split_variable_name].isin(
-            self.test_institution_ids[-1])].to_numpy())
+        self.train_i.append(
+            self.df.index[
+                self.df[self.split_variable_name].isin(self.train_institution_ids[-1])
+            ].to_numpy()
+        )
+        self.test_i.append(
+            self.complete_case_df.index[
+                self.complete_case_df[self.split_variable_name].isin(
+                    self.test_institution_ids[-1]
+                )
+            ].to_numpy()
+        )
 
     def _calculate_split_stats(self):
-        self.split_stats['n_test_cases'].append(self.test_i[-1].shape[0])
-        self.split_stats['test_fraction_of_complete_cases'].append(
-            self.test_i[-1].shape[0] / self.drop_stats['n_complete_cases'])
-        self.split_stats['test_fraction_of_total_cases'].append(
-            self.test_i[-1].shape[0] / self.drop_stats['n_total_cases'])
+        self.split_stats["n_test_cases"].append(self.test_i[-1].shape[0])
+        self.split_stats["test_fraction_of_complete_cases"].append(
+            self.test_i[-1].shape[0] / self.drop_stats["n_complete_cases"]
+        )
+        self.split_stats["test_fraction_of_total_cases"].append(
+            self.test_i[-1].shape[0] / self.drop_stats["n_total_cases"]
+        )
 
 
 class Splitter:
     """Base class to handle repeated train-test splitting, according to
         pre-defined splits in passed TrainTestSplitter."""
-    def __init__(self,
-                 df: pd.DataFrame,
-                 train_test_splitter: TrainTestSplitter,
-                 target_variable_name: str):
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        train_test_splitter: TrainTestSplitter,
+        target_variable_name: str,
+    ):
         self.df = df
         self.tts = train_test_splitter
         self.target_variable_name = target_variable_name
         self.split_stats: Dict[str, Dict[int, int]] = {
-            'n_total_train_cases': {}, 'n_included_train_cases': {}}
+            "n_total_train_cases": {},
+            "n_included_train_cases": {},
+        }
 
-    def _split(self, i: int) -> (pd.DataFrame, np.ndarray,
-                                 pd.DataFrame, np.ndarray):
+    def _split(self, i: int) -> (pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray):
         """Train-test split, according to the pre-defined splits calculated
             in 1_train_test_split.py"""
-        (X_train, y_train, X_test, y_test,
-         n_total_train_cases, n_included_train_cases) = split_into_folds(
+        (
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            n_total_train_cases,
+            n_included_train_cases,
+        ) = split_into_folds(
             self.df,
-            indices={'train': self.tts.train_i[i], 'test': self.tts.test_i[i]},
-            target_var_name=self.target_variable_name)
-        self.split_stats['n_total_train_cases'][i] = n_total_train_cases
-        self.split_stats['n_included_train_cases'][i] = n_included_train_cases
+            indices={"train": self.tts.train_i[i], "test": self.tts.test_i[i]},
+            target_var_name=self.target_variable_name,
+        )
+        self.split_stats["n_total_train_cases"][i] = n_total_train_cases
+        self.split_stats["n_included_train_cases"][i] = n_included_train_cases
         return X_train, y_train, X_test, y_test

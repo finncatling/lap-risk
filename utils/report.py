@@ -23,19 +23,19 @@ class Timer:
             if raw:
                 return diff
             else:
-                return '(' + str(round(diff / 60, 2)) + ' minutes elapsed)'
+                return "(" + str(round(diff / 60, 2)) + " minutes elapsed)"
 
     def start(self):
         """Starts timer, if it isn't already started."""
         if self.start_time is None:
             self.start_time = time.time()
         else:
-            print('Timer is already started.')
+            print("Timer is already started.")
 
     def stop(self):
         """Stops timer."""
         if self.stopped:
-            print('Timer is already stopped.')
+            print("Timer is already stopped.")
         else:
             self.stopped = time.time()
 
@@ -46,10 +46,12 @@ class Reporter:
     def __init__(self):
         self.timer = Timer()
 
-    def report(self,
-               message: str,
-               leading_newline: bool = False,
-               trailing_newline: bool = False):
+    def report(
+        self,
+        message: str,
+        leading_newline: bool = False,
+        trailing_newline: bool = False,
+    ):
         """Prints message for end user.
 
         Args:
@@ -57,27 +59,27 @@ class Reporter:
             leading_newline: If True, starts message with a new line
             trailing_newline: If True, end message with a new line
         """
-        message = f'{message} {self.timer.elapsed()}'
+        message = f"{message} {self.timer.elapsed()}"
         if leading_newline:
-            message = f'\n{message}'
+            message = f"\n{message}"
         if trailing_newline:
-            message = f'{message}\n'
+            message = f"{message}\n"
         print(message)
 
     def title(self, message: str, show_time=False, box_width: int = 72):
         """Print message in title box."""
-        box_edge = '#' * box_width
+        box_edge = "#" * box_width
         text_width = int(box_width - 4)
         char_i = 0
         if show_time:
-            message = f'{message} {self.timer.elapsed()}'
-        print(f'\n{box_edge}')
+            message = f"{message} {self.timer.elapsed()}"
+        print(f"\n{box_edge}")
         while char_i < len(message):
-            fragment = message[char_i:char_i + text_width]
-            extra_spaces = ' ' * int(text_width - len(fragment))
-            print(f'# {fragment}{extra_spaces} #')
+            fragment = message[char_i : char_i + text_width]
+            extra_spaces = " " * int(text_width - len(fragment))
+            print(f"# {fragment}{extra_spaces} #")
             char_i += text_width
-        print(f'{box_edge}\n')
+        print(f"{box_edge}\n")
 
     def first(self, message: str):
         """Convenience wrapper for first message."""

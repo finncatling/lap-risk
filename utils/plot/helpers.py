@@ -17,22 +17,27 @@ def generate_ci_quantiles(cis: Tuple[float]) -> np.ndarray:
     return np.array(sorted(quantiles))
 
 
-def plot_saver(plot_func: Callable,
-               *plot_func_args,
-               output_dir: str,
-               output_filename: str,
-               extensions: Tuple[str] = ('pdf', 'eps'),
-               **plot_func_kwargs) -> None:
+def plot_saver(
+    plot_func: Callable,
+    *plot_func_args,
+    output_dir: str,
+    output_filename: str,
+    extensions: Tuple[str] = ("pdf", "eps"),
+    **plot_func_kwargs,
+) -> None:
     """Wraps plotting function so figures are saved. output_filename should
         lack extension."""
     fig, _ = plot_func(*plot_func_args, **plot_func_kwargs)
     for ext in extensions:
-        fig.savefig(os.path.join(output_dir, f'{output_filename}.{ext}'),
-                    format=ext, bbox_inches='tight')
+        fig.savefig(
+            os.path.join(output_dir, f"{output_filename}.{ext}"),
+            format=ext,
+            bbox_inches="tight",
+        )
 
 
 def sanitize_indication(ind: str, ind_prefix: str = INDICATION_PREFIX) -> str:
-    ind = ind[len(ind_prefix):]
-    ind = ' '.join(re.findall('[A-Z][^A-Z]*', ind))
+    ind = ind[len(ind_prefix) :]
+    ind = " ".join(re.findall("[A-Z][^A-Z]*", ind))
     ind = ind.lower()
     return ind[0].upper() + ind[1:]

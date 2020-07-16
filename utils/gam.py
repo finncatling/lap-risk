@@ -23,24 +23,24 @@ def combine_mi_gams(gams: List[GAM]) -> GAM:
     comb.coef_ /= len(gams)
 
     # Average covariance matrices
-    comb.statistics_['cov'] = np.zeros_like(comb.statistics_['cov'])
+    comb.statistics_["cov"] = np.zeros_like(comb.statistics_["cov"])
     for gam in gams:
-        comb.statistics_['cov'] += gam.statistics_['cov']
-    comb.statistics_['cov'] /= len(gams)
+        comb.statistics_["cov"] += gam.statistics_["cov"]
+    comb.statistics_["cov"] /= len(gams)
 
     # Apply correction factor to covariance matrix to account for
     # variation between models
-    B = np.zeros_like(comb.statistics_['cov'])
+    B = np.zeros_like(comb.statistics_["cov"])
     for gam in gams:
         diff = (gam.coef_ - comb.coef_).reshape(-1, 1)
         B += np.matmul(diff, diff.T)
     B /= len(gams) - 1
-    comb.statistics_['cov'] += (1 + 1 / len(gams)) * B
+    comb.statistics_["cov"] += (1 + 1 / len(gams)) * B
 
     return comb
 
 
-def quick_sample(gam, sample_at_X, random_seed, quantity='y', n_draws=100):
+def quick_sample(gam, sample_at_X, random_seed, quantity="y", n_draws=100):
     """Sample from the multivariate normal distribution
         over the model coefficients, and use the samples to predict a
         distribution over the target quantity.
@@ -78,22 +78,22 @@ def quick_sample(gam, sample_at_X, random_seed, quantity='y', n_draws=100):
         Otherwise, the number of columns of `draws` is the number of
         rows of `X`.
     """
-    if quantity not in {'mu', 'coef', 'y'}:
-        raise ValueError("`quantity` must be one of 'mu', 'coef', 'y';"
-                         " got {}".format(quantity))
+    if quantity not in {"mu", "coef", "y"}:
+        raise ValueError(
+            "`quantity` must be one of 'mu', 'coef', 'y';" " got {}".format(quantity)
+        )
 
     rnd = RandomState(random_seed)
-    coef_draws = rnd.multivariate_normal(gam.coef_,
-                                         gam.statistics_['cov'],
-                                         size=n_draws)
+    coef_draws = rnd.multivariate_normal(
+        gam.coef_, gam.statistics_["cov"], size=n_draws
+    )
 
-    if quantity == 'coef':
+    if quantity == "coef":
         return coef_draws
 
     linear_predictor = gam._modelmat(sample_at_X).dot(coef_draws.T)
-    mu_shape_n_draws_by_n_samples = gam.link.mu(
-        linear_predictor, gam.distribution).T
-    if quantity == 'mu':
+    mu_shape_n_draws_by_n_samples = gam.link.mu(linear_predictor, gam.distribution).T
+    if quantity == "mu":
         return mu_shape_n_draws_by_n_samples
     else:
         return gam.distribution.sample(mu_shape_n_draws_by_n_samples)
