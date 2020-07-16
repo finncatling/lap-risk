@@ -31,7 +31,7 @@ df = pd.read_pickle(
 
 reporter.report("Performing train-test split")
 tt_splitter_args = {
-    "split_variable_name": "TrustId.anon",
+    "split_variable_name": "HospitalId.anon",
     "test_fraction": 0.2,
     "n_splits": 120,
 }

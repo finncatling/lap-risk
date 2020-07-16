@@ -26,9 +26,9 @@ def split_into_folds(
     df: pd.DataFrame, indices: Dict[str, np.ndarray], target_var_name: str
 ) -> (pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray, int, int):
     """Splits supplied DataFrame into train and test folds, such that the test
-        fold is the cases from the test trusts which are complete for the
+        fold is the cases from the test hospitals which are complete for the
         variables in the current NELA risk model, and the train fold is all
-        the available cases from the train trusts. Two things to note:
+        the available cases from the train hospitals. Two things to note:
 
         1) The train fold will be different between models as for the current
         NELA model it will only contain complete cases, whereas for our novel
