@@ -13,7 +13,7 @@ from pygam import GAM
 from sklearn.preprocessing import QuantileTransformer
 
 from utils.split import Splitter, TrainTestSplitter
-from utils.model.novel import winsorize_novel
+from utils.model.novel import winsorize_novel, NOVEL_MODEL_VARS
 from utils.model.albumin import GammaTransformer
 from utils.gam import combine_mi_gams
 
@@ -524,6 +524,7 @@ class LactateAlbuminImputer(Splitter):
             df, categorical_imputer.tts, categorical_imputer.target_variable_name
         )
         self.cat_imputer = categorical_imputer
+        self.cont_vars = NOVEL_MODEL_VARS["cont"]
         self.imp_target = imputation_target
         self.model_factory = imputation_model_factory
         self.winsor_quantiles = winsor_quantiles
