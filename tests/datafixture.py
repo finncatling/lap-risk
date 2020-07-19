@@ -7,8 +7,7 @@ import numpy as np
 
 from utils.model.novel import NOVEL_MODEL_VARS
 
-# @pytest.fixture
-def dummy_data():
+def dummy_dataframe():
     """ generates fake data frame and makes it a pytest fixturr for use in tests"""
     df = pd.DataFrame()
 
@@ -28,9 +27,3 @@ def dummy_data():
 
     df["target"] = np.random.randint(2, size=numrows)
     return(df)
-        
-
-
-dummy = dummy_data()
-dummy2 = dummy.dropna()
-print(dummy.shape, dummy2.shape)
