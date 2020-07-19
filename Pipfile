@@ -8,6 +8,8 @@ scipy = "*"
 sklearn = "*"
 pygam = "*"
 statsmodels = "*"
+matplotlib = "*"
+jupyter = "*"
 
 [dev-packages]
 pytest = "*"
