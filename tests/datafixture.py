@@ -25,5 +25,6 @@ def dummy_dataframe():
     for col in df.columns:
         df.loc[df.sample(frac=0.05).index, col] = np.nan
 
-    df["target"] = np.random.randint(2, size=numrows)
+    df["HospitalId.anon"] = np.random.randint(170, size=numrows)
+    df["Target"] = np.random.randint(2, size=numrows)
     return(df)
