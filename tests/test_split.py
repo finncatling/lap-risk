@@ -19,7 +19,7 @@ def test_drop_incomplete_cases():
     assert df.shape[0] - dropped.shape[0] > 0
 
 def test_split_into_folds():
-    #TODO this test should probably be more comprehensive
+    #TODO this test should probably be more comprehensive but it's passing for now
     df = dummy_dataframe()
    
     indices = {
@@ -29,3 +29,11 @@ def test_split_into_folds():
     stuff = split.split_into_folds(df, indices, NOVEL_MODEL_VARS["target"])
 
     assert stuff[0].shape[0] == df.sample(frac=0.6).shape[0]
+
+def test_TTS():
+    df = dummy_dataframe()
+    model_vars = NOVEL_MODEL_VARS["cat"] + NOVEL_MODEL_VARS["cont"]
+    tts = split.TrainTestSplitter(df, "HospitalId.anon", 0.2, 5, list(model_vars), 5)
+    tts.split()
+    
+    assert len(tts.train_institution_ids) == 5

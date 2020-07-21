@@ -1,6 +1,6 @@
 import pytest
 
-from .datafixture import dummy_dataframe
+from .datafixture import dummy_dataframe, TTS
 from utils import impute
 from utils.split import Splitter, TrainTestSplitter
 from utils.model.novel import WINSOR_QUANTILES, NOVEL_MODEL_VARS
@@ -14,7 +14,7 @@ def test_determine_imputations():
 def test_SWM_1():
     swm = impute.SplitterWinsorMICE(
     df=df,
-    train_test_splitter=TrainTestSplitter,
+    train_test_splitter=TTS,
     target_variable_name=NOVEL_MODEL_VARS["target"],
     cont_variables=NOVEL_MODEL_VARS["cont"],
     binary_variables=NOVEL_MODEL_VARS["cat"],
