@@ -24,3 +24,16 @@ We want to use `taskset` to limit the number of cores used for the computational
 ```console
 taskset -c 0-15 /opt/python/3.6.8/bin/python3.6 1_train_test_split.py
 ```
+
+### Runnin tests
+Install dev packages with 
+
+```console
+pipenv install --dev 
+```
+
+Tests are currently only written for the utils module as this provides the functions open which we build the analysis. To run tests and check coverage
+
+```console
+pytest --cov=utils tests/ 
+```
