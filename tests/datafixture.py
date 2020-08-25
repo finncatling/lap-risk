@@ -32,7 +32,8 @@ def dummy_dataframe():
     return(df)
 
 
-@pytest.fixture(scope="module")
+# @pytest.fixture(scope="module")
+#for some reason fixtures aren't working
 def TTS():
     df = dummy_dataframe()
     model_vars = NOVEL_MODEL_VARS["cat"] + NOVEL_MODEL_VARS["cont"]

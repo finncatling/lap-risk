@@ -175,6 +175,7 @@ class SplitterWinsorMICE(Splitter):
     def _sanity_check_variables(self):
         """Check that, apart from target (accounted for with the minus 1), df
             only contains the continuous and binary variables specified."""
+        # breakpoint()
         assert len(self.all_vars) == len(self.df.columns) - 1
         for var in self.all_vars:
             assert var in self.df.columns
@@ -250,6 +251,7 @@ class SplitterWinsorMICE(Splitter):
 
     def _run_mice_loop(self, split_i: int, fold: str, mice_data: MICEData):
         """'Burn-in' and 'skip' imputations are discarded."""
+        breakpoint()
         for _ in range(self.n_mice_burn_in):
             mice_data.update_all()
         for imputation_i in range(self.n_mice_imputations):
