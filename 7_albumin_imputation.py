@@ -27,12 +27,17 @@ make_directory(FIGURES_OUTPUT_DIR)
 
 
 reporter.report("Loading previous analysis outputs needed for imputation")
-df = pd.read_pickle(os.path.join(DATA_DIR, "df_preprocessed_for_novel_pre_split.pkl"))
+df = pd.read_pickle(
+    os.path.join(DATA_DIR, "df_preprocessed_for_novel_pre_split.pkl")
+)
 cat_imputer: CategoricalImputer = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "categorical_imputer.pkl")
 )
 multi_category_levels: Dict[str, Tuple] = load_object(
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "multi_category_levels_with_indications.pkl")
+    os.path.join(
+        NOVEL_MODEL_OUTPUT_DIR,
+        "multi_category_levels_with_indications.pkl"
+    )
 )
 
 
@@ -54,7 +59,8 @@ alb_imputer.fit()
 
 reporter.report("Saving draft albumin imputer for later use")
 save_object(
-    alb_imputer, os.path.join(NOVEL_MODEL_OUTPUT_DIR, "draft_albumin_imputer.pkl")
+    alb_imputer,
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "draft_albumin_imputer.pkl")
 )
 
 
@@ -64,7 +70,11 @@ alb_pdp_terms = [
     PDPTerm("S03Sodium", "Sodium (mmol/L)", (1, 1)),
     PDPTerm("S03Potassium", "Potassium (mmol/L)", (1, 2)),
     PDPTerm("S03Urea", "Urea (mmol/L)", (2, 0)),
-    PDPTerm("S03WhiteCellCount", r"White cell count ($\times$10${^9}$/L)", (1, 0)),
+    PDPTerm(
+        "S03WhiteCellCount",
+        r"White cell count ($\times$10${^9}$/L)",
+        (1, 0)
+    ),
     PDPTerm("S03SystolicBloodPressure", "Systolic pressure (mmHg)", (0, 1)),
     PDPTerm("S03ASAScore", "ASA physical status", (2, 1), list(range(1, 6))),
     PDPTerm(
@@ -87,7 +97,8 @@ alb_pdp_terms = [
         INDICATION_VAR_NAME,
         "Indication",
         (slice(3, 5), slice(1, 3)),
-        [sanitize_indication(s) for s in multi_category_levels[INDICATION_VAR_NAME]],
+        [sanitize_indication(s) for s in
+         multi_category_levels[INDICATION_VAR_NAME]],
         ["No CT", "CT"],
         "upper left",
     ),
@@ -104,7 +115,8 @@ alb_pdp_terms = [
 
 reporter.report("Saving albumin PDP specification")
 save_object(
-    alb_pdp_terms, os.path.join(NOVEL_MODEL_OUTPUT_DIR, "alb_pdp_specification.pkl")
+    alb_pdp_terms,
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "alb_pdp_specification.pkl")
 )
 
 

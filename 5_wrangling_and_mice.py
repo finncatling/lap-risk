@@ -4,7 +4,11 @@ from typing import Tuple, Dict
 
 import pandas as pd
 
-from utils.constants import DATA_DIR, INTERNAL_OUTPUT_DIR, NOVEL_MODEL_OUTPUT_DIR
+from utils.constants import (
+    DATA_DIR,
+    INTERNAL_OUTPUT_DIR,
+    NOVEL_MODEL_OUTPUT_DIR
+)
 from utils.model.shared import flatten_model_var_dict
 from utils.io import make_directory, load_object, save_object
 from utils.model.novel import (
@@ -52,7 +56,10 @@ df = df[flatten_model_var_dict(NOVEL_MODEL_VARS) + indications]
 reporter.report("Preparing details of discrete variables")
 multi_category_levels: Dict[str, Tuple] = copy.deepcopy(MULTI_CATEGORY_LEVELS)
 multi_category_levels[INDICATION_VAR_NAME] = tuple(indications)
-binary_vars = list(set(NOVEL_MODEL_VARS["cat"]) - set(multi_category_levels.keys()))
+binary_vars = list(
+    set(NOVEL_MODEL_VARS["cat"]) -
+    set(multi_category_levels.keys())
+)
 
 
 reporter.report("Doing pre-train-test-split data preprocessing")
@@ -81,11 +88,15 @@ df.to_pickle(os.path.join(DATA_DIR, "df_preprocessed_for_novel_pre_split.pkl"))
 
 
 reporter.report(
-    "Saving levels of categorical variables (with indications " "added) for later use"
+    "Saving levels of categorical variables (with indications "
+    "added) for later use"
 )
 save_object(
     multi_category_levels,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "multi_category_levels_with_indications.pkl"),
+    os.path.join(
+        NOVEL_MODEL_OUTPUT_DIR,
+        "multi_category_levels_with_indications.pkl"
+    ),
 )
 
 
@@ -99,7 +110,8 @@ mice_cont_vars.remove(ALBUMIN_VAR_NAME)
 
 
 reporter.report(
-    "Define stages of imputation, and the number of imputations " "needed at each stage"
+    "Define stages of imputation, and the number of imputations "
+    "needed at each stage"
 )
 imputation_stages = ImputationInfo()
 imputation_stages.add_stage(
@@ -108,11 +120,15 @@ imputation_stages.add_stage(
         "and non-binary discrete variables"
     ),
     df=mice_df.drop(NOVEL_MODEL_VARS["target"], axis=1),
-    variables_to_impute=list(mice_df.drop(NOVEL_MODEL_VARS["target"], axis=1).columns),
+    variables_to_impute=list(
+        mice_df.drop(NOVEL_MODEL_VARS["target"], axis=1).columns
+    ),
 )
 imputation_stages.add_stage(
     description="Non-binary discrete variables",
-    df=df.drop(list(LACTATE_ALBUMIN_VARS) + [NOVEL_MODEL_VARS["target"]], axis=1),
+    df=df.drop(
+        list(LACTATE_ALBUMIN_VARS) + [NOVEL_MODEL_VARS["target"]], axis=1
+    ),
     variables_to_impute=list(multi_category_levels.keys()),
 )
 imputation_stages.add_stage(
@@ -124,7 +140,8 @@ imputation_stages.add_stage(
 
 reporter.report("Saving imputation stage information for later use")
 save_object(
-    imputation_stages, os.path.join(NOVEL_MODEL_OUTPUT_DIR, "imputation_stages.pkl")
+    imputation_stages,
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "imputation_stages.pkl")
 )
 
 
@@ -154,7 +171,10 @@ swm.split_winsorize_mice()
 
 
 reporter.report("Saving MICE imputations for later use")
-save_object(swm, os.path.join(NOVEL_MODEL_OUTPUT_DIR, "splitter_winsor_mice.pkl"))
+save_object(
+    swm,
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "splitter_winsor_mice.pkl")
+)
 
 
 reporter.last("Done.")

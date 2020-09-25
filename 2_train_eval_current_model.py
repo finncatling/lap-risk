@@ -55,7 +55,7 @@ df, _ = drop_incomplete_cases(df)
 
 reporter.report("Preparing list of variables for binarization")
 """
-GCS is exempt from binarisation as it is binned in a separate function. ASA is
+GCS is exempt from binarization as it is binned in a separate function. ASA is
 exempt as it is only used in a later interaction term.
 """
 binarize_vars = list(CURRENT_MODEL_VARS["cat"])
@@ -70,7 +70,10 @@ quadratic transformation to creatinine and urea after they are log-transformed.
 """
 quadratic_vars = list(CURRENT_MODEL_VARS["cont"])
 quadratic_vars.remove("S03Sodium")
-for original, logged in (("S03SerumCreatinine", "logcreat"), ("S03Urea", "logurea")):
+for original, logged in (
+        ("S03SerumCreatinine", "logcreat"),
+        ("S03Urea", "logurea")
+):
     quadratic_vars.remove(original)
     quadratic_vars.append(logged)
 
@@ -112,7 +115,8 @@ stp.split_train_predict()
 
 reporter.report("Saving SplitterTrainerPredictor for later use")
 save_object(
-    stp, os.path.join(CURRENT_MODEL_OUTPUT_DIR, "splitter_trainer_predictor.pkl")
+    stp,
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "splitter_trainer_predictor.pkl")
 )
 
 

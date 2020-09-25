@@ -1,6 +1,9 @@
 import os
 import numpy as np
-from utils.plot.evaluate import plot_calibration, plot_stratified_risk_distributions
+from utils.plot.evaluate import (
+    plot_calibration,
+    plot_stratified_risk_distributions
+)
 from utils.plot.helpers import plot_saver
 from utils.report import Reporter
 from utils.constants import FIGURES_OUTPUT_DIR, CURRENT_MODEL_OUTPUT_DIR
@@ -20,7 +23,9 @@ make_directory(FIGURES_OUTPUT_DIR)
 
 
 reporter.report("Loading results of model scoring")
-scorer: ModelScorer = load_object(os.path.join(CURRENT_MODEL_OUTPUT_DIR, "scorer.pkl"))
+scorer: ModelScorer = load_object(
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "scorer.pkl")
+)
 
 
 reporter.report("Plotting calibration curves")

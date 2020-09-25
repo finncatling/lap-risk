@@ -25,7 +25,9 @@ make_directory(NOVEL_MODEL_OUTPUT_DIR)
 
 
 reporter.report("Loading previous analysis outputs needed for imputation")
-df = pd.read_pickle(os.path.join(DATA_DIR, "df_preprocessed_for_novel_pre_split.pkl"))
+df = pd.read_pickle(
+    os.path.join(DATA_DIR, "df_preprocessed_for_novel_pre_split.pkl")
+)
 imp_stages: ImputationInfo = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "imputation_stages.pkl")
 )
@@ -33,7 +35,10 @@ swm: SplitterWinsorMICE = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "splitter_winsor_mice.pkl")
 )
 multi_category_levels: Dict[str, Tuple] = load_object(
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "multi_category_levels_with_indications.pkl")
+    os.path.join(
+        NOVEL_MODEL_OUTPUT_DIR,
+        "multi_category_levels_with_indications.pkl"
+    )
 )
 
 

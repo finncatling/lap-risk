@@ -9,7 +9,10 @@ from utils.io import make_directory, save_object
 from utils.constants import DATA_DIR, STATS_OUTPUT_DIR
 from utils.model.novel import INDICATION_PREFIX, MISSING_IND_CATEGORY
 
+
+# TODO: Move this to constants.py
 SINGLE_IND_FREQUENCY_THRESHOLD = 1200
+
 
 reporter = Reporter()
 reporter.title(
@@ -40,14 +43,18 @@ reporter.report(
     "Defining 'common single indications' as those that occur in "
     f"isolation more than {SINGLE_IND_FREQUENCY_THRESHOLD} times"
 )
-common_single_inds: List[str] = ind_df.loc[ind_df.sum(1) == 1].sum(0)[
-    ind_df.loc[ind_df.sum(1) == 1].sum(0) > SINGLE_IND_FREQUENCY_THRESHOLD
+common_single_inds: List[str] = ind_df.loc[
+    ind_df.sum(1) == 1
+].sum(0)[
+    ind_df.loc[
+        ind_df.sum(1) == 1
+    ].sum(0) > SINGLE_IND_FREQUENCY_THRESHOLD
 ].sort_values(ascending=False).index.tolist()
 
 
 print(
     "The common single indications are",
-    ", ".join([i[len(INDICATION_PREFIX) :] for i in common_single_inds]),
+    ", ".join([i[len(INDICATION_PREFIX):] for i in common_single_inds]),
 )
 
 
@@ -155,9 +162,16 @@ df_with_new_inds.to_pickle(
 
 
 reporter.report("Saving a few summary statistics")
-ci_stats = {"indication_counts": new_ind_df.sum(0).sort_values(ascending=False)}
-ci_stats["indication_proportions"] = ci_stats["indication_counts"] / new_ind_df.shape[0]
-save_object(ci_stats, os.path.join(STATS_OUTPUT_DIR, "4_consolidate_indications.pkl"))
+ci_stats = {
+    "indication_counts": new_ind_df.sum(0).sort_values(ascending=False)
+}
+ci_stats["indication_proportions"] = (
+    ci_stats["indication_counts"] / new_ind_df.shape[0]
+)
+save_object(
+    ci_stats,
+    os.path.join(STATS_OUTPUT_DIR, "4_consolidate_indications.pkl")
+)
 
 
 reporter.last("Done.")
