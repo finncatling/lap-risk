@@ -60,7 +60,8 @@ def split_into_folds(
 
     split = {}
     for fold in ("train", "test"):
-        split[fold] = {"X_df": df.loc[indices[fold]].copy().reset_index(drop=True)}
+        split[fold] = {
+            "X_df": df.loc[indices[fold]].copy().reset_index(drop=True)}
         split[fold]["y"] = split[fold]["X_df"][target_var_name].values
         split[fold]["X_df"] = split[fold]["X_df"].drop(target_var_name, axis=1)
 
@@ -109,7 +110,7 @@ class TrainTestSplitter:
                 anonymised institution IDs used in splitting
             test_fraction: Fraction of institutions from which the test fold
                 cases are sourced. In interval [0, 1]
-            n_iters: Number of iterations of train-test splitting to perform.
+            n_splits: Number of iterations of train-test splitting to perform.
                 The multiple splits obtained will be used later to calculate
                 confidence intervals for the models' performance.
             current_nela_model_vars: Column names of the variables used by the
@@ -178,13 +179,15 @@ class TrainTestSplitter:
         self.test_institution_ids.append(
             np.sort(
                 self.rnd.choice(
-                    self.institution_ids, self.n_test_institutions, replace=False
+                    self.institution_ids, self.n_test_institutions,
+                    replace=False
                 )
             )
         )
         self.train_institution_ids.append(
             np.array(
-                list(set(self.institution_ids) - set(self.test_institution_ids[-1]))
+                list(set(self.institution_ids) - set(
+                    self.test_institution_ids[-1]))
             )
         )
 
@@ -195,7 +198,8 @@ class TrainTestSplitter:
             incomplete cases)."""
         self.train_i.append(
             self.df.index[
-                self.df[self.split_variable_name].isin(self.train_institution_ids[-1])
+                self.df[self.split_variable_name].isin(
+                    self.train_institution_ids[-1])
             ].to_numpy()
         )
         self.test_i.append(
@@ -234,7 +238,9 @@ class Splitter:
             "n_included_train_cases": {},
         }
 
-    def _split(self, i: int) -> (pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray):
+    def _split(self, i: int) -> (
+        pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray
+    ):
         """Train-test split, according to the pre-defined splits calculated
             in 1_train_test_split.py"""
         (

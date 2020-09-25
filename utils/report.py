@@ -75,7 +75,7 @@ class Reporter:
             message = f"{message} {self.timer.elapsed()}"
         print(f"\n{box_edge}")
         while char_i < len(message):
-            fragment = message[char_i : char_i + text_width]
+            fragment = message[char_i: char_i + text_width]
             extra_spaces = " " * int(text_width - len(fragment))
             print(f"# {fragment}{extra_spaces} #")
             char_i += text_width

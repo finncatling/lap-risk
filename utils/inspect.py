@@ -28,7 +28,8 @@ def con_data(df: pd.DataFrame, col_name: str, bins: int = 50) -> None:
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].hist(df[col_name].values, bins=bins)
-    stats.probplot(df.loc[df[col_name].notnull(), col_name].values, plot=axes[1])
+    stats.probplot(df.loc[df[col_name].notnull(), col_name].values,
+                   plot=axes[1])
     plt.show()
 
 
@@ -56,7 +57,8 @@ def dummies_data(
     dot_chart(ind_vc, f"How common is each {concept}?")
 
     dot_chart(
-        ddf.sum(1).value_counts().sort_index(), f"How many {concept}s per laparotomy?"
+        ddf.sum(1).value_counts().sort_index(),
+        f"How many {concept}s per laparotomy?"
     )
 
     for c in ddf.columns:
@@ -116,7 +118,8 @@ def dot_chart(vc: pd.Series, title: str) -> None:
     ax2 = ax.twinx()
     ax2.set_yticks(list(range(n)))
     total = data.sum()
-    count_labels = ["{} ({:.2f}%)".format(x, 100 * x / total) for x in data[::-1]]
+    count_labels = ["{} ({:.2f}%)".format(x, 100 * x / total) for x in
+                    data[::-1]]
     ax2.set_yticklabels(count_labels)
     ax2.set_ylim(-1, n)
 
@@ -171,7 +174,8 @@ def multi_dot_chart(
     plt.show()
 
 
-def report_ohe_category_assignment(data: pd.DataFrame, category_name: str) -> None:
+def report_ohe_category_assignment(data: pd.DataFrame,
+                                   category_name: str) -> None:
     """Given a DataFrame where the columns one-hot-encode a categorical
         variable, reports the number / proportion of rows where a category is
         assigned."""
