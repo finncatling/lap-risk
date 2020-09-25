@@ -1,7 +1,6 @@
 from typing import Tuple, List, Union
 
 import matplotlib.pyplot as plt
-import numpy as np
 from dataclasses import dataclass
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -106,10 +105,12 @@ def plot_partial_dependence(
                         )
 
                     lines.append(Line2D([0], [0], color=colours[l]))
-                ax.legend(lines, pdp_terms[i].strata, loc=pdp_terms[i].legend_loc)
+                ax.legend(lines, pdp_terms[i].strata,
+                          loc=pdp_terms[i].legend_loc)
 
                 if pdp_terms[i].labels is not None:
-                    ax.set_xticks(XX[0][:, 0][range(mid_cat_i, n, ticks_per_cat)])
+                    ax.set_xticks(
+                        XX[0][:, 0][range(mid_cat_i, n, ticks_per_cat)])
                     ax.set_xticklabels(pdp_terms[i].labels)
                     ax.set_xlim([XX[0][0, 0], XX[0][-1, 0]])
                     if pdp_terms[i].name == "Indication":

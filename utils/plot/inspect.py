@@ -29,7 +29,11 @@ def inspect_transformed_lac_alb(
         obs_target_trans = imputer._transformers[train_test_split_i].transform(
             obs_target
         )
-        ax[i].hist(obs_target_trans.values.flatten(), label="transformed", **hist_args)
+        ax[i].hist(
+            obs_target_trans.values.flatten(),
+            label="transformed",
+            **hist_args
+        )
 
         ax[i].set(title=fold)
         ax[i].legend()

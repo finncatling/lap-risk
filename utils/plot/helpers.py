@@ -37,7 +37,7 @@ def plot_saver(
 
 
 def sanitize_indication(ind: str, ind_prefix: str = INDICATION_PREFIX) -> str:
-    ind = ind[len(ind_prefix) :]
+    ind = ind[len(ind_prefix):]
     ind = " ".join(re.findall("[A-Z][^A-Z]*", ind))
     ind = ind.lower()
     return ind[0].upper() + ind[1:]
