@@ -4,18 +4,18 @@ from typing import List, Dict, Union, Tuple, Any, Callable, Type
 import numpy as np
 import pandas as pd
 from progressbar import progressbar as pb
+from pygam import GAM
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import QuantileTransformer
 from sklearn.preprocessing import RobustScaler
+from statsmodels.discrete import discrete_model
 from statsmodels.imputation.mice import MICEData
 from statsmodels.regression import linear_model
-from statsmodels.discrete import discrete_model
-from pygam import GAM
-from sklearn.preprocessing import QuantileTransformer
 
-from utils.split import Splitter, TrainTestSplitter
-from utils.model.novel import winsorize_novel, NOVEL_MODEL_VARS
-from utils.model.albumin import GammaTransformer
 from utils.gam import combine_mi_gams
+from utils.model.albumin import GammaTransformer
+from utils.model.novel import winsorize_novel, NOVEL_MODEL_VARS
+from utils.split import Splitter, TrainTestSplitter
 
 
 def determine_n_imputations(df: pd.DataFrame) -> (int, float):
@@ -140,7 +140,7 @@ class SplitterWinsorMICE(Splitter):
             n_mice_burn_in: Number of MICE-imputed DataFrames that will be
                 discarded before the first retained DataFrame
             n_mice_skip: Number of MICE-imputed DataFrames that will be
-                discarded betweem retained DataFrames
+                discarded between retained DataFrames
         """
         super().__init__(df, train_test_splitter, target_variable_name)
         self.cont_vars = cont_variables
@@ -151,22 +151,20 @@ class SplitterWinsorMICE(Splitter):
         self.n_mice_imputations = n_mice_imputations
         self.n_mice_burn_in = n_mice_burn_in
         self.n_mice_skip = n_mice_skip
-        self.winsor_thresholds: Dict[
-            int, Dict[str, Tuple[float, float]]  # train-test split index
-        ] = {}
-        self.missing_i: Dict[
-            str,  # fold name
-            Dict[int, Dict[str, np.ndarray]],  # train-test split index  # variable name
-        ] = {"train": {}, "test": {}}
-        self.imputed: Dict[
-            str,  # fold name
-            Dict[
-                int,  # train-test split index
-                Dict[
-                    int, Dict[str, np.ndarray]  # MICE imputation index  # variable name
-                ],
-            ],
-        ] = {"train": {}, "test": {}}
+        self.winsor_thresholds: Dict[int,  # train-test split index
+                                     Dict[str,  # variable name
+                                          Tuple[float, float]]] = {}
+        self.missing_i: Dict[str,  # fold name
+                             Dict[int,  # train-test split index
+                                  Dict[str,  # variable name
+                                       np.ndarray]]] = {'train': {},
+                                                        'test': {}}
+        self.imputed: Dict[str,  # fold name
+                           Dict[int,  # train-test split index
+                                Dict[int,  # MICE imputation index
+                                     Dict[str,  # variable name
+                                          np.ndarray]]]] = {'train': {},
+                                                            'test': {}}
 
     @property
     def all_vars(self):
@@ -175,14 +173,13 @@ class SplitterWinsorMICE(Splitter):
     def _sanity_check_variables(self):
         """Check that, apart from target (accounted for with the minus 1), df
             only contains the continuous and binary variables specified."""
-        # breakpoint()
         assert len(self.all_vars) == len(self.df.columns) - 1
         for var in self.all_vars:
             assert var in self.df.columns
 
     def split_winsorize_mice(self):
         """Split df according to pre-defined train-test splits, perform
-            winsorization (using thresolds from train fold to winsorize test
+            winsorization (using thresholds from train fold to winsorize test
             fold), then run MICE for train and test folds of all train-test
             splits."""
         for i in pb(range(self.tts.n_splits), prefix="Split iteration"):
@@ -211,9 +208,9 @@ class SplitterWinsorMICE(Splitter):
         elif fold == "test":
             _, _, imp_df, _ = self._split(split_i)
         for var_name, missing_i in self.missing_i[fold][split_i].items():
-            imp_df.iloc[missing_i, imp_df.columns.get_loc(var_name)] = self.imputed[
-                fold
-            ][split_i][mice_imp_i][var_name]
+            imp_df.iloc[missing_i, imp_df.columns.get_loc(var_name)] = (
+                self.imputed[fold][split_i][mice_imp_i][var_name]
+            )
         return imp_df
 
     def _winsorize(
@@ -266,7 +263,8 @@ class SplitterWinsorMICE(Splitter):
         self.imputed[fold][split_i][imputation_i] = {}
         for var_name, missing_i in self.missing_i[fold][split_i].items():
             self.imputed[fold][split_i][imputation_i][var_name] = (
-                imp_df.iloc[missing_i, imp_df.columns.get_loc(var_name)].copy().values
+                imp_df.iloc[
+                    missing_i, imp_df.columns.get_loc(var_name)].copy().values
             )
 
 
@@ -298,27 +296,24 @@ class CategoricalImputer(Splitter):
             random_seed: For reproducibility
         """
         super().__init__(
-            df, splitter_winsor_mice.tts, splitter_winsor_mice.target_variable_name
+            df, splitter_winsor_mice.tts,
+            splitter_winsor_mice.target_variable_name
         )
         self.swm = splitter_winsor_mice
         self.cat_vars = cat_vars
         self.imp_multiple = n_imputations_per_mice
         self.random_seed = random_seed
-        self.missing_i: Dict[
-            str,  # fold name
-            Dict[int, Dict[str, np.ndarray]],  # train-test split index  # variable name
-        ] = {"train": {}, "test": {}}
-        self._scalers: Dict[
-            int,  # train-test split index
-            Dict[int, RobustScaler],  # MICE imputation index
-        ] = {}
-        self._imputers: Dict[
-            int,  # train-test split index
-            Dict[
-                int,  # MICE imputation index
-                Dict[str, LogisticRegression],  # variable name
-            ],
-        ] = {}
+        self.missing_i: Dict[str,  # fold name
+                             Dict[int,  # train-test split index
+                                  Dict[str,  # variable name
+                                       np.ndarray]]] = {'train': {}, 'test': {}}
+        self._scalers: Dict[int,  # train-test split index
+                            Dict[int,  # MICE imputation index
+                                 RobustScaler]] = {}
+        self._imputers: Dict[int,  # train-test split index
+                             Dict[int,  # MICE imputation index
+                                  Dict[str,  # variable name
+                                       LogisticRegression]]] = {}
 
     def fit(self):
         """Fit imputers for every non-binary categorical variable, in every MICE
@@ -346,9 +341,11 @@ class CategoricalImputer(Splitter):
             the test-fold indices aren't used until later imputation."""
         fold_dfs = {"train": X_train, "test": X_test}
         for fold, df in fold_dfs.items():
-            self.missing_i[fold][split_i] = find_missing_indices(df[self.cat_vars])
+            self.missing_i[fold][split_i] = find_missing_indices(
+                df[self.cat_vars])
 
-    def _single_mice_imp(self, split_i: int, mice_imp_i: int, train_cat: pd.DataFrame):
+    def _single_mice_imp(self, split_i: int, mice_imp_i: int,
+                         train_cat: pd.DataFrame):
         """Fit imputers for every non-binary categorical variable, for a single
             MICE imputation, in a single train-test split."""
         train_cont_bin = self.swm.get_imputed_X_df(split_i, "train", mice_imp_i)
@@ -360,7 +357,8 @@ class CategoricalImputer(Splitter):
                 split_i, mice_imp_i, train_cont_bin, train_cat[cat_var_name]
             )
 
-    def _fit_scalers(self, split_i: int, mice_imp_i: int, train_cont_bin: pd.DataFrame):
+    def _fit_scalers(self, split_i: int, mice_imp_i: int,
+                     train_cont_bin: pd.DataFrame):
         """Fit scalers for continuous features. We need to scale them in order
             to use fast solvers for multinomial logistic regression in
             sklearn."""
@@ -369,10 +367,12 @@ class CategoricalImputer(Splitter):
             train_cont_bin.loc[:, self.swm.cont_vars].values
         )
 
-    def _scale(self, split_i: int, mice_imp_i: int, X: pd.DataFrame) -> pd.DataFrame:
+    def _scale(self, split_i: int, mice_imp_i: int,
+               X: pd.DataFrame) -> pd.DataFrame:
         """Scale continuous features."""
         X = X.copy()
-        X.loc[:, self.swm.cont_vars] = self._scalers[split_i][mice_imp_i].transform(
+        X.loc[:, self.swm.cont_vars] = self._scalers[split_i][
+            mice_imp_i].transform(
             X.loc[:, self.swm.cont_vars].values
         )
         return X
@@ -406,7 +406,8 @@ class CategoricalImputer(Splitter):
             obs_i = train_cont_bin.index.difference(
                 self.missing_i["train"][split_i][cat_var.name]
             )
-            self._imputers[split_i][mice_imp_i][cat_var.name] = LogisticRegression(
+            self._imputers[split_i][mice_imp_i][
+                cat_var.name] = LogisticRegression(
                 penalty="none",
                 solver="sag",
                 max_iter=3000,
@@ -479,11 +480,13 @@ class CategoricalImputer(Splitter):
         missing_i = self.missing_i[fold][split_i][cat_var_name]
         if missing_i.shape[0]:
             imputer = self._imputers[split_i][mice_imp_i][cat_var_name]
-            pred_probs = imputer.predict_proba(cont_bin_df_scaled.loc[missing_i].values)
+            pred_probs = imputer.predict_proba(
+                cont_bin_df_scaled.loc[missing_i].values)
             rnd = np.random.RandomState(self.random_seed + cat_imp_i)
             pred_classes = np.empty_like(missing_i)
             for i in range(missing_i.shape[0]):
-                pred_classes[i] = rnd.choice(imputer.classes_, p=pred_probs[i, :])
+                pred_classes[i] = rnd.choice(imputer.classes_,
+                                             p=pred_probs[i, :])
             cat_df.loc[missing_i, cat_var_name] = pred_classes
         return cat_df
 
@@ -496,7 +499,8 @@ class LactateAlbuminImputer(Splitter):
         df: pd.DataFrame,
         categorical_imputer: CategoricalImputer,
         imputation_target: str,
-        imputation_model_factory: Callable[[pd.Index, Dict[str, Tuple], str], GAM],
+        imputation_model_factory: Callable[
+            [pd.Index, Dict[str, Tuple], str], GAM],
         winsor_quantiles: Tuple[float, float],
         transformer: Type[Union[GammaTransformer, QuantileTransformer]],
         transformer_args: Dict[str, Any],
@@ -523,7 +527,8 @@ class LactateAlbuminImputer(Splitter):
             indication_var_name: Name of the indication column
         """
         super().__init__(
-            df, categorical_imputer.tts, categorical_imputer.target_variable_name
+            df, categorical_imputer.tts,
+            categorical_imputer.target_variable_name
         )
         self.cat_imputer = categorical_imputer
         self.cont_vars = NOVEL_MODEL_VARS["cont"]
@@ -542,7 +547,8 @@ class LactateAlbuminImputer(Splitter):
             int, Tuple[float, float]  # train-test split index
         ] = {}
         self._transformers: Dict[
-            int, Union[GammaTransformer, QuantileTransformer]  # train-test split index
+            int, Union[GammaTransformer, QuantileTransformer]
+            # train-test split index
         ] = {}
         self._imputers: Dict[int, GAM] = {}  # train-test split index
 
@@ -565,13 +571,15 @@ class LactateAlbuminImputer(Splitter):
         for X in (target_train, target_test):  # TODO: Remove these 2 lines
             assert isinstance(X, pd.DataFrame)
         self._find_missing_indices(split_i, target_train, target_test)
-        obs_target_train = self._get_observed_values("train", split_i, target_train)
+        obs_target_train = self._get_observed_values("train", split_i,
+                                                     target_train)
         obs_target_train = self._winsorize(split_i, obs_target_train)
         obs_target_train = self._fit_transform(split_i, obs_target_train)
         self._fit_combine_gams(split_i, obs_target_train)
 
     def _find_missing_indices(
-        self, split_i: int, target_train: pd.DataFrame, target_test: pd.DataFrame
+        self, split_i: int, target_train: pd.DataFrame,
+        target_test: pd.DataFrame
     ):
         """Find the indices (for this train-test split) of the missing values
             of the imputation target. We find these indices for the train and
@@ -593,16 +601,19 @@ class LactateAlbuminImputer(Splitter):
             the train fold)."""
         try:
             target, _ = winsorize_novel(
-                target, thresholds={self.imp_target: self._winsor_thresholds[split_i]}
+                target,
+                thresholds={self.imp_target: self._winsor_thresholds[split_i]}
             )
         except KeyError:
             target, w_thresholds = winsorize_novel(
-                target, cont_vars=[self.cont_vars], quantiles=self.winsor_quantiles
+                target, cont_vars=[self.cont_vars],
+                quantiles=self.winsor_quantiles
             )
             self._winsor_thresholds[split_i] = w_thresholds[self.imp_target]
         return target
 
-    def _fit_transform(self, split_i: int, target_train: pd.DataFrame) -> pd.DataFrame:
+    def _fit_transform(self, split_i: int,
+                       target_train: pd.DataFrame) -> pd.DataFrame:
         self._transformers[split_i] = self.trans(**self.trans_args)
         self._transformers[split_i].fit(target_train.values)
         target_train[self.imp_target] = self._transformers[split_i].transform(
@@ -621,7 +632,8 @@ class LactateAlbuminImputer(Splitter):
                     "train", split_i, features_train
                 )
                 gam = self.model_factory(
-                    obs_features_train.columns, self.multi_cat_vars, self.ind_var_name
+                    obs_features_train.columns, self.multi_cat_vars,
+                    self.ind_var_name
                 )
                 gam.fit(obs_features_train.values, obs_target_train.values)
                 gams.append(gam)
