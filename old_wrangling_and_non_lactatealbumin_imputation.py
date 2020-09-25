@@ -1,3 +1,8 @@
+# Old script, retained temporarily for reference only
+# TODO: Remove this script once happy with new imputation pipeline
+raise DeprecationWarning
+
+
 import os, copy, re, sys, operator
 import numpy as np
 import pandas as pd

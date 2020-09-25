@@ -1,3 +1,8 @@
+# Old script, retained temporarily for reference only
+# TODO: Remove this script once new lactate / albumin imputation scripts done
+raise DeprecationWarning
+
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # coding: utf-8
