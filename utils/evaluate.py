@@ -15,13 +15,18 @@ from sklearn.metrics import (
 
 
 def score_calibration(
-    y_true: np.ndarray, y_pred: np.ndarray, n_splines: int, lam_candidates: np.ndarray
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    n_splines: int,
+    lam_candidates: np.ndarray
 ) -> (np.ndarray, np.ndarray, float, float):
     """Derive smooth model calibration curve using a GAM. Report calibration
         error versus line of identity."""
     calib_gam = GAM(
-        s(0, n_splines=n_splines), distribution=BinomialDist(levels=1), link="logit"
-    ).gridsearch(y_pred.reshape(-1, 1), y_true, lam=lam_candidates, progress=False)
+        s(0, n_splines=n_splines), distribution=BinomialDist(levels=1),
+        link="logit"
+    ).gridsearch(y_pred.reshape(-1, 1), y_true, lam=lam_candidates,
+                 progress=False)
     p = np.linspace(0, 1, 101)
     cal_curve = calib_gam.predict(p)
     calib_mae = mean_absolute_error(p, cal_curve)
@@ -45,7 +50,10 @@ def tjurs_coef(y_true, y_pred):
     return strata[1] - strata[0]
 
 
-def score_predictions(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
+def score_predictions(
+    y_true: np.ndarray,
+    y_pred: np.ndarray
+) -> Dict[str, float]:
     """Calculate several scores for model performance using predicted risks
         and true labels.
 
@@ -122,21 +130,24 @@ class ModelScorer:
         for score in self.scores["point_estimates"].keys():
             self._extract_iter_per_score(score)
             self.scores["per_split"][score] = (
-                self.scores["per_split"][score] - self.scores["point_estimates"][score]
+                self.scores["per_split"][score] -
+                self.scores["point_estimates"][score]
             )
             self.scores["95ci"][score] = list(
-                self.scores["point_estimates"][score]
-                + np.percentile(self.scores["per_split"][score], (2.5, 97.5))
+                self.scores["point_estimates"][score] +
+                np.percentile(self.scores["per_split"][score], (2.5, 97.5))
             )
 
     def _extract_iter_per_score(self, score):
         self.scores["per_split"][score] = np.zeros(self.n_splits)
         for i in range(self.n_splits):
-            self.scores["per_split"][score][i] = self.scores["per_iter"][i][score]
+            self.scores["per_split"][score][i] = self.scores["per_iter"][i][
+                score]
 
 
 def evaluate_samples(
-    y: np.ndarray, y_samples: np.ndarray, cis: np.ndarray = np.linspace(0.95, 0.05, 20)
+    y: np.ndarray, y_samples: np.ndarray,
+    cis: np.ndarray = np.linspace(0.95, 0.05, 20)
 ) -> None:
     """Generate some plots to evaluate the quality of imputed samples of
         e.g. lactate, albumin. y is (n_patients,), y_samples is
@@ -162,7 +173,8 @@ def evaluate_samples(
         sam_mean_iqrs.append(sam_iqrs[i, :].mean())
 
         sam_cis.append(
-            y[np.where((y > sam_ci[:, 0]) & (y < sam_ci[:, 1]))].shape[0] / y.shape[0]
+            y[np.where((y > sam_ci[:, 0]) & (y < sam_ci[:, 1]))].shape[0] /
+            y.shape[0]
         )
 
     fig, ax = plt.subplots(2, 2, figsize=(7, 6.4))

@@ -80,7 +80,7 @@ def quick_sample(gam, sample_at_X, random_seed, quantity="y", n_draws=100):
     """
     if quantity not in {"mu", "coef", "y"}:
         raise ValueError(
-            "`quantity` must be one of 'mu', 'coef', 'y';" " got {}".format(quantity)
+            "`quantity` must be one of 'mu', 'coef', 'y';" f" got {quantity}"
         )
 
     rnd = RandomState(random_seed)
@@ -92,7 +92,8 @@ def quick_sample(gam, sample_at_X, random_seed, quantity="y", n_draws=100):
         return coef_draws
 
     linear_predictor = gam._modelmat(sample_at_X).dot(coef_draws.T)
-    mu_shape_n_draws_by_n_samples = gam.link.mu(linear_predictor, gam.distribution).T
+    mu_shape_n_draws_by_n_samples = gam.link.mu(linear_predictor,
+                                                gam.distribution).T
     if quantity == "mu":
         return mu_shape_n_draws_by_n_samples
     else:
