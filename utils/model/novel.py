@@ -4,7 +4,6 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 
-
 NOVEL_MODEL_VARS = {
     "cat": (
         "S03ASAScore",
@@ -32,7 +31,6 @@ NOVEL_MODEL_VARS = {
     "target": "Target",
 }
 
-
 # Need to add levels for the Indications variable below, once they are derived
 MULTI_CATEGORY_LEVELS = {
     "S03ASAScore": (1.0, 2.0, 3.0, 4.0, 5.0),
@@ -42,9 +40,7 @@ MULTI_CATEGORY_LEVELS = {
     "S03Pred_Peritsoil": (1.0, 2.0, 4.0, 8.0),
 }
 
-
 WINSOR_QUANTILES = (0.001, 0.999)
-
 
 LACTATE_VAR_NAME = "S03PreOpArterialBloodLactate"
 ALBUMIN_VAR_NAME = "S03PreOpLowestAlbumin"
@@ -63,8 +59,8 @@ MISSING_IND_CATEGORY = f"{INDICATION_PREFIX}Missing"
 def combine_categories(
     df: pd.DataFrame, category_mapping: Dict[str, Dict[float, float]]
 ) -> pd.DataFrame:
-    """Combines values of categorical variables. Propogates missing values.
-        each key-value pair in combine specifies a remappng of current
+    """Combines values of categorical variables. Propagates missing values.
+        each key-value pair in combine specifies a remapping of current
         categories to new ones. An example key-value pair in combine is
         'S03ECG' : {1.0: 0.0, 4.0: 1.0, 8.0: 1.0} which combines
         the two 'abnormal ecg' categories (4.0 and 8.0) together."""
@@ -82,7 +78,8 @@ def combine_categories(
     return df.drop(drop, axis=1)
 
 
-def add_missingness_indicators(df: pd.DataFrame, variables: List[str]) -> pd.DataFrame:
+def add_missingness_indicators(df: pd.DataFrame,
+                               variables: List[str]) -> pd.DataFrame:
     """Adds a missingness indicator column for each of the specified
         variables."""
     for v in variables:
@@ -109,7 +106,8 @@ def label_encode(
     for c, levels in multi_cat_levels.items():
         if c is not "Indication":
             df[c] = df[c].astype(float)
-            df[c] = [np.nan if np.isnan(x) else levels.index(x) for x in df[c].values]
+            df[c] = [np.nan if np.isnan(x) else levels.index(x) for x in
+                     df[c].values]
             df[c] = df[c].astype(float)
         else:
             df[c] = [

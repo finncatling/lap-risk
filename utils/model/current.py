@@ -3,8 +3,8 @@ from typing import Dict, List, Tuple, Union
 import numpy as np
 import pandas as pd
 from progressbar import progressbar as pb
-from sklearn.preprocessing import LabelBinarizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import LabelBinarizer
 
 from utils.split import TrainTestSplitter, Splitter
 
@@ -12,7 +12,7 @@ from utils.split import TrainTestSplitter, Splitter
 Web form for current NELA risk model includes Hb, but only uses this to
     calculate P-POSSUM.
 
-Winsorisation thresholds and centres are sourced from the appendix of
+Winsorization thresholds and centres are sourced from the appendix of
     Eugene et al. BJA 2018. Available at https://bit.ly/3dE9YS2
 """
 
@@ -100,10 +100,10 @@ def binarize_categorical(
     label_binarizers: Union[None, List[LabelBinarizer]],
     binarize_vars: List[str],
 ) -> (pd.DataFrame, List[LabelBinarizer]):
-    """Binarise categorical features. Can use pre-fit label binarisers
+    """Binarize categorical features. Can use pre-fit label binarizers
         if these are available (e.g. ones fit on the train fold).
 
-        Note that in the current NELA model, GCS is exempt from binarisation
+        Note that in the current NELA model, GCS is exempt from binarization
         as it is binned. ASA is exempt as it is only used in a later interaction
         term."""
     if label_binarizers:
@@ -175,7 +175,8 @@ def centre(df: pd.DataFrame, centres: Dict[str, float]) -> pd.DataFrame:
     return df
 
 
-def add_quadratic_features(df: pd.DataFrame, quadratic_vars: List[str]) -> pd.DataFrame:
+def add_quadratic_features(df: pd.DataFrame,
+                           quadratic_vars: List[str]) -> pd.DataFrame:
     """Add quadratic transformation of some continuous features. Sodium is
         exempt as it undergoes a customised transformation."""
     for v in quadratic_vars:
@@ -231,7 +232,7 @@ def transform_sodium(df: pd.DataFrame) -> pd.DataFrame:
 def preprocess_current(
     df: pd.DataFrame,
     quadratic_vars: List[str],
-    winsor_threholds: Dict[str, Tuple[float, float]],
+    winsor_thresholds: Dict[str, Tuple[float, float]],
     centres: Dict[str, float],
     binarize_vars: List[str],
     label_binarizers: Union[None, List[LabelBinarizer]],
@@ -241,7 +242,7 @@ def preprocess_current(
     Args:
         df: Manually-wrangled NELA data
         quadratic_vars: Continuous features to add a quadratic transformation of
-        winsor_threholds: Upper and lower bounds for winsorisation of
+        winsor_thresholds: Upper and lower bounds for winsorization of
             continuous variables
         centres: For use in centering the continuous variables
         binarize_vars: Categorical features to binarize
@@ -261,12 +262,13 @@ def preprocess_current(
     df = discretise_gcs(df)
     df = combine_ncepod_urgencies(df)
     df = combine_highest_resp_levels(df)
-    df, label_binarizers = binarize_categorical(df, label_binarizers, binarize_vars)
+    df, label_binarizers = binarize_categorical(df, label_binarizers,
+                                                binarize_vars)
     df = drop_base_categories(df)
 
     # Preprocess continuous variables
     df = log_urea_creat(df)
-    df = winsorize_current(df, winsor_threholds)
+    df = winsorize_current(df, winsor_thresholds)
     df = centre(df, centres)
     df = add_quadratic_features(df, quadratic_vars)
     df = add_asa_age_resp_interaction(df)
@@ -303,10 +305,11 @@ class SplitterTrainerPredictor(Splitter):
             self.y_pred.append(model.predict_proba(X_test.values)[:, 1])
         self.features += X_train.columns.tolist()
 
-    def _train(self, X_train: pd.DataFrame, y_train: np.ndarray) -> LogisticRegression:
+    def _train(self, X_train: pd.DataFrame,
+               y_train: np.ndarray) -> LogisticRegression:
         """We use the liblinear solver, as the unscaled features would slow the
             convergence of the other solvers. The current NELA model is
-            unregularised, but using the liblinear solver means that we must
+            unregularized, but using the liblinear solver means that we must
             specify a value for C (the inverse of regularisation strength). We
             get around this by setting C to a very large number in order to
             avoid any meaningful regularisation."""

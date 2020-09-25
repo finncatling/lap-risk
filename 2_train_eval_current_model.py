@@ -90,7 +90,7 @@ the data are repeatedly split and the model retrained.
 preprocessed_df, _ = preprocess_current(
     df,
     quadratic_vars=quadratic_vars,
-    winsor_threholds=WINSOR_THRESHOLDS,
+    winsor_thresholds=WINSOR_THRESHOLDS,
     centres=CENTRES,
     binarize_vars=binarize_vars,
     label_binarizers=None,

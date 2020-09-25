@@ -1,11 +1,13 @@
 from typing import Dict, Tuple
+
 import numpy as np
 import pandas as pd
 from pygam import GammaGAM, s, f, te
 
 
 def albumin_model_factory(
-    columns: pd.Index, multi_cat_levels: Dict[str, Tuple], indication_var_name: str
+    columns: pd.Index, multi_cat_levels: Dict[str, Tuple],
+    indication_var_name: str
 ) -> GammaGAM:
     # TODO: Check creatinine features in DataFrame - why is it causing
     #  divergence? Should it interact with urea?
