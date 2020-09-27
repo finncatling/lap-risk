@@ -30,7 +30,7 @@ make_directory(os.path.join(STATS_OUTPUT_DIR))
 
 reporter.report("Loading manually-wrangled NELA data")
 df = pd.read_pickle(
-    os.path.join(DATA_DIR, "df_after_univariate_wrangling.pkl")
+    os.path.join(DATA_DIR, "lap_risk_df_after_univariate_wrangling.pkl")
 ).reset_index(drop=True)
 
 
