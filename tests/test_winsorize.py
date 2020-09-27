@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 from utils.model.novel import winsorize_novel, NOVEL_MODEL_VARS
-from .fixtures import initial_df_fixture
 
 
 def test_winsorise(initial_df_fixture):

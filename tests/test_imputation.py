@@ -1,6 +1,5 @@
 from utils import impute
 from utils.model.novel import NOVEL_MODEL_VARS
-from .fixtures import initial_df_fixture, train_test_split_fixture
 
 
 def test_determine_imputations(initial_df_fixture):

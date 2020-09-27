@@ -1,6 +1,5 @@
 from utils import split
 from utils.model.novel import NOVEL_MODEL_VARS
-from .fixtures import initial_df_fixture, train_test_split_fixture
 
 
 def test_drop_incomplete_cases(initial_df_fixture):

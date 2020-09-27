@@ -1,5 +1,4 @@
 from utils.model import novel
-from .fixtures import initial_df_fixture
 
 
 def test_combine(initial_df_fixture):
