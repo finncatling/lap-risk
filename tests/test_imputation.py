@@ -1,11 +1,11 @@
 import pytest
 
-from .datafixture import dummy_dataframe, TTS
+from .datafixture import dummy_df, TTS
 from utils import impute
 from utils.split import Splitter, TrainTestSplitter
 from utils.model.novel import WINSOR_QUANTILES, NOVEL_MODEL_VARS
 
-df = dummy_dataframe()
+df = dummy_df()
 #includes hospital.id which needs to be dropped
 df = df.drop(columns=["HospitalId.anon"])
 

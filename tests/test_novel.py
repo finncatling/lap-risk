@@ -1,9 +1,9 @@
 import pytest
 
-from .datafixture import dummy_dataframe
+from .datafixture import dummy_df
 from utils.model import novel 
 
-df = dummy_dataframe()
+df = dummy_df()
 
 def test_combine():
     mapping = {"S03ECG": {
