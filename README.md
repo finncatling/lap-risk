@@ -2,38 +2,47 @@
 
 Modelling mortality risk in emergency laparotomy, using data from the NELA
 
-## Running on the Imperial BDAU
+## Install
 
-Set the correct python environment by running the following in the terminal:
+Install necessary dependencies with [pipenv](https://pipenv-fork.readthedocs.io/en/latest/):
 
 ```console
-alias python3=/opt/python/3.6.8/bin/python3.6
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/python/3.6.8/lib
+pipenv install
 ```
 
-Then, after navigating to the `lap-risk` root directory, you _could_ run the individual analysis files as follows:
+## Running the analysis
+
+Enter the project's python environment:
 
 ```console
-python3 1_train_test_split.py
+pipenv shell
+```
+
+Then run the python scripts in the root directory in numerical order, e.g. starting with:
+
+```console
+python 01_train_test_split.py
 ```
 
 ### Limiting the number of cores used
 
-We want to use `taskset` to limit the number of cores used for the computationally-intensive bits of the analysis, but the `python3` alias set above doesn't work with it. So, we need to instead use the full python path instead. E.g. to run on the first 16 cores:
+When running in the Imperial BDAU, we should limit the number of cores used for the computationally-intensive bits of the analysis. E.g. to run on the first 16 cores:
 
 ```console
-taskset -c 0-15 /opt/python/3.6.8/bin/python3.6 1_train_test_split.py
+taskset -c 0-15 python 01_train_test_split.py
 ```
 
-### Runnin tests
-Install dev packages with 
+## Running tests
+Install dev packages with:
 
 ```console
 pipenv install --dev 
 ```
 
-Tests are currently only written for the utils module as this provides the functions open which we build the analysis. To run tests and check coverage
+Run tests and check coverage:
 
 ```console
 pytest --cov=utils tests/ 
 ```
+
+NB. Tests are currently only written for the utils module as this provides the functions upon which we build the analysis
