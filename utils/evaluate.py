@@ -74,7 +74,7 @@ def score_predictions(
 
 class ModelScorer:
     """Calculate confidence intervals for model evaluation scores using their
-        predictions on the different test folds from 1_train_test_split.py"""
+        predictions on the different test folds from 01_train_test_split.py"""
 
     def __init__(
         self,
