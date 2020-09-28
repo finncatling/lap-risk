@@ -104,7 +104,7 @@ def label_encode(
     """Encode labels for each novel-model categorical variable as integers, with
         missingness support."""
     for c, levels in multi_cat_levels.items():
-        if c is not "Indication":
+        if c != "Indication":
             df[c] = df[c].astype(float)
             df[c] = [np.nan if np.isnan(x) else levels.index(x) for x in
                      df[c].values]
