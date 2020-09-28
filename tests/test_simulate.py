@@ -13,3 +13,10 @@ class TestTruncatedDistribution:
     def test_normaliser(self, truncated_distribution):
         assert truncated_distribution.normaliser <= 1
         assert truncated_distribution.normaliser >= 0
+
+    def test_sample(self, truncated_distribution):
+        n_samples = 10000
+        samples = truncated_distribution.sample(n_samples)
+        assert samples.shape[0] == n_samples
+        assert samples.min() >= truncated_distribution.lower_bound
+        assert samples.max() <= truncated_distribution.upper_bound
