@@ -75,7 +75,7 @@ reporter.first(
     "indications to the closest single indication"
 )
 for ind_pair, keep_ind_index in (
-    (("Perforation", "Peritonitis"), 0),
+    (("Perforation", "Peritonitis"), 1),
     (("SmallBowelObstruction", "IncarceratedHernia"), 0),
     (("Perforation", "AbdominalAbscess"), 0),
 ):
@@ -96,7 +96,7 @@ reporter.first(
     "indications to the closest single indication"
 )
 for ind_trio, keep_ind_index in (
-    (("Perforation", "Peritonitis", "AbdominalAbscess"), 0),
+    (("Perforation", "Peritonitis", "AbdominalAbscess"), 1),
 ):
     print(f"Changing {ind_trio} to {ind_trio[keep_ind_index]}")
     new_ind_df.loc[
