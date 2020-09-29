@@ -1,5 +1,5 @@
 import operator
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Iterable
 
 import numpy as np
 import pandas as pd
@@ -56,6 +56,23 @@ INDICATION_PREFIX = "S05Ind_"
 MISSING_IND_CATEGORY = f"{INDICATION_PREFIX}Missing"
 
 
+def get_indication_variable_names(
+    columns: Iterable[str],
+    prefix: str = INDICATION_PREFIX
+) -> List[str]:
+    """Given an iterable of column names, isolates just those that are binary
+        indication variables.
+
+    Args:
+        columns: Column names
+        prefix: Prefix of the variables which are binary indications
+
+    Returns:
+        Binary indication variables
+    """
+    return [c for c in columns if prefix in c]
+
+
 def combine_categories(
     df: pd.DataFrame, category_mapping: Dict[str, Dict[float, float]]
 ) -> pd.DataFrame:
@@ -104,7 +121,7 @@ def label_encode(
     """Encode labels for each novel-model categorical variable as integers, with
         missingness support."""
     for c, levels in multi_cat_levels.items():
-        if c is not "Indication":
+        if c != "Indication":
             df[c] = df[c].astype(float)
             df[c] = [np.nan if np.isnan(x) else levels.index(x) for x in
                      df[c].values]
