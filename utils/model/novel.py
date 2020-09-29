@@ -1,5 +1,5 @@
 import operator
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Iterable
 
 import numpy as np
 import pandas as pd
@@ -54,6 +54,23 @@ LACTATE_ALBUMIN_VARS = (
 INDICATION_VAR_NAME = "Indication"
 INDICATION_PREFIX = "S05Ind_"
 MISSING_IND_CATEGORY = f"{INDICATION_PREFIX}Missing"
+
+
+def get_indication_variable_names(
+    columns: Iterable[str],
+    prefix: str = INDICATION_PREFIX
+) -> List[str]:
+    """Given an iterable of column names, isolates just those that are binary
+        indication variables.
+
+    Args:
+        columns: Column names
+        prefix: Prefix of the variables which are binary indications
+
+    Returns:
+        Binary indication variables
+    """
+    return [c for c in columns if prefix in c]
 
 
 def combine_categories(
