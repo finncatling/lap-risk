@@ -1,13 +1,13 @@
 import os
-import numpy as np
+from typing import Iterable
+
 import pandas as pd
 import pytest
-from scipy import stats
 
 from utils.io import load_object
-from utils.split import TrainTestSplitter
-from utils.model.novel import NOVEL_MODEL_VARS, get_indication_variable_names
+from utils.model.novel import NOVEL_MODEL_VARS
 from utils.simulate import simulate_initial_df
+from utils.split import TrainTestSplitter
 
 
 @pytest.fixture(scope='session')
@@ -34,6 +34,12 @@ def initial_df_fixture(
     complete_indications: bool = True,
     complete_target: bool = True,
     complete_institution: bool = True,
+    round_1dp_variables: Iterable[str] = (
+        "S03PreOpArterialBloodLactate",
+        "S03Urea",
+        "S03WhiteCellCount",
+        "S03Potassium"
+    )
 ) -> pd.DataFrame:
     """Simulates NELA data after initial univariate wrangling and variable
         selection (i.e. the output of 0_univariate_wrangling.ipynb), which is
@@ -54,6 +60,8 @@ def initial_df_fixture(
             target variable
         complete_institution: if True, don't introduce missingness into the
             hospital / trust ID variable
+        round_1dp_variables: These variables are rounded to one decimal place.
+            All other continuous variables are rounded to zero decimal places.
 
     Returns:
         Simulated NELA data
@@ -66,6 +74,7 @@ def initial_df_fixture(
         complete_indications=complete_indications,
         complete_target=complete_target,
         complete_institution=complete_institution,
+        round_1dp_variables=round_1dp_variables,
         random_seed=request.param
     )
 

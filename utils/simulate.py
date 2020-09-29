@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy import stats
+from typing import Iterable
 
 from utils.model.novel import get_indication_variable_names
 
@@ -63,6 +64,7 @@ def simulate_initial_df(
     complete_indications: bool,
     complete_target: bool,
     complete_institution: bool,
+    round_1dp_variables: Iterable[str],
     random_seed
 ) -> pd.DataFrame:
     """Simulates NELA data after initial univariate wrangling and variable
@@ -83,6 +85,8 @@ def simulate_initial_df(
             target variable
         complete_institution: if True, don't introduce missingness into the
             hospital / trust ID variable
+        round_1dp_variables: These variables are rounded to one decimal place.
+            All other continuous variables are rounded to zero decimal places.
         random_seed
 
     Returns:
@@ -117,6 +121,10 @@ def simulate_initial_df(
             random_state=rnd
         )
         df[var_name] = truncated_rv.sample(n_rows)
+        if var_name in round_1dp_variables:
+            df[var_name] = df[var_name].round(1)
+        else:
+            df[var_name] = df[var_name].round(0)
 
     # Make list of columns which will have missing values
     missing_columns = df.columns.tolist()
