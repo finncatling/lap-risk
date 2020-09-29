@@ -13,19 +13,22 @@ class TruncatedDistribution:
         rv: stats._distn_infrastructure.rv_frozen,
         lower_bound: float = -np.inf,
         upper_bound: float = np.inf,
-        random_seed=None
+        random_state: np.random.RandomState = None
     ):
         """
         Args:
             rv: Frozen scipy continuous random variables, e.g. norm(0, 1)
             lower_bound: Samples should be >= this value
             upper_bound: Samples should be <= this value
-            random_seed: Optional
+            random_state: Pass this for deterministic sampling
         """
         self.rv = rv
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
-        self.rnd = np.random.RandomState(random_seed)
+        if random_state is None:
+            self.rnd = np.random.RandomState()
+        else:
+            self.rnd = random_state
 
     @property
     def lower_quantile(self) -> float:

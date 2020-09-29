@@ -7,6 +7,7 @@ from scipy import stats
 from utils.io import load_object
 from utils.split import TrainTestSplitter
 from utils.model.novel import NOVEL_MODEL_VARS, get_indication_variable_names
+from utils.simulate import TruncatedDistribution
 
 
 @pytest.fixture(scope='session')
@@ -27,8 +28,8 @@ def initial_df_specification(
 def initial_df_fixture(
     request,
     initial_df_specification: dict,
-    n_rows: int = 1000,
-    n_hospitals: int = 170,
+    n_rows: int = 500,
+    n_hospitals: int = 70,
     missing_frac: float = 0.05,
     complete_indications: bool = True,
     complete_target: bool = True,
@@ -76,11 +77,16 @@ def initial_df_fixture(
         df[var_name] = cat_samples
 
     # Create continuous columns
-    # TODO: Add boundaries
     for var_name, params in spec['cont_fits'].items():
         dist = getattr(stats, params['dist_name'])
-        rv = dist(*params['dist_params'])
-        df[var_name] = rv.rvs(n_rows, random_state=rnd)
+        # TODO: Truncation is slow - find out why and try and fix. Is it .ppf()?
+        truncated_rv = TruncatedDistribution(
+            rv=dist(*params['dist_params']),
+            lower_bound=params['min'],
+            upper_bound=params['max'],
+            random_state=rnd
+        )
+        df[var_name] = truncated_rv.sample(n_rows)
 
     # Make list of columns which will have missing values
     missing_columns = df.columns.tolist()
