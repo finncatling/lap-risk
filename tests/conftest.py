@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+from scipy import stats
 
 from utils.io import load_object
 from utils.split import TrainTestSplitter
@@ -75,10 +76,11 @@ def initial_df_fixture(
         df[var_name] = cat_samples
 
     # Create continuous columns
-    # TODO: Update this
-    for i in NOVEL_MODEL_VARS["cont"]:
-        center = rnd.randint(50, 150)
-        df[i] = rnd.normal(center, 10, n_rows)
+    # TODO: Add boundaries
+    for var_name, params in spec['cont_fits'].items():
+        dist = getattr(stats, params['dist_name'])
+        rv = dist(*params['dist_params'])
+        df[var_name] = rv.rvs(n_rows, random_state=rnd)
 
     # Make list of columns which will have missing values
     missing_columns = df.columns.tolist()
