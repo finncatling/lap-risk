@@ -16,7 +16,6 @@ arviz = "0.10.0"
 progressbar2 = "3.53.1"
 pexpect = "*"
 ptyprocess = "*"
-toml = "*"
 
 [dev-packages]
 pytest = "6.0.2"
