@@ -1,5 +1,8 @@
 import numpy as np
+import pandas as pd
 from scipy import stats
+
+from utils.model.novel import get_indication_variable_names
 
 
 class TruncatedDistribution:
@@ -50,3 +53,86 @@ class TruncatedDistribution:
                      self.normaliser +
                      self.lower_quantile)
         return self.rv.ppf(quantiles)
+
+
+def simulate_initial_df(
+    specification: dict,
+    n_rows: int,
+    n_hospitals: int,
+    missing_frac: float,
+    complete_indications: bool,
+    complete_target: bool,
+    complete_institution: bool,
+    random_seed
+) -> pd.DataFrame:
+    """Simulates NELA data after initial univariate wrangling and variable
+        selection (i.e. the output of 0_univariate_wrangling.ipynb), which is
+        input to 01_train_test_split.py
+
+    Args:
+        specification: Specification for the continuous and
+            categorical variables in the NELA data. Load this from
+            config/initial_df_univariate_specification.pkl
+        n_rows: Number of rows in DataFrame
+        n_hospitals: Number of hospitals in DataFrame
+        missing_frac: Fraction of data that is missing (for incomplete
+            variables)
+        complete_indications: if True, don't introduce missingness into the
+            binary indications variables
+        complete_target: if True, don't introduce missingness into the
+            target variable
+        complete_institution: if True, don't introduce missingness into the
+            hospital / trust ID variable
+        random_seed
+
+    Returns:
+        Simulated NELA data
+    """
+    spec = specification
+    rnd = np.random.RandomState(random_seed)
+    df = pd.DataFrame()
+
+    # Create institution (hospital or trust) ID column
+    df[spec['var_names']['institutions'][0]] = rnd.randint(
+        n_hospitals, size=n_rows)
+
+    # Create other categorical columns
+    for var_name, probabilities in spec['cat_fits'].items():
+        cat_samples_i_2d = np.random.multinomial(
+            n=1,
+            pvals=probabilities.values,
+            size=n_rows)
+        cat_samples_i_1d = np.argmax(cat_samples_i_2d, 1)
+        cat_samples = [probabilities.index[i] for i in cat_samples_i_1d]
+        df[var_name] = cat_samples
+
+    # Create continuous columns
+    for var_name, params in spec['cont_fits'].items():
+        dist = getattr(stats, params['dist_name'])
+        # TODO: Truncation is slow - find out why and try and fix. Is it .ppf()?
+        truncated_rv = TruncatedDistribution(
+            rv=dist(*params['dist_params']),
+            lower_bound=params['min'],
+            upper_bound=params['max'],
+            random_state=rnd
+        )
+        df[var_name] = truncated_rv.sample(n_rows)
+
+    # Make list of columns which will have missing values
+    missing_columns = df.columns.tolist()
+    if complete_indications:
+        for c in get_indication_variable_names(df.columns):
+            missing_columns.remove(c)
+    if complete_target:
+        missing_columns.remove(spec['var_names']['target'])
+    if complete_institution:
+        missing_columns.remove(spec['var_names']['institutions'][0])
+
+    # Introduce missing values
+    for col in missing_columns:
+        df.loc[df.sample(
+            frac=missing_frac,
+            random_state=rnd
+        ).index, col] = np.nan
+
+    return df

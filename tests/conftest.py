@@ -7,7 +7,7 @@ from scipy import stats
 from utils.io import load_object
 from utils.split import TrainTestSplitter
 from utils.model.novel import NOVEL_MODEL_VARS, get_indication_variable_names
-from utils.simulate import TruncatedDistribution
+from utils.simulate import simulate_initial_df
 
 
 @pytest.fixture(scope='session')
@@ -23,7 +23,7 @@ def initial_df_specification(
     return load_object(specification_filepath)
 
 
-# TODO: Consider correct scope from https://tinyurl.com/y6t7m77q
+# TODO: Consider widening scope from https://tinyurl.com/y6t7m77q
 @pytest.fixture(scope="function", params=[1, 2, 3])
 def initial_df_fixture(
     request,
@@ -58,54 +58,16 @@ def initial_df_fixture(
     Returns:
         Simulated NELA data
     """
-    spec = initial_df_specification
-    rnd = np.random.RandomState(request.param)
-    df = pd.DataFrame()
-
-    # Create institution (hospital or trust) ID column
-    df[spec['var_names']['institutions'][0]] = rnd.randint(
-        n_hospitals, size=n_rows)
-
-    # Create other categorical columns
-    for var_name, probabilities in spec['cat_fits'].items():
-        cat_samples_i_2d = np.random.multinomial(
-            n=1,
-            pvals=probabilities.values,
-            size=n_rows)
-        cat_samples_i_1d = np.argmax(cat_samples_i_2d, 1)
-        cat_samples = [probabilities.index[i] for i in cat_samples_i_1d]
-        df[var_name] = cat_samples
-
-    # Create continuous columns
-    for var_name, params in spec['cont_fits'].items():
-        dist = getattr(stats, params['dist_name'])
-        # TODO: Truncation is slow - find out why and try and fix. Is it .ppf()?
-        truncated_rv = TruncatedDistribution(
-            rv=dist(*params['dist_params']),
-            lower_bound=params['min'],
-            upper_bound=params['max'],
-            random_state=rnd
-        )
-        df[var_name] = truncated_rv.sample(n_rows)
-
-    # Make list of columns which will have missing values
-    missing_columns = df.columns.tolist()
-    if complete_indications:
-        for c in get_indication_variable_names(df.columns):
-            missing_columns.remove(c)
-    if complete_target:
-        missing_columns.remove(spec['var_names']['target'])
-    if complete_institution:
-        missing_columns.remove(spec['var_names']['institutions'][0])
-
-    # Introduce missing values
-    for col in missing_columns:
-        df.loc[df.sample(
-            frac=missing_frac,
-            random_state=rnd
-        ).index, col] = np.nan
-
-    return df
+    return simulate_initial_df(
+        specification=initial_df_specification,
+        n_rows=n_rows,
+        n_hospitals=n_hospitals,
+        missing_frac=missing_frac,
+        complete_indications=complete_indications,
+        complete_target=complete_target,
+        complete_institution=complete_institution,
+        random_seed=request.param
+    )
 
 
 # TODO: Consider correct scope from https://tinyurl.com/y6t7m77q
