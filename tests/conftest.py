@@ -80,10 +80,6 @@ def initial_df_fixture(
         center = rnd.randint(50, 150)
         df[i] = rnd.normal(center, 10, n_rows)
 
-    for i in NOVEL_MODEL_VARS["cat"]:
-        cats = (1.0, 2.0, 4.0, 8.0)
-        df[i] = rnd.choice(cats, n_rows)
-
     # Make list of columns which will have missing values
     missing_columns = df.columns.tolist()
     if complete_indications:
