@@ -2,28 +2,36 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
-from typing import Tuple
 
 from utils.io import load_object
 from utils.split import TrainTestSplitter
 from utils.model.novel import NOVEL_MODEL_VARS, get_indication_variable_names
 
 
-# TODO: Separate out initial DataFrame spec as separate fixture
+@pytest.fixture(scope='session')
+def initial_df_specification(
+    specification_filepath: str = os.path.join(
+        os.pardir, 'config', 'initial_df_univariate_specification.pkl')
+) -> dict:
+    """Specification for the continuous and categorical variables in the NELA
+        data. Contains all the variables names, the categories (and
+        associated probabilities) for each categorical variable, plus parameters
+        for the parametric distribution that most closely fits the univariate
+        empirical distributions of each continuous variable."""
+    return load_object(specification_filepath)
 
 
 # TODO: Consider correct scope from https://tinyurl.com/y6t7m77q
 @pytest.fixture(scope="function", params=[1, 2, 3])
 def initial_df_fixture(
     request,
+    initial_df_specification: dict,
     n_rows: int = 1000,
     n_hospitals: int = 170,
     missing_frac: float = 0.05,
     complete_indications: bool = True,
     complete_target: bool = True,
     complete_institution: bool = True,
-    specification_filepath: str = os.path.join(
-        os.pardir, 'config', 'initial_df_univariate_specification.pkl')
 ) -> pd.DataFrame:
     """Simulates NELA data after initial univariate wrangling and variable
         selection (i.e. the output of 0_univariate_wrangling.ipynb), which is
@@ -32,6 +40,8 @@ def initial_df_fixture(
     Args:
         request: Used by pytest to pass in different random seeds, generating
             different versions of the fixture
+        initial_df_specification: Specification for the continuous and
+            categorical variables in the NELA data
         n_rows: Number of rows in DataFrame
         n_hospitals: Number of hospitals in DataFrame
         missing_frac: Fraction of data that is missing (for incomplete
@@ -42,13 +52,12 @@ def initial_df_fixture(
             target variable
         complete_institution: if True, don't introduce missingness into the
             hospital / trust ID variable
-        specification_filepath:
 
     Returns:
         Simulated NELA data
     """
+    spec = initial_df_specification
     rnd = np.random.RandomState(request.param)
-    spec = load_object(specification_filepath)
     df = pd.DataFrame()
 
     # Create institution (hospital or trust) ID column
