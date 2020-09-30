@@ -1,18 +1,23 @@
+import pandas as pd
+
 from utils import split
 from utils.model.novel import NOVEL_MODEL_VARS
 
 
-def test_drop_incomplete_cases(initial_df_fixture):
-    dropped, stats = split.drop_incomplete_cases(initial_df_fixture)
-
-    missing_in_dropped = dropped.shape[0] - dropped.dropna().shape[0]
-    assert missing_in_dropped == 0
-
-    number_dropped = initial_df_fixture.shape[0] - dropped.shape[0]
-    assert number_dropped == stats["n_dropped_cases"]
-
-    # check original dataframe not changed
-    assert initial_df_fixture.shape[0] - dropped.shape[0] > 0
+def test_drop_incomplete_cases(simple_df_with_missingness_fixture):
+    complete_df, drop_stats = split.drop_incomplete_cases(
+        simple_df_with_missingness_fixture
+    )
+    assert drop_stats['n_total_cases'] == 5
+    assert drop_stats['n_complete_cases'] == 3
+    assert drop_stats['n_dropped_cases'] == 2
+    assert drop_stats['fraction_dropped'] == 0.4
+    assert all(complete_df == pd.DataFrame({
+        'a': [0., 3., 4.],
+        'b': [0., 3., 4.]
+    }, index=[0, 3, 4]))
+    # check input DataFrame not changed
+    assert simple_df_with_missingness_fixture.shape == (5, 2)
 
 
 def test_split_into_folds(initial_df_fixture):
