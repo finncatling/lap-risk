@@ -10,8 +10,8 @@ from utils.split import TrainTestSplitter
 @pytest.fixture()
 def simple_df_with_missingness_fixture() -> pd.DataFrame:
     return pd.DataFrame({
-        'a': [0, 1, np.nan, 3, 4],
-        'b': [0, np.nan, 2, 3, 4]
+        'a': [0., 1., np.nan, 3., 4.],
+        'b': [0., np.nan, 2., 3., 4.]
     })
 
 
