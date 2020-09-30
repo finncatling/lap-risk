@@ -1,12 +1,17 @@
+import numpy as np
+import pandas as pd
+
 from utils import impute
 from utils.model.novel import NOVEL_MODEL_VARS
 
 
-def test_determine_imputations(initial_df_fixture):
-    # TODO: This fails sometimes - check why
-    df = initial_df_fixture.drop(columns=["HospitalId.anon"])
+def test_determine_imputations():
+    df = pd.DataFrame({
+        'a': [0, 1, np.nan, 3, 4],
+        'b': [0, np.nan, 2, 3, 4]
+    })
     n_imps, fraction = impute.determine_n_imputations(df)
-    assert n_imps == 59
+    assert (n_imps, fraction) == (40, 0.4)
 
 
 # def test_splitter_winsor_mice(initial_df_fixture, train_test_split_fixture):
