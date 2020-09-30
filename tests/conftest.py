@@ -7,7 +7,7 @@ from utils.simulate import get_initial_df_specification, simulate_initial_df
 from utils.split import TrainTestSplitter
 
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def simple_df_with_missingness_fixture() -> pd.DataFrame:
     return pd.DataFrame({
         'a': [0., 1., np.nan, 3., 4.],
