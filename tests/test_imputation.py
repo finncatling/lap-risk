@@ -1,16 +1,10 @@
-import numpy as np
-import pandas as pd
-
 from utils import impute
 from utils.model.novel import NOVEL_MODEL_VARS
 
 
-def test_determine_imputations():
-    df = pd.DataFrame({
-        'a': [0, 1, np.nan, 3, 4],
-        'b': [0, np.nan, 2, 3, 4]
-    })
-    n_imps, fraction = impute.determine_n_imputations(df)
+def test_determine_imputations(simple_df_with_missingness_fixture):
+    n_imps, fraction = impute.determine_n_imputations(
+        simple_df_with_missingness_fixture)
     assert (n_imps, fraction) == (40, 0.4)
 
 
