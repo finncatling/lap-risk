@@ -62,7 +62,7 @@ def initial_df_fixture(
     )
 
 
-# TODO: Consider correct scope from https://tinyurl.com/y6t7m77q
+# TODO: Retire this?
 @pytest.fixture(scope="function")
 def train_test_split_fixture(initial_df_fixture):
     model_vars = NOVEL_MODEL_VARS["cat"] + NOVEL_MODEL_VARS["cont"]
