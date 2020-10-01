@@ -60,19 +60,3 @@ def initial_df_fixture(
         ),
         random_seed=request.param
     )
-
-
-# TODO: Retire this?
-@pytest.fixture(scope="function")
-def train_test_split_fixture(initial_df_fixture):
-    model_vars = NOVEL_MODEL_VARS["cat"] + NOVEL_MODEL_VARS["cont"]
-    tts = TrainTestSplitter(
-        df=initial_df_fixture,
-        split_variable_name="HospitalId.anon",
-        test_fraction=0.2,
-        n_splits=5,
-        current_nela_model_vars=list(model_vars),
-        random_seed=5
-    )
-    tts.split()
-    return tts

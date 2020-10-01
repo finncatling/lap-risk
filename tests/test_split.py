@@ -94,8 +94,3 @@ def test_split_into_folds(initial_df_fixture):
         NOVEL_MODEL_VARS["target"]
     )
     assert stuff[0].shape[0] == initial_df_fixture.sample(frac=0.6).shape[0]
-
-
-def test_train_test_split(train_test_split_fixture):
-    assert len(train_test_split_fixture.train_institution_ids) == 5
-
