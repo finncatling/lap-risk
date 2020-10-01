@@ -33,8 +33,8 @@ class TestTrainTestSplitter:
         }, index=[0, 1, 3, 4, 5])
 
     @pytest.fixture(scope='class')
-    def post_instantiation_fixture(self, df_for_train_test_split_fixture):
-        return split.TrainTestSplitter(
+    def post_split_fixture(self, df_for_train_test_split_fixture):
+        tts = split.TrainTestSplitter(
             df=df_for_train_test_split_fixture,
             split_variable_name='institution',
             test_fraction=0.25,
@@ -42,26 +42,24 @@ class TestTrainTestSplitter:
             current_nela_model_vars=['a', 'b'],
             random_seed=1
         )
+        tts.split()
+        return tts
 
-    @pytest.fixture(scope='class')
-    def post_split_fixture(self, post_instantiation_fixture):
-        return post_instantiation_fixture.split()
+    def test_n_institutions(self, post_split_fixture):
+        assert post_split_fixture.n_institutions == 4
 
-    def test_n_institutions(self, post_instantiation_fixture):
-        assert post_instantiation_fixture.n_institutions == 4
+    def test_n_test_institutions(self, post_split_fixture):
+        assert post_split_fixture.n_test_institutions == 1
 
-    def test_n_test_institutions(self, post_instantiation_fixture):
-        assert post_instantiation_fixture.n_test_institutions == 1
+    def test_n_train_institutions(self, post_split_fixture):
+        assert post_split_fixture.n_train_institutions == 3
 
-    def test_n_train_institutions(self, post_instantiation_fixture):
-        assert post_instantiation_fixture.n_train_institutions == 3
-
-    def test_institution_ids(self, post_instantiation_fixture):
-        assert all(post_instantiation_fixture.institution_ids == np.array(
+    def test_institution_ids(self, post_split_fixture):
+        assert all(post_split_fixture.institution_ids == np.array(
             [0, 1, 2, 3]))
 
-    def test__preprocess_df(self, post_instantiation_fixture):
-        assert all(post_instantiation_fixture.df == pd.DataFrame({
+    def test__preprocess_df(self, post_split_fixture):
+        assert all(post_split_fixture.df == pd.DataFrame({
             'a': [0., 0., 1., np.nan, 1.],
             'b': [1.6, 3.8, np.nan, np.nan, 9.1],
             'institution': [0, 0, 1, 2, 3]
