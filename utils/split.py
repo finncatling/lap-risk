@@ -4,7 +4,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from utils.inspect import missingness_perc
+from utils.inspect import percent_missing
 
 
 def drop_incomplete_cases(df: pd.DataFrame) -> (pd.DataFrame, Dict[str, float]):
@@ -156,7 +156,7 @@ class TrainTestSplitter:
             and so doesn't change the number of complete cases by being dropped
             later, 3) removes variables not in current NELA risk model."""
         df = df.copy().reset_index(drop=True)
-        assert missingness_perc(df, self.split_variable_name) == 0.0
+        assert percent_missing(df, self.split_variable_name) == 0.0
         return df[self.nela_vars + [self.split_variable_name]]
 
     def split(self) -> None:

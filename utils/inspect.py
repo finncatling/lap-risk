@@ -14,7 +14,7 @@ def cat_data(df: pd.DataFrame, col_name: str, binary: bool = False) -> None:
     if binary:
         df.loc[:, col_name] = df[col_name].apply(convert_to_binary)
     print(f"Data type: {df[col_name].dtype}")
-    print(f"Missing rows: {missingness_perc(df, col_name)}%")
+    print(f"Missing rows: {percent_missing(df, col_name)}%")
     dot_chart(df[col_name].value_counts(dropna=False), col_name)
 
 
@@ -23,7 +23,7 @@ def con_data(df: pd.DataFrame, col_name: str, bins: int = 50) -> None:
         NB. Normality test is likely to fail even for Gaussian-looking
         distributions given that the dataset is large."""
     print(f"Data type: {df[col_name].dtype}")
-    print(f"Missing rows: {missingness_perc(df, col_name)}%")
+    print(f"Missing rows: {percent_missing(df, col_name)}%")
     display(pd.DataFrame(df[col_name].describe()))
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -75,7 +75,7 @@ def last_digit(df: pd.DataFrame, col_name: str) -> None:
     plt.hist(digits)
 
 
-def missingness_perc(df: pd.DataFrame, col_name: str) -> float:
+def percent_missing(df: pd.DataFrame, col_name: str) -> float:
     """Calculate percent missing values for column of data."""
     return df[col_name].isnull().sum() / df.shape[0] * 100
 
