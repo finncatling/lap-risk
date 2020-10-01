@@ -13,7 +13,7 @@ from utils.model.novel import get_indication_variable_names
 
 def get_initial_df_specification(
     specification_filepath: str = os.path.join(
-        os.pardir, 'config', 'initial_df_univariate_specification.pkl')
+        'config', 'initial_df_univariate_specification.pkl')
 ) -> dict:
     """Specification for the continuous and categorical variables in the NELA
         data. Contains all the variables names, the categories (and
