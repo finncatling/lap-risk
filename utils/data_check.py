@@ -65,9 +65,9 @@ def load_nela_data_and_sanity_check(
 
     # Check that there are no missing variables in some columns
     complete_columns = [
-                           spec['var_names']['target'],
-                           spec['var_names']['institutions'][0]
-                       ] + get_indication_variable_names(df.columns)
+        spec['var_names']['target'],
+        spec['var_names']['institutions'][0]
+    ] + get_indication_variable_names(df.columns)
     for column_name in complete_columns:
         assert percent_missing(df, column_name) == 0.
 
