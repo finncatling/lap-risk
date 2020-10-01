@@ -2,9 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from utils.model.novel import NOVEL_MODEL_VARS
 from utils.simulate import get_initial_df_specification, simulate_initial_df
-from utils.split import TrainTestSplitter
 
 
 @pytest.fixture(scope='function')
