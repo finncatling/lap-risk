@@ -10,6 +10,12 @@ Install necessary dependencies with [pipenv](https://pipenv-fork.readthedocs.io/
 pipenv install
 ```
 
+`pipenv` isn't in path in the Imperial BDAU, so we can define a convenient alias for it:
+
+```console
+alias pipenv='/opt/python3.8.6/bin/pipenv'
+```
+
 ## Running the analysis
 
 Enter the project's python environment:
