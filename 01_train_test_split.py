@@ -1,20 +1,18 @@
 import os
-
-import pandas as pd
 from datetime import datetime
 
 from utils.constants import (
     RANDOM_SEED,
-    DATA_DIR,
     STATS_OUTPUT_DIR,
     INTERNAL_OUTPUT_DIR
 )
-from utils.model.current import CURRENT_MODEL_VARS
+from utils.data_check import load_nela_data_and_sanity_check
 from utils.io import make_directory
 from utils.io import save_object
+from utils.model.current import CURRENT_MODEL_VARS
+from utils.model.shared import flatten_model_var_dict
 from utils.report import Reporter
 from utils.split import TrainTestSplitter
-from utils.model.shared import flatten_model_var_dict
 
 
 reporter = Reporter()
@@ -29,9 +27,7 @@ make_directory(os.path.join(STATS_OUTPUT_DIR))
 
 
 reporter.report("Loading manually-wrangled NELA data")
-df = pd.read_pickle(
-    os.path.join(DATA_DIR, "lap_risk_df_after_univariate_wrangling.pkl")
-).reset_index(drop=True)
+df = load_nela_data_and_sanity_check()
 
 
 reporter.report("Performing train-test split")

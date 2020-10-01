@@ -1,10 +1,7 @@
 import os
-
-import pandas as pd
 from datetime import datetime
 
 from utils.constants import (
-    DATA_DIR,
     RANDOM_SEED,
     INTERNAL_OUTPUT_DIR,
     STATS_OUTPUT_DIR,
@@ -12,6 +9,9 @@ from utils.constants import (
     CALIB_GAM_N_SPLINES,
     CALIB_GAM_LAM_CANDIDATES,
 )
+from utils.data_check import load_nela_data_and_sanity_check
+from utils.evaluate import ModelScorer
+from utils.io import make_directory, load_object, save_object
 from utils.model.current import (
     preprocess_current,
     SplitterTrainerPredictor,
@@ -19,11 +19,9 @@ from utils.model.current import (
     CURRENT_MODEL_VARS,
     CENTRES,
 )
-from utils.io import make_directory, load_object, save_object
 from utils.model.shared import flatten_model_var_dict
-from utils.split import TrainTestSplitter, drop_incomplete_cases
-from utils.evaluate import ModelScorer
 from utils.report import Reporter
+from utils.split import TrainTestSplitter, drop_incomplete_cases
 
 
 reporter = Reporter()
@@ -40,9 +38,7 @@ make_directory(CURRENT_MODEL_OUTPUT_DIR)
 
 
 reporter.report("Loading manually-wrangled NELA data")
-df = pd.read_pickle(
-    os.path.join(DATA_DIR, "df_after_univariate_wrangling.pkl")
-).reset_index(drop=True)
+df = load_nela_data_and_sanity_check()
 
 
 reporter.report("Removing unused variables")
@@ -71,8 +67,8 @@ quadratic transformation to creatinine and urea after they are log-transformed.
 quadratic_vars = list(CURRENT_MODEL_VARS["cont"])
 quadratic_vars.remove("S03Sodium")
 for original, logged in (
-        ("S03SerumCreatinine", "logcreat"),
-        ("S03Urea", "logurea")
+    ("S03SerumCreatinine", "logcreat"),
+    ("S03Urea", "logurea")
 ):
     quadratic_vars.remove(original)
     quadratic_vars.append(logged)

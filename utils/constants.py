@@ -3,8 +3,14 @@ import numpy as np
 
 RANDOM_SEED = 1
 
-# Location of source data, plus this data after initial manual wrangling
+# Folder where source data and this data after initial manual wrangling are kept
 DATA_DIR = os.path.join(os.pardir, "nelarisk", "data")
+
+# Path to data after initial manual wrangling
+NELA_DATA_FILEPATH = os.path.join(
+    DATA_DIR,
+    "lap_risk_df_after_univariate_wrangling.pkl"
+)
 
 # Locations where 'internal' outputs are saved for use later in the analysis
 INTERNAL_OUTPUT_DIR = "outputs"

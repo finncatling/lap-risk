@@ -10,6 +10,12 @@ Install necessary dependencies with [pipenv](https://pipenv-fork.readthedocs.io/
 pipenv install
 ```
 
+`pipenv` isn't in path in the Imperial BDAU, so we can define a convenient alias for it:
+
+```console
+alias pipenv='/opt/python3.8.6/bin/pipenv'
+```
+
 ## Running the analysis
 
 Enter the project's python environment:
@@ -26,10 +32,10 @@ python 01_train_test_split.py
 
 ### Limiting the number of cores used
 
-When running in the Imperial BDAU, we should limit the number of cores used for the computationally-intensive bits of the analysis. E.g. to run on the first 16 cores:
+When running in the Imperial BDAU, we should limit the number of cores used for the computationally-intensive bits of the analysis. E.g. to run on the first 8 cores:
 
 ```console
-taskset -c 0-15 python 01_train_test_split.py
+taskset -c 0-7 python 01_train_test_split.py
 ```
 
 ## Running tests

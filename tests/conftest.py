@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from utils.simulate import get_initial_df_specification, simulate_initial_df
+from utils.simulate import simulate_initial_df
+from utils.data_check import get_initial_df_specification
 
 
 @pytest.fixture(scope='function')

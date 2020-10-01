@@ -1,17 +1,19 @@
 import os
-import numpy as np
-import pandas as pd
 from typing import List
 
-from utils.inspect import report_ohe_category_assignment
-from utils.report import Reporter
-from utils.io import make_directory, save_object
+import numpy as np
+import pandas as pd
+
 from utils.constants import DATA_DIR, STATS_OUTPUT_DIR
+from utils.data_check import load_nela_data_and_sanity_check
+from utils.inspect import report_ohe_category_assignment
+from utils.io import make_directory, save_object
 from utils.model.novel import (
     INDICATION_PREFIX,
     MISSING_IND_CATEGORY,
     get_indication_variable_names
 )
+from utils.report import Reporter
 
 
 # TODO: Move this to constants.py
@@ -33,9 +35,7 @@ make_directory(STATS_OUTPUT_DIR)
 
 
 reporter.report("Loading manually-wrangled NELA data")
-df = pd.read_pickle(
-    os.path.join(DATA_DIR, "df_after_univariate_wrangling.pkl")
-).reset_index(drop=True)
+df = load_nela_data_and_sanity_check()
 
 
 reporter.report("Isolating indication variables")
@@ -49,11 +49,11 @@ reporter.report(
 )
 common_single_inds: List[str] = ind_df.loc[
     ind_df.sum(1) == 1
-].sum(0)[
+    ].sum(0)[
     ind_df.loc[
         ind_df.sum(1) == 1
-    ].sum(0) > SINGLE_IND_FREQUENCY_THRESHOLD
-].sort_values(ascending=False).index.tolist()
+        ].sum(0) > SINGLE_IND_FREQUENCY_THRESHOLD
+    ].sort_values(ascending=False).index.tolist()
 
 
 print(

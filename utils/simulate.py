@@ -1,23 +1,9 @@
-import os
 import numpy as np
 import pandas as pd
 from scipy import stats
 from typing import Iterable
 
-from utils.io import load_object
 from utils.model.novel import get_indication_variable_names
-
-
-def get_initial_df_specification(
-    specification_filepath: str = os.path.join(
-        os.pardir, 'config', 'initial_df_univariate_specification.pkl')
-) -> dict:
-    """Specification for the continuous and categorical variables in the NELA
-        data. Contains all the variables names, the categories (and
-        associated probabilities) for each categorical variable, plus parameters
-        for the parametric distribution that most closely fits the univariate
-        empirical distributions of each continuous variable."""
-    return load_object(specification_filepath)
 
 
 class TruncatedDistribution:
@@ -106,16 +92,15 @@ def simulate_initial_df(
     Returns:
         Simulated NELA data
     """
-    spec = specification
     rnd = np.random.RandomState(random_seed)
     df = pd.DataFrame()
 
     # Create institution (hospital or trust) ID column
-    df[spec['var_names']['institutions'][0]] = rnd.randint(
+    df[specification['var_names']['institutions'][0]] = rnd.randint(
         n_hospitals, size=n_rows)
 
     # Create other categorical columns
-    for var_name, probabilities in spec['cat_fits'].items():
+    for var_name, probabilities in specification['cat_fits'].items():
         cat_samples_i_2d = np.random.multinomial(
             n=1,
             pvals=probabilities.values,
@@ -125,7 +110,7 @@ def simulate_initial_df(
         df[var_name] = cat_samples
 
     # Create continuous columns
-    for var_name, params in spec['cont_fits'].items():
+    for var_name, params in specification['cont_fits'].items():
         dist = getattr(stats, params['dist_name'])
         # TODO: Truncation is slow - find out why and try and fix. Is it .ppf()?
         truncated_rv = TruncatedDistribution(
@@ -146,9 +131,9 @@ def simulate_initial_df(
         for c in get_indication_variable_names(df.columns):
             missing_columns.remove(c)
     if complete_target:
-        missing_columns.remove(spec['var_names']['target'])
+        missing_columns.remove(specification['var_names']['target'])
     if complete_institution:
-        missing_columns.remove(spec['var_names']['institutions'][0])
+        missing_columns.remove(specification['var_names']['institutions'][0])
 
     # Introduce missing values
     for col in missing_columns:
