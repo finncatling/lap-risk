@@ -84,11 +84,6 @@ class TrainTestSplitter:
 
         Selects consistent test fold cases for with all models, by excluding
         current-NELA-model-variable incomplete cases from the test fold.
-
-        TODO: A few end-to-end tests for sanity checking
-
-        TODO: Consider whether current-NELA-model incomplete cases are likely
-            to be systemically different from the incomplete cases.
     """
 
     def __init__(
@@ -132,7 +127,7 @@ class TrainTestSplitter:
         self.split_stats = {
             "n_test_cases": [],
             "test_fraction_of_complete_cases": [],
-            "test_fraction_of_total_cases": [],
+            "test_fraction_of_total_cases": []
         }
 
     @property

@@ -66,19 +66,38 @@ class TestTrainTestSplitter:
         }, index=[0, 1, 2, 3, 4]))
 
     def test_test_institution_ids(self, post_split_fixture):
-        assert False
+        """Due to randomisation we only know the contents of the inner arrays
+            a posteriori, but once these are known we should be able to work
+            out the results of the later tests a priori"""
+        assert (post_split_fixture.test_institution_ids ==
+                [np.array([3]), np.array([0])])
 
-    def test_split(self):
-        assert False
+    def test_train_institution_ids(self, post_split_fixture):
+        assert isinstance(post_split_fixture.train_institution_ids, list)
+        # outer list cast to numpy array for convenient use of .all()
+        assert (np.array(post_split_fixture.train_institution_ids) ==
+                np.array([[0, 1, 2], [1, 2, 3]])).all()
 
-    # def test__split_institutions(self):
-    #     assert False
-    #
-    # def test__split_cases(self):
-    #     assert False
-    #
-    # def test__calculate_split_stats(self):
-    #     assert False
+    def test_test_i(self, post_split_fixture):
+        """Piecewise comparison as structure (list of numpy arrays of different
+            lengths) complicates use of all()"""
+        assert isinstance(post_split_fixture.test_i, list)
+        assert len(post_split_fixture.test_i) == 2
+        assert post_split_fixture.test_i[0] == np.array([4])
+        assert (post_split_fixture.test_i[1] == np.array([0, 1])).all()
+
+    def test_train_i(self, post_split_fixture):
+        assert isinstance(post_split_fixture.train_i, list)
+        assert len(post_split_fixture.train_i) == 2
+        assert (post_split_fixture.train_i[0] == np.array([0, 1, 2, 3])).all()
+        assert (post_split_fixture.train_i[1] == np.array([2, 3, 4])).all()
+
+    def test_split_stats(self, post_split_fixture):
+        assert post_split_fixture.split_stats == {
+            "n_test_cases": [1, 2],
+            "test_fraction_of_complete_cases": [1 / 3, 2 / 3],
+            "test_fraction_of_total_cases": [0.2, 0.4],
+        }
 
 
 def test_split_into_folds(initial_df_fixture):
