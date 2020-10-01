@@ -88,6 +88,7 @@ def load_nela_data_and_sanity_check(
     for column_name in df.columns:
         column_percent_missing = percent_missing(df, column_name)
         if column_percent_missing > missingness_warning_percent:
-            warn(f'{column_name} has {column_percent_missing}% missing values')
+            warn(f'{column_name} has '
+                 f'{np.round(column_percent_missing, 1)}% missing values')
 
     return df
