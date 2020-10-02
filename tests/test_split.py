@@ -14,10 +14,10 @@ def test_drop_incomplete_cases(simple_df_with_missingness_fixture):
     assert drop_stats['n_complete_cases'] == 3
     assert drop_stats['n_dropped_cases'] == 2
     assert drop_stats['fraction_dropped'] == 0.4
-    assert all(complete_df == pd.DataFrame({
+    assert pd.DataFrame({
         'a': [0., 3., 4.],
         'b': [0., 3., 4.]
-    }, index=[0, 3, 4]))
+    }, index=[0, 3, 4]).equals(complete_df)
     # check input DataFrame not changed
     assert simple_df_with_missingness_fixture.shape == (5, 2)
 
@@ -59,11 +59,11 @@ class TestTrainTestSplitter:
             [0, 1, 2, 3]))
 
     def test__preprocess_df(self, post_split_fixture):
-        assert all(post_split_fixture.df == pd.DataFrame({
+        assert pd.DataFrame({
             'a': [0., 0., 1., np.nan, 1.],
             'b': [1.6, 3.8, np.nan, np.nan, 9.1],
             'institution': [0, 0, 1, 2, 3]
-        }, index=[0, 1, 2, 3, 4]))
+        }, index=[0, 1, 2, 3, 4]).equals(post_split_fixture.df)
 
     def test_test_institution_ids(self, post_split_fixture):
         """Due to randomisation we only know the contents of the inner arrays
