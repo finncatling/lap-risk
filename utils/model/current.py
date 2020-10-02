@@ -302,8 +302,11 @@ class SplitterTrainerPredictor(Splitter):
             self.y_pred.append(model.predict_proba(X_test.values)[:, 1])
         self.features += X_train.columns.tolist()
 
-    def _train(self, X_train: pd.DataFrame,
-               y_train: np.ndarray) -> LogisticRegression:
+    def _train(
+        self,
+        X_train: pd.DataFrame,
+        y_train: np.ndarray
+    ) -> LogisticRegression:
         """We use the liblinear solver, as the unscaled features would slow the
             convergence of the other solvers. The current NELA model is
             unregularized, but using the liblinear solver means that we must
