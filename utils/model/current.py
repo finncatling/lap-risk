@@ -134,19 +134,16 @@ def drop_base_categories(df: pd.DataFrame) -> pd.DataFrame:
         end up with k-1 variables to avoid the dummy variable trap.
         So, we drop the category that corresponds to baseline risk in
         for each variable."""
-    return df.drop(
-        [
-            "S03RespiratorySigns_1",
-            "S03NCEPODUrgency_1",
-            "S03ECG_1",
-            "S03NumberOfOperativeProcedures_1",
-            "S03CardiacSigns_1",
-            "S03Pred_Peritsoil_1",
-            "S03Pred_TBL_1",
-            "S03DiagnosedMalignancy_1",
-        ],
-        axis=1,
-    )
+    return df.drop([
+        "S03RespiratorySigns_1",
+        "S03NCEPODUrgency_1",
+        "S03ECG_1",
+        "S03NumberOfOperativeProcedures_1",
+        "S03CardiacSigns_1",
+        "S03Pred_Peritsoil_1",
+        "S03Pred_TBL_1",
+        "S03DiagnosedMalignancy_1",
+    ], axis=1)
 
 
 def log_urea_creat(df: pd.DataFrame) -> pd.DataFrame:
