@@ -122,7 +122,11 @@ def binarize_categorical(
             df[v] = trans
         else:
             cat_names = [f"{v}_{c}" for c in lb[v].classes_]
-            v_df = pd.DataFrame(trans, columns=cat_names)
+            v_df = pd.DataFrame(
+                data=trans,
+                columns=cat_names,
+                index=df.index
+            )
             df = pd.concat([df, v_df], axis=1)
             df = df.drop(v, axis=1)
 
@@ -237,7 +241,9 @@ def preprocess_current(
     """Preprocess NELA data for input to current EL mortality risk model.
 
     Args:
-        df: Manually-wrangled NELA data
+        df: Manually-wrangled NELA data with some preprocessing, and incomplete
+            cases removed. Index should not be reset until train-test splitting
+            has been performed
         quadratic_vars: Continuous features to add a quadratic transformation of
         winsor_thresholds: Upper and lower bounds for winsorization of
             continuous variables
@@ -253,7 +259,6 @@ def preprocess_current(
             label_binarizers is returned unmodified
     """
     df = df.copy()
-    df = df.reset_index(drop=True)
 
     # Preprocess categorical variables
     df = discretise_gcs(df)
