@@ -29,3 +29,18 @@ def test_binarize_categorical():
         'multi_cat_3': [0, 1, 0],
         'multi_cat_4': [0, 0, 1]
     }) == df)
+
+
+def test_winsorize_current():
+    df = pd.DataFrame({
+        'for_winsor': [6., 1., 20.],
+        'ignore': [0., 1., 0.]
+    })
+    df = current.winsorize_current(
+        df=df,
+        winsor_thresholds={'for_winsor': (4., 10.)}
+    )
+    assert pd.DataFrame({
+        'for_winsor': [6., 4., 10.],
+        'ignore': [0., 1., 0.]
+    }).equals(df)
