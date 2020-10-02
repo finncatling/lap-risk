@@ -5,7 +5,7 @@ from warnings import warn
 import numpy as np
 import pandas as pd
 
-from utils.constants import NELA_DATA_FILEPATH
+from utils.constants import NELA_DATA_FILEPATH, ROOT_DIR
 from utils.inspect import percent_missing
 from utils.io import load_object
 from utils.model.novel import get_indication_variable_names
@@ -13,7 +13,7 @@ from utils.model.novel import get_indication_variable_names
 
 def get_initial_df_specification(
     specification_filepath: str = os.path.join(
-        'config', 'initial_df_univariate_specification.pkl')
+        ROOT_DIR, 'config', 'initial_df_univariate_specification.pkl')
 ) -> dict:
     """Specification for the continuous and categorical variables in the NELA
         data. Contains all the variables names, the categories (and
