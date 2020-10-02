@@ -44,3 +44,19 @@ def test_winsorize_current():
         'for_winsor': [6., 4., 10.],
         'ignore': [0., 1., 0.]
     }).equals(df)
+
+
+def test_add_asa_age_resp_interaction():
+    assert False
+
+
+def test_transform_sodium():
+    assert False
+
+
+class TestSplitterTrainerPredictor:
+    def test_split_train_predict(self):
+        assert False
+
+    def test__train(self):
+        assert False
