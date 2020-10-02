@@ -25,7 +25,7 @@ def test_binarize_categorical():
         'binary': [5., 6., 5.],
         'multi_cat': [2., 3., 4.],
         'ignore': [1.5, 2.3, 9.1]
-    })
+    }, index=[0, 2, 3])
     df, _ = current.binarize_categorical(
         df=df,
         label_binarizers=None,
@@ -37,7 +37,7 @@ def test_binarize_categorical():
         'multi_cat_2': [1, 0, 0],
         'multi_cat_3': [0, 1, 0],
         'multi_cat_4': [0, 0, 1]
-    }) == df)
+    }, index=[0, 2, 3]) == df)
 
 
 def test_winsorize_current():
