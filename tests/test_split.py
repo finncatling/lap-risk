@@ -1,6 +1,6 @@
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
 
 from utils import split
 from utils.model.novel import NOVEL_MODEL_VARS
@@ -100,16 +100,18 @@ class TestTrainTestSplitter:
         }
 
 
-def test_split_into_folds(initial_df_fixture):
+def test_split_into_folds(initial_df_permutations_fixture):
     # TODO this test should probably be more comprehensive but it's passing
     #  for now
     indices = {
-        'train': initial_df_fixture.sample(frac=0.6).index,
-        'test': initial_df_fixture.sample(frac=0.2).index
+        'train': initial_df_permutations_fixture.sample(frac=0.6).index,
+        'test': initial_df_permutations_fixture.sample(frac=0.2).index
     }
     stuff = split.split_into_folds(
-        initial_df_fixture,
+        initial_df_permutations_fixture,
         indices,
         NOVEL_MODEL_VARS["target"]
     )
-    assert stuff[0].shape[0] == initial_df_fixture.sample(frac=0.6).shape[0]
+    assert stuff[0].shape[0] == initial_df_permutations_fixture.sample(
+        frac=0.6
+    ).shape[0]

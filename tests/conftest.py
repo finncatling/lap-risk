@@ -26,7 +26,7 @@ def initial_df_specification_fixture() -> dict:
 
 # TODO: Consider widening scope from https://tinyurl.com/y6t7m77q
 @pytest.fixture(scope="function", params=[1, 2, 3])
-def initial_df_fixture(
+def initial_df_permutations_fixture(
     request,
     initial_df_specification_fixture,
 ) -> pd.DataFrame:
