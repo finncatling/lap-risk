@@ -115,3 +115,8 @@ def test_split_into_folds(initial_df_permutations_fixture):
     assert stuff[0].shape[0] == initial_df_permutations_fixture.sample(
         frac=0.6
     ).shape[0]
+
+
+class TestSplitter:
+    def test__split(self):
+        assert False

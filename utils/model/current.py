@@ -289,6 +289,7 @@ class SplitterTrainerPredictor(Splitter):
     ):
         super().__init__(df, train_test_splitter, target_variable_name)
         self.features: List[str] = ["intercept"]
+        # TODO: Change coefficients, y_test and y_pred lists into dicts?
         self.coefficients: List[np.ndarray] = []
         self.y_test: List[np.ndarray] = []
         self.y_pred: List[np.ndarray] = []

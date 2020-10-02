@@ -173,11 +173,3 @@ def test_preprocess_current(initial_df_permutations_fixture):
     }
 
     assert set(preprocessed_df.columns == expected_column_names)
-
-
-class TestSplitterTrainerPredictor:
-    def test_split_train_predict(self):
-        assert False
-
-    def test__train(self):
-        assert False
