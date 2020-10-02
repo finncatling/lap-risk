@@ -1,13 +1,13 @@
 import pandas as pd
+
 from utils.model import current
-from utils.model.shared import flatten_model_var_dict
 from utils.model.current import (
     preprocess_current,
-    SplitterTrainerPredictor,
     WINSOR_THRESHOLDS,
     CURRENT_MODEL_VARS,
     CENTRES,
 )
+from utils.model.shared import flatten_model_var_dict
 from utils.split import drop_incomplete_cases
 
 
