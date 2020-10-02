@@ -47,10 +47,39 @@ def test_winsorize_current():
 
 
 def test_add_asa_age_resp_interaction():
-    assert False
+    """Patient in row 0 fell into the (now dropped) base category 1.0 for
+        respiratory signs, hence initial 0 in the S03RespiratorySigns_2 and
+        03RespiratorySigns_4 columns."""
+    df = pd.DataFrame({
+        "S01AgeOnArrival": [1., 2., 3., 4., 5.],
+        "S01AgeOnArrival_2": [1., 4., 9., 16., 25.],
+        "S03RespiratorySigns_2": [0, 1, 1, 0, 0],
+        "S03RespiratorySigns_4": [0, 0, 0, 1, 1],
+        "S03ASAScore": [1., 2., 3., 4., 5.]
+    })
+    df = current.add_asa_age_resp_interaction(df)
+    assert pd.DataFrame({
+        "age_asa12": [1., 2., 0., 0., 0.],
+        "age_2_asa12": [1., 4., 0., 0., 0.],
+        "resp2_asa12": [0., 1., 0., 0., 0.],
+        "resp4_asa12": [0., 0., 0., 0., 0.],
+        "age_asa3": [0., 0., 3., 0., 0.],
+        "age_2_asa3": [0., 0., 9., 0., 0.],
+        "resp2_asa3": [0., 0., 1., 0., 0.],
+        "resp4_asa3": [0., 0., 0., 0., 0.],
+        "age_asa4": [0., 0., 0., 4., 0.],
+        "age_2_asa4": [0., 0., 0., 16., 0.],
+        "resp2_asa4": [0., 0., 0., 0., 0.],
+        "resp4_asa4": [0., 0., 0., 1., 0.],
+        "age_asa5": [0., 0., 0., 0., 5.],
+        "age_2_asa5": [0., 0., 0., 0., 25.],
+        "resp2_asa5": [0., 0., 0., 0., 0.],
+        "resp4_asa5": [0., 0., 0., 0., 1.]
+    }).equals(df)
 
 
-def test_transform_sodium():
+def test_preprocess_current():
+    """End-to-end test which just checks that column names are as expected."""
     assert False
 
 
