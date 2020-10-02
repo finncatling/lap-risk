@@ -119,7 +119,8 @@ def test_preprocess_current(initial_df_permutations_fixture):
     expected_column_names = {
         "S01Sex",
         "S03NCEPODUrgency_2",
-        "S03NCEPODUrgency_4",
+        "S03NCEPODUrgency_3",
+        "S03NCEPODUrgency_8",
         "S03ECG_4",
         "S03ECG_8",
         "S03NumberOfOperativeProcedures_4",
@@ -172,4 +173,4 @@ def test_preprocess_current(initial_df_permutations_fixture):
         "Target"
     }
 
-    assert set(preprocessed_df.columns == expected_column_names)
+    assert set(preprocessed_df.columns) == expected_column_names
