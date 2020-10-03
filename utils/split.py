@@ -71,10 +71,11 @@ def split_into_folds(
             number of cases in the returned training data.
     """
     n_total_train_cases = indices["train"].shape[0]
+    """Test indices are unchanged, not an intersection with something else.
+        We include them in the dict below for convenient use in the later
+        loop."""
     intersection_indices = {
-        """Test indices are unchanged, not an intersection with something else.
-            We include them in this dict for convenient use in the loop below"""
-        "test": copy.deepcopy(indices['test']),
+        "test": copy.deepcopy(indices["test"]),
         "train": np.array([i for i in indices["train"] if i in df.index])
     }
     n_intersection_train_cases = intersection_indices["train"].shape[0]
@@ -251,7 +252,8 @@ class TrainTestSplitter:
 
 class Splitter:
     """Base class to handle repeated train-test splitting, according to
-        pre-defined splits in passed TrainTestSplitter."""
+        pre-defined splits in passed TrainTestSplitter. Thin wrapper around
+        split_into_folds() which also logs the statistics from each split."""
 
     def __init__(
         self,

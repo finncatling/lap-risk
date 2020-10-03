@@ -100,23 +100,47 @@ class TestTrainTestSplitter:
         }
 
 
-def test_split_into_folds(initial_df_permutations_fixture):
-    # TODO this test should probably be more comprehensive but it's passing
-    #  for now
-    indices = {
-        'train': initial_df_permutations_fixture.sample(frac=0.6).index,
-        'test': initial_df_permutations_fixture.sample(frac=0.2).index
-    }
-    stuff = split.split_into_folds(
-        initial_df_permutations_fixture,
-        indices,
-        NOVEL_MODEL_VARS["target"]
+@pytest.fixture(scope='function')
+def splitter_current_model_df_fixture() -> pd.DataFrame:
+    """Note discontinuous index, as if incomplete cases have been previously
+        dropped."""
+    return pd.DataFrame({
+        'target': [0, 0, 1, 0],
+        'a': [0., 0., 4., 2.],
+    }, index=[1, 3, 4, 5])
+
+
+def test_split_into_folds(splitter_current_model_df_fixture):
+    (
+        X_train,
+        y_train,
+        X_test,
+        y_test,
+        n_total_train_cases,
+        n_intersection_train_cases
+    ) = split.split_into_folds(
+        df=splitter_current_model_df_fixture,
+        indices={
+            'train': np.array([0, 2, 3, 4]),
+            'test': np.array([1, 5])
+        },
+        target_var_name='target'
     )
-    assert stuff[0].shape[0] == initial_df_permutations_fixture.sample(
-        frac=0.6
-    ).shape[0]
+    assert all(pd.DataFrame({'a': [0., 4.]}) == X_train)
+    assert (np.array([0, 1]) == y_train).all()
+    assert all(pd.DataFrame({'a': [0., 2.]}) == X_test)
+    assert (np.array([0, 0]) == y_test).all()
+    assert n_total_train_cases == 4
+    assert n_intersection_train_cases == 2
 
 
-class TestSplitter:
-    def test__split(self):
-        assert False
+def test_split_into_folds_index_assertion(splitter_current_model_df_fixture):
+    with pytest.raises(AssertionError):
+        _ = split.split_into_folds(
+            df=splitter_current_model_df_fixture.reset_index(drop=True),
+            indices={
+                'train': np.array([0, 2, 3, 4]),
+                'test': np.array([1, 5])
+            },
+            target_var_name='target'
+        )
