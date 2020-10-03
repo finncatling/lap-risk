@@ -57,8 +57,8 @@ def split_into_folds(
         df: Preprocessed NELA data. When using with current model, incomplete
             cases should have been removed but the DataFrame index SHOULD NOT
             BE RESET otherwise indices and df.index won't match correctly
-        indices: Of the form {'train': [np.array(train_fold_indices), ...],
-                              'test': [np.array(test_fold_indices), ...]}
+        indices: Of the form {'train': np.array([train_fold_indices]),
+                              'test': np.array([test_fold_indices])}
         target_var_name: Name of DataFrame column containing mortality status
 
     Returns:
