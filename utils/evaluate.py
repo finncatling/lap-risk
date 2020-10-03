@@ -23,10 +23,15 @@ def score_calibration(
     """Derive smooth model calibration curve using a GAM. Report calibration
         error versus line of identity."""
     calib_gam = GAM(
-        s(0, n_splines=n_splines), distribution=BinomialDist(levels=1),
+        s(0, n_splines=n_splines),
+        distribution=BinomialDist(levels=1),
         link="logit"
-    ).gridsearch(y_pred.reshape(-1, 1), y_true, lam=lam_candidates,
-                 progress=False)
+    ).gridsearch(
+        y_pred.reshape(-1, 1),
+        y_true,
+        lam=lam_candidates,
+        progress=False
+    )
     p = np.linspace(0, 1, 101)
     cal_curve = calib_gam.predict(p)
     calib_mae = mean_absolute_error(p, cal_curve)
