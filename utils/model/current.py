@@ -242,8 +242,8 @@ def preprocess_current(
 
     Args:
         df: Manually-wrangled NELA data with some preprocessing, and incomplete
-            cases removed. Index should not be reset until train-test splitting
-            has been performed
+            cases removed (the DataFrame index should not be reset until
+            after train-test splitting)
         quadratic_vars: Continuous features to add a quadratic transformation of
         winsor_thresholds: Upper and lower bounds for winsorization of
             continuous variables
@@ -292,6 +292,17 @@ class SplitterTrainerPredictor(Splitter):
         target_variable_name: str,
         random_seed,
     ):
+        """
+        Args:
+            df: Preprocessed NELA data. When using with current model,
+                incomplete cases should have been removed but the DataFrame
+                index should not be reset
+            train_test_splitter: TrainTestSplitter instance from
+                01_train_test_split.py
+            target_variable_name: Name of DataFrame column containing mortality
+                status
+            random_seed: Used to seed the sklearn LogisticRegression models
+        """
         super().__init__(df, train_test_splitter, target_variable_name)
         self.features: List[str] = ["intercept"]
         self.coefficients: List[np.ndarray] = []
@@ -299,7 +310,7 @@ class SplitterTrainerPredictor(Splitter):
         self.y_pred: List[np.ndarray] = []
         self.rnd = np.random.RandomState(random_seed)
 
-    def split_train_predict(self):
+    def split_train_predict(self) -> None:
         for i in pb(range(self.tts.n_splits), prefix="STP iteration"):
             X_train, y_train, X_test, y_test = self._split(i)
             model = self._train(X_train, y_train)
