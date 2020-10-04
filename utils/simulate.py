@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy import stats
-from typing import Iterable
+from typing import Iterable, Tuple
 
 from utils.model.novel import get_indication_variable_names
 
@@ -143,3 +143,20 @@ def simulate_initial_df(
         ).index, col] = np.nan
 
     return df
+
+
+def simulate_labels_and_well_calibrated_pred_probs(
+    n_labels: int,
+    random_seed=None
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Simulates binary labels and corresponding well-calibrated predicted
+        probabilities for the positive class
+
+    Returns:
+        binary labels in {0, 1}
+        predicted probabilities in [0, 1]
+    """
+    rnd = np.random.RandomState(random_seed)
+    y_pred = rnd.uniform(low=0.0, high=1.0, size=n_labels)
+    y_true = rnd.binomial(n=1, p=y_pred)
+    return y_true, y_pred

@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List
 
 import numpy as np
 import pytest
@@ -6,46 +6,71 @@ from sklearn.calibration import calibration_curve
 from sklearn.metrics import mean_absolute_error
 
 from utils import evaluate
+from utils.simulate import simulate_labels_and_well_calibrated_pred_probs
 
 
 class TestModelScorer:
-    def test_n_splits(self):
-        assert False
+    """End-to-end test which just checks that"""
 
-    def test__sanity_check(self):
-        assert False
+    @pytest.fixture(scope='class')
+    def ms_fixture(self) -> evaluate.ModelScorer:
+        y_true, y_pred = [], []
+        for i in range(4):
+            true, pred = simulate_labels_and_well_calibrated_pred_probs(
+                n_labels=100,
+                random_seed=i
+            )
+            y_true.append(true)
+            y_pred.append(pred)
+        ms = evaluate.ModelScorer(
+            y_true=y_true,
+            y_pred=y_pred,
+            calibration_n_splines=5,
+            calibration_lam_candidates=np.logspace(-3, -1, 5)
+        )
+        ms.calculate_scores()
+        return ms
 
-    def test_calculate_scores(self):
-        assert False
+    def test_n_splits(self, ms_fixture):
+        assert ms_fixture.n_splits == 4
 
-    def test_print_scores(self):
-        assert False
+    @pytest.fixture(scope='class')
+    def score_names(self, ms_fixture) -> List[str]:
+        return list(ms_fixture.scores['per_split'][0])
 
-    def test__calculate_95ci(self):
-        assert False
+    def test_score_names(self, score_names):
+        assert len(score_names) > 0
+        assert all([isinstance(name, str) for name in score_names])
 
-    def test__extract_iter_per_score(self):
-        assert False
+    def test_scores_dict_format(self, ms_fixture, score_names):
+        for subdict_name in ['per_score', 'per_score_diff', '95ci']:
+            assert score_names == list(ms_fixture.scores[subdict_name])
+        for score_name in score_names:
+            assert len(ms_fixture.scores['95ci'][score_name]) == 2
+            for subdict_name in ['per_score', 'per_score_diff']:
+                assert (
+                    len(ms_fixture.scores[subdict_name][score_name]) ==
+                    ms_fixture.n_splits
+                )
+
+    def test_95ci(self, ms_fixture, score_names):
+        for score_name in score_names:
+            assert (
+                ms_fixture.scores['95ci'][score_name][1] <
+                ms_fixture.scores['per_score'][score_name].max()
+            )
+            assert (
+                ms_fixture.scores['95ci'][score_name][0] >
+                ms_fixture.scores['per_score'][score_name].min()
+            )
 
 
-@pytest.fixture
-def labels_and_well_calibrated_pred_probs() -> Tuple[np.ndarray, np.ndarray]:
-    """Simulates binary labels and corresponding well-calibrated predicted
-        probabilities for the positive class
-
-    Returns:
-        y_true
-        y_predicted_probabilities
-    """
-    rnd = np.random.RandomState(1)
-    y_pred = rnd.uniform(low=0.0, high=1.0, size=1000)
-    y_true = rnd.binomial(n=1, p=y_pred)
-    return y_true, y_pred
-
-
-def test_score_calibration(labels_and_well_calibrated_pred_probs):
-    calibration_error_threshold = 0.03
-    y_true, y_pred = labels_and_well_calibrated_pred_probs
+def test_score_calibration():
+    calibration_error_threshold = 0.05
+    y_true, y_pred = simulate_labels_and_well_calibrated_pred_probs(
+        n_labels=1000,
+        random_seed=1
+    )
 
     # Test that we report low calibration error with these perfect predictions
     _, our_cal_curve, our_calib_mae, _ = evaluate.score_calibration(
@@ -71,3 +96,29 @@ def test_score_calibration(labels_and_well_calibrated_pred_probs):
         our_cal_curve_downsampled
     )
     assert difference_from_sklearn < calibration_error_threshold
+
+
+def test_somers_dxy():
+    assert evaluate.somers_dxy(
+        y_true=np.array([1., 0.]),
+        y_pred=np.array([0.75, 0.25])
+    ) == 1.0
+    assert evaluate.somers_dxy(
+        y_true=np.array([1., 1., 0., 0.]),
+        y_pred=np.array([0.75, 0.25, 0.75, 0.25])
+    ) == 0.0
+    assert evaluate.somers_dxy(
+        y_true=np.array([1., 1., 0., 0.]),
+        y_pred=np.array([0.75, 0.75, 0.75, 0.25])
+    ) == 0.5
+
+
+def test_tjurs_coef():
+    assert evaluate.tjurs_coef(
+        y_true=np.array([1., 0.]),
+        y_pred=np.array([0.65, 0.45])
+    ) == 0.2
+    assert evaluate.tjurs_coef(
+        y_true=np.array([1., 1., 0., 0.]),
+        y_pred=np.array([0.75, 0.25, 0.75, 0.25])
+    ) == 0.0

@@ -69,7 +69,7 @@ def score_calibration(
 
 
 def somers_dxy(y_true, y_pred):
-    """Somers' Dxy simply rescales AUROC / c statistic so that Dxy = 0
+    """Somers' Dxy simply rescales AUROC (AKA c statistic) so that Dxy = 0
         corresponds to random predictions and Dxy = 1 corresponds to
         perfect discrimination."""
     auroc = roc_auc_score(y_true, y_pred)
@@ -122,7 +122,12 @@ class ModelScorer:
         self.y_pred = y_pred
         self.calib_n_splines = calibration_n_splines
         self.calib_lam_candidates = calibration_lam_candidates
-        self.scores = {"per_iter": {}, "per_split": {}, "95ci": {}}
+        self.scores = {
+            "per_split": {},
+            "per_score": {},
+            "per_score_diff": {},
+            "95ci": {}
+        }
         self.p: Union[None, np.ndarray] = None
         self.calib_lams: List[float] = []
         self.calib_curves: List[np.ndarray] = []
@@ -138,7 +143,7 @@ class ModelScorer:
 
     def calculate_scores(self):
         for i in pb(range(self.n_splits), prefix="Scorer iteration"):
-            self.scores["per_iter"][i] = score_predictions(
+            self.scores["per_split"][i] = score_predictions(
                 self.y_true[i], self.y_pred[i]
             )
             self.p, calib_curve, calib_mae, best_lam = score_calibration(
@@ -147,10 +152,10 @@ class ModelScorer:
                 self.calib_n_splines,
                 self.calib_lam_candidates,
             )
-            self.scores["per_iter"][i]["Calibration MAE"] = calib_mae
+            self.scores["per_split"][i]["Calibration MAE"] = calib_mae
             self.calib_curves.append(calib_curve)
             self.calib_lams.append(best_lam)
-        self.scores["point_estimates"] = self.scores["per_iter"][0]
+        self.scores["point_estimates"] = self.scores["per_split"][0]
         self._calculate_95ci()
 
     def print_scores(self, dec_places):
@@ -164,19 +169,22 @@ class ModelScorer:
     def _calculate_95ci(self):
         for score in self.scores["point_estimates"].keys():
             self._extract_iter_per_score(score)
-            self.scores["per_split"][score] = (
-                self.scores["per_split"][score] -
+            self.scores["per_score_diff"][score] = (
+                self.scores["per_score"][score] -
                 self.scores["point_estimates"][score]
             )
             self.scores["95ci"][score] = list(
                 self.scores["point_estimates"][score] +
-                np.percentile(self.scores["per_split"][score], (2.5, 97.5))
+                np.percentile(
+                    self.scores["per_score_diff"][score],
+                    (2.5, 97.5)
+                )
             )
 
     def _extract_iter_per_score(self, score):
-        self.scores["per_split"][score] = np.zeros(self.n_splits)
+        self.scores["per_score"][score] = np.zeros(self.n_splits)
         for i in range(self.n_splits):
-            self.scores["per_split"][score][i] = self.scores["per_iter"][i][
+            self.scores["per_score"][score][i] = self.scores["per_split"][i][
                 score]
 
 
