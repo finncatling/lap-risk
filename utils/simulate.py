@@ -112,7 +112,6 @@ def simulate_initial_df(
     # Create continuous columns
     for var_name, params in specification['cont_fits'].items():
         dist = getattr(stats, params['dist_name'])
-        # TODO: Truncation is slow - find out why and try and fix. Is it .ppf()?
         truncated_rv = TruncatedDistribution(
             rv=dist(*params['dist_params']),
             lower_bound=params['min'],

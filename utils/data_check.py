@@ -49,9 +49,6 @@ def load_nela_data_and_sanity_check(
     check_nela_data_complete_columns(df, spec)
     check_nela_data_categories(df, spec)
     warn_if_high_nela_data_missingness(df, missingness_warning_fraction)
-    # TODO: Check range of some continuous variables, e.g. age
-    # TODO: Check (with tolerance) prevalence of each category
-    # TODO: Check (with tolerance) distribution of continuous variables
 
     return df
 
