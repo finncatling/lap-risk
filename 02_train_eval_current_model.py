@@ -133,7 +133,6 @@ save_object(scorer, os.path.join(CURRENT_MODEL_OUTPUT_DIR, "scorer.pkl"))
 
 
 reporter.report("Saving summary statistics for external use")
-del scorer.scores["per_iter"]
 current_model_stats = {
     "start_datetime": datetime.fromtimestamp(reporter.timer.start_time),
     "train_fold_stats": stp.split_stats,
