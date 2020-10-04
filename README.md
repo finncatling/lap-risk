@@ -24,7 +24,7 @@ Enter the project's python environment:
 pipenv shell
 ```
 
-Then run the python scripts in the root directory in numerical order, e.g. starting with:
+Then run the python scripts in the root directory in numerical order, i.e. starting with:
 
 ```console
 python 01_train_test_split.py
