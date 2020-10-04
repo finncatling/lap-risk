@@ -122,7 +122,11 @@ def binarize_categorical(
             df[v] = trans
         else:
             cat_names = [f"{v}_{c}" for c in lb[v].classes_]
-            v_df = pd.DataFrame(trans, columns=cat_names)
+            v_df = pd.DataFrame(
+                data=trans,
+                columns=cat_names,
+                index=df.index
+            )
             df = pd.concat([df, v_df], axis=1)
             df = df.drop(v, axis=1)
 
@@ -134,19 +138,16 @@ def drop_base_categories(df: pd.DataFrame) -> pd.DataFrame:
         end up with k-1 variables to avoid the dummy variable trap.
         So, we drop the category that corresponds to baseline risk in
         for each variable."""
-    return df.drop(
-        [
-            "S03RespiratorySigns_1",
-            "S03NCEPODUrgency_1",
-            "S03ECG_1",
-            "S03NumberOfOperativeProcedures_1",
-            "S03CardiacSigns_1",
-            "S03Pred_Peritsoil_1",
-            "S03Pred_TBL_1",
-            "S03DiagnosedMalignancy_1",
-        ],
-        axis=1,
-    )
+    return df.drop([
+        "S03RespiratorySigns_1",
+        "S03NCEPODUrgency_1",
+        "S03ECG_1",
+        "S03NumberOfOperativeProcedures_1",
+        "S03CardiacSigns_1",
+        "S03Pred_Peritsoil_1",
+        "S03Pred_TBL_1",
+        "S03DiagnosedMalignancy_1",
+    ], axis=1)
 
 
 def log_urea_creat(df: pd.DataFrame) -> pd.DataFrame:
@@ -240,7 +241,9 @@ def preprocess_current(
     """Preprocess NELA data for input to current EL mortality risk model.
 
     Args:
-        df: Manually-wrangled NELA data
+        df: Manually-wrangled NELA data with some preprocessing, and incomplete
+            cases removed (the DataFrame index should not be reset until
+            after train-test splitting)
         quadratic_vars: Continuous features to add a quadratic transformation of
         winsor_thresholds: Upper and lower bounds for winsorization of
             continuous variables
@@ -256,7 +259,6 @@ def preprocess_current(
             label_binarizers is returned unmodified
     """
     df = df.copy()
-    df = df.reset_index(drop=True)
 
     # Preprocess categorical variables
     df = discretise_gcs(df)
@@ -290,6 +292,17 @@ class SplitterTrainerPredictor(Splitter):
         target_variable_name: str,
         random_seed,
     ):
+        """
+        Args:
+            df: Preprocessed NELA data. When using with current model,
+                incomplete cases should have been removed but the DataFrame
+                index should not be reset
+            train_test_splitter: TrainTestSplitter instance from
+                01_train_test_split.py
+            target_variable_name: Name of DataFrame column containing mortality
+                status
+            random_seed: Used to seed the sklearn LogisticRegression models
+        """
         super().__init__(df, train_test_splitter, target_variable_name)
         self.features: List[str] = ["intercept"]
         self.coefficients: List[np.ndarray] = []
@@ -297,7 +310,7 @@ class SplitterTrainerPredictor(Splitter):
         self.y_pred: List[np.ndarray] = []
         self.rnd = np.random.RandomState(random_seed)
 
-    def split_train_predict(self):
+    def split_train_predict(self) -> None:
         for i in pb(range(self.tts.n_splits), prefix="STP iteration"):
             X_train, y_train, X_test, y_test = self._split(i)
             model = self._train(X_train, y_train)
@@ -305,8 +318,11 @@ class SplitterTrainerPredictor(Splitter):
             self.y_pred.append(model.predict_proba(X_test.values)[:, 1])
         self.features += X_train.columns.tolist()
 
-    def _train(self, X_train: pd.DataFrame,
-               y_train: np.ndarray) -> LogisticRegression:
+    def _train(
+        self,
+        X_train: pd.DataFrame,
+        y_train: np.ndarray
+    ) -> LogisticRegression:
         """We use the liblinear solver, as the unscaled features would slow the
             convergence of the other solvers. The current NELA model is
             unregularized, but using the liblinear solver means that we must

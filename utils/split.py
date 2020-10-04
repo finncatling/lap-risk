@@ -1,3 +1,4 @@
+import copy
 import warnings
 from typing import Dict, List
 
@@ -9,7 +10,11 @@ from utils.inspect import percent_missing
 
 def drop_incomplete_cases(df: pd.DataFrame) -> (pd.DataFrame, Dict[str, float]):
     """Drops incomplete rows in input DataFrame, keeping track of pre- and
-        post-drop case numbers and calculating some convenience stats."""
+        post-drop case numbers and calculating some convenience stats.
+
+        Index of returned df SHOULD NOT BE RESET before train-test splitting
+        has occurred.
+    """
     drop_stats = {"n_total_cases": df.shape[0]}
     df = df.dropna()  # DON'T reset index
     drop_stats["n_complete_cases"] = df.shape[0]
@@ -23,8 +28,17 @@ def drop_incomplete_cases(df: pd.DataFrame) -> (pd.DataFrame, Dict[str, float]):
 
 
 def split_into_folds(
-    df: pd.DataFrame, indices: Dict[str, np.ndarray], target_var_name: str
-) -> (pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray, int, int):
+    df: pd.DataFrame,
+    indices: Dict[str, np.ndarray],
+    target_var_name: str
+) -> (
+    pd.DataFrame,
+    np.ndarray,
+    pd.DataFrame,
+    np.ndarray,
+    int,
+    int
+):
     """Splits supplied DataFrame into train and test folds, such that the test
         fold is the cases from the test hospitals which are complete for the
         variables in the current NELA risk model, and the train fold is all
@@ -40,9 +54,11 @@ def split_into_folds(
         training or testing of any of the models.
 
     Args:
-        df: NELA data
-        indices: Of the form {'train': [train_fold_indices...],
-                              'test': [test_fold_indices...]}
+        df: Preprocessed NELA data. When using with current model, incomplete
+            cases should have been removed but the DataFrame index SHOULD NOT
+            BE RESET otherwise indices and df.index won't match correctly
+        indices: Of the form {'train': np.array([train_fold_indices]),
+                              'test': np.array([test_fold_indices])}
         target_var_name: Name of DataFrame column containing mortality status
 
     Returns:
@@ -55,16 +71,31 @@ def split_into_folds(
             number of cases in the returned training data.
     """
     n_total_train_cases = indices["train"].shape[0]
-    indices["train"] = np.array([i for i in indices["train"] if i in df.index])
-    n_intersection_train_cases = indices["train"].shape[0]
+    """Test indices are unchanged, not an intersection with something else.
+        We include them in the dict below for convenient use in the later
+        loop."""
+    intersection_indices = {
+        "test": copy.deepcopy(indices["test"]),
+        "train": np.array([i for i in indices["train"] if i in df.index])
+    }
+    n_intersection_train_cases = intersection_indices["train"].shape[0]
+
+    """Check that, if using the current model, we haven't accidentally reset 
+        the DataFrame index before train-test splitting"""
+    if n_intersection_train_cases < n_total_train_cases:
+        assert not isinstance(df.index, pd.RangeIndex)
 
     split = {}
     for fold in ("train", "test"):
         split[fold] = {
-            "X_df": df.loc[indices[fold]].copy().reset_index(drop=True)}
+            "X_df": df.loc[
+                intersection_indices[fold]
+            ].copy().reset_index(drop=True)
+        }
         split[fold]["y"] = split[fold]["X_df"][target_var_name].values
         split[fold]["X_df"] = split[fold]["X_df"].drop(target_var_name, axis=1)
 
+    # Check that we found all the test fold cases in the input DataFrame
     assert split["test"]["X_df"].shape[0] == indices["test"].shape[0]
 
     return (
@@ -73,7 +104,7 @@ def split_into_folds(
         split["test"]["X_df"],
         split["test"]["y"],
         n_total_train_cases,
-        n_intersection_train_cases,
+        n_intersection_train_cases
     )
 
 
@@ -174,15 +205,18 @@ class TrainTestSplitter:
         self.test_institution_ids.append(
             np.sort(
                 self.rnd.choice(
-                    self.institution_ids, self.n_test_institutions,
+                    self.institution_ids,
+                    self.n_test_institutions,
                     replace=False
                 )
             )
         )
         self.train_institution_ids.append(
             np.array(
-                list(set(self.institution_ids) - set(
-                    self.test_institution_ids[-1]))
+                list(
+                    set(self.institution_ids) -
+                    set(self.test_institution_ids[-1])
+                )
             )
         )
 
@@ -194,7 +228,8 @@ class TrainTestSplitter:
         self.train_i.append(
             self.df.index[
                 self.df[self.split_variable_name].isin(
-                    self.train_institution_ids[-1])
+                    self.train_institution_ids[-1]
+                )
             ].to_numpy()
         )
         self.test_i.append(
@@ -217,7 +252,8 @@ class TrainTestSplitter:
 
 class Splitter:
     """Base class to handle repeated train-test splitting, according to
-        pre-defined splits in passed TrainTestSplitter."""
+        pre-defined splits in passed TrainTestSplitter. Thin wrapper around
+        split_into_folds() which also logs the statistics from each split."""
 
     def __init__(
         self,
@@ -225,6 +261,16 @@ class Splitter:
         train_test_splitter: TrainTestSplitter,
         target_variable_name: str,
     ):
+        """
+        Args:
+            df: Preprocessed NELA data. When using with current model,
+                incomplete cases should have been removed but the DataFrame
+                index should not be reset
+            train_test_splitter: TrainTestSplitter instance from
+                01_train_test_split.py
+            target_variable_name: Name of DataFrame column containing mortality
+                status
+        """
         self.df = df
         self.tts = train_test_splitter
         self.target_variable_name = target_variable_name

@@ -26,7 +26,7 @@ def initial_df_specification_fixture() -> dict:
 
 # TODO: Consider widening scope from https://tinyurl.com/y6t7m77q
 @pytest.fixture(scope="function", params=[1, 2, 3])
-def initial_df_fixture(
+def initial_df_permutations_fixture(
     request,
     initial_df_specification_fixture,
 ) -> pd.DataFrame:
@@ -45,9 +45,9 @@ def initial_df_fixture(
     """
     return simulate_initial_df(
         specification=initial_df_specification_fixture,
-        n_rows=500,
+        n_rows=600,
         n_hospitals=70,
-        missing_frac=0.05,
+        missing_frac=0.02,
         complete_indications=True,
         complete_target=True,
         complete_institution=True,

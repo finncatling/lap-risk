@@ -27,7 +27,9 @@ def plot_stratified_risk_distributions(
 
 
 def plot_calibration(
-    p: np.ndarray, calib_curves: List[np.ndarray], curve_transparency: float
+    p: np.ndarray,
+    calib_curves: List[np.ndarray],
+    curve_transparency: float
 ) -> Tuple[Figure, Axes]:
     """Plot calibration curve, with confidence intervals."""
     fig, ax = plt.subplots(figsize=(4, 4))

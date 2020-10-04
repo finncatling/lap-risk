@@ -20,13 +20,48 @@ def score_calibration(
     n_splines: int,
     lam_candidates: np.ndarray
 ) -> (np.ndarray, np.ndarray, float, float):
-    """Derive smooth model calibration curve using a GAM. Report calibration
-        error versus line of identity."""
+    """Given binary labels and corresponding predicted probabilities from a
+        binary logistic model, derives a smooth calibration curve for that
+        binary logistic model. Reports calibration error versus line of
+        identity.
+
+        calib_gam models y_true as multivariate Bernoulli-distributed
+        (equivalent to multivariate binomial distribution where trials=1). This
+        distribution is parameterised by sigmoid(f(y_pred)) and f() is a
+        learned spline transformation. f() transforms y_pred from [0, 1] to
+        [-inf, inf], and sigmoid() transforms f(y_pred) back to [0, 1].
+
+        For each mortality label y_true[i], calib_gam.pred(y_pred[i]) = x,
+        where y_true[i] ~ Bernoulli(p=x). For a perfectly-calibrated binary
+        logistic model calib_gam.pred() is the identity function.
+
+    Args:
+        y_true: Binary labels in {0., 1.}
+        y_pred: Predicted probabilities in [0, 1] corresponding to labels
+        n_splines: Number of splines used to transform y_pred
+        lam_candidates: Candidates for the penalty on the second derivative of
+            the spline transformation
+
+    Returns:
+        Linearly-spaced probabilities spanning [0, 1]. Use as the binary
+            logistic model's predicted probabilities on the x axis of the
+            calibration plot
+        Estimated actual probabilities (estimated by calib_gam) corresponding
+            to the predicted probabilities above. Use as the y axis of the
+            calibration plot
+        Mean absolute calibration error
+        The member of of lam_candidates used to fit the final calib_gam
+    """
     calib_gam = GAM(
-        s(0, n_splines=n_splines), distribution=BinomialDist(levels=1),
+        s(0, n_splines=n_splines),
+        distribution=BinomialDist(levels=1),
         link="logit"
-    ).gridsearch(y_pred.reshape(-1, 1), y_true, lam=lam_candidates,
-                 progress=False)
+    ).gridsearch(
+        y_pred.reshape(-1, 1),
+        y_true,
+        lam=lam_candidates,
+        progress=False
+    )
     p = np.linspace(0, 1, 101)
     cal_curve = calib_gam.predict(p)
     calib_mae = mean_absolute_error(p, cal_curve)
@@ -34,7 +69,7 @@ def score_calibration(
 
 
 def somers_dxy(y_true, y_pred):
-    """Somers' Dxy simply rescales AUROC / c statistic so that Dxy = 0
+    """Somers' Dxy simply rescales AUROC (AKA c statistic) so that Dxy = 0
         corresponds to random predictions and Dxy = 1 corresponds to
         perfect discrimination."""
     auroc = roc_auc_score(y_true, y_pred)
@@ -87,7 +122,12 @@ class ModelScorer:
         self.y_pred = y_pred
         self.calib_n_splines = calibration_n_splines
         self.calib_lam_candidates = calibration_lam_candidates
-        self.scores = {"per_iter": {}, "per_split": {}, "95ci": {}}
+        self.scores = {
+            "per_split": {},
+            "per_score": {},
+            "per_score_diff": {},
+            "95ci": {}
+        }
         self.p: Union[None, np.ndarray] = None
         self.calib_lams: List[float] = []
         self.calib_curves: List[np.ndarray] = []
@@ -103,7 +143,7 @@ class ModelScorer:
 
     def calculate_scores(self):
         for i in pb(range(self.n_splits), prefix="Scorer iteration"):
-            self.scores["per_iter"][i] = score_predictions(
+            self.scores["per_split"][i] = score_predictions(
                 self.y_true[i], self.y_pred[i]
             )
             self.p, calib_curve, calib_mae, best_lam = score_calibration(
@@ -112,10 +152,10 @@ class ModelScorer:
                 self.calib_n_splines,
                 self.calib_lam_candidates,
             )
-            self.scores["per_iter"][i]["Calibration MAE"] = calib_mae
+            self.scores["per_split"][i]["Calibration MAE"] = calib_mae
             self.calib_curves.append(calib_curve)
             self.calib_lams.append(best_lam)
-        self.scores["point_estimates"] = self.scores["per_iter"][0]
+        self.scores["point_estimates"] = self.scores["per_split"][0]
         self._calculate_95ci()
 
     def print_scores(self, dec_places):
@@ -129,19 +169,22 @@ class ModelScorer:
     def _calculate_95ci(self):
         for score in self.scores["point_estimates"].keys():
             self._extract_iter_per_score(score)
-            self.scores["per_split"][score] = (
-                self.scores["per_split"][score] -
+            self.scores["per_score_diff"][score] = (
+                self.scores["per_score"][score] -
                 self.scores["point_estimates"][score]
             )
             self.scores["95ci"][score] = list(
                 self.scores["point_estimates"][score] +
-                np.percentile(self.scores["per_split"][score], (2.5, 97.5))
+                np.percentile(
+                    self.scores["per_score_diff"][score],
+                    (2.5, 97.5)
+                )
             )
 
     def _extract_iter_per_score(self, score):
-        self.scores["per_split"][score] = np.zeros(self.n_splits)
+        self.scores["per_score"][score] = np.zeros(self.n_splits)
         for i in range(self.n_splits):
-            self.scores["per_split"][score][i] = self.scores["per_iter"][i][
+            self.scores["per_score"][score][i] = self.scores["per_split"][i][
                 score]
 
 

@@ -3,8 +3,16 @@ import numpy as np
 
 RANDOM_SEED = 1
 
+"""
+Project root directory. This is dependent on constants.py being one directory
+down from the root directory.
+"""
+ROOT_DIR = os.path.split(
+    os.path.dirname(os.path.abspath(__file__))
+)[0]
+
 # Folder where source data and this data after initial manual wrangling are kept
-DATA_DIR = os.path.join(os.pardir, "nelarisk", "data")
+DATA_DIR = os.path.join(ROOT_DIR, os.pardir, "nelarisk", "data")
 
 # Path to data after initial manual wrangling
 NELA_DATA_FILEPATH = os.path.join(
@@ -13,12 +21,12 @@ NELA_DATA_FILEPATH = os.path.join(
 )
 
 # Locations where 'internal' outputs are saved for use later in the analysis
-INTERNAL_OUTPUT_DIR = "outputs"
+INTERNAL_OUTPUT_DIR = os.path.join(ROOT_DIR, "outputs")
 CURRENT_MODEL_OUTPUT_DIR = os.path.join(INTERNAL_OUTPUT_DIR, "current_model")
 NOVEL_MODEL_OUTPUT_DIR = os.path.join(INTERNAL_OUTPUT_DIR, "novel_model")
 
 # Locations where 'external' (non-PHI) outputs are saved
-EXTERNAL_OUTPUT_DIR = os.path.join(os.pardir, "lap-risk-outputs")
+EXTERNAL_OUTPUT_DIR = os.path.join(ROOT_DIR, os.pardir, "lap-risk-outputs")
 STATS_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, "statistics")
 FIGURES_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, "figures")
 

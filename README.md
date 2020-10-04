@@ -4,16 +4,18 @@ Modelling mortality risk in emergency laparotomy, using data from the NELA
 
 ## Install
 
-Install necessary dependencies with [pipenv](https://pipenv-fork.readthedocs.io/en/latest/):
+We manage dependencies with [pipenv](https://pipenv-fork.readthedocs.io/en/latest/).
+
+If working in the Imperial BDAU, pipenv isn't in path. We can define a convenient alias for it in this case:
+
+```console
+alias pipenv='/opt/python/3.8.6/bin/pipenv'
+```
+
+Then install dependencies:
 
 ```console
 pipenv install
-```
-
-`pipenv` isn't in path in the Imperial BDAU, so we can define a convenient alias for it:
-
-```console
-alias pipenv='/opt/python3.8.6/bin/pipenv'
 ```
 
 ## Running the analysis
@@ -24,7 +26,7 @@ Enter the project's python environment:
 pipenv shell
 ```
 
-Then run the python scripts in the root directory in numerical order, e.g. starting with:
+Then run the python scripts in the root directory in numerical order, i.e. starting with:
 
 ```console
 python 01_train_test_split.py
@@ -39,6 +41,7 @@ taskset -c 0-7 python 01_train_test_split.py
 ```
 
 ## Running tests
+
 Install dev packages with:
 
 ```console
@@ -51,4 +54,4 @@ Run tests and check coverage:
 pytest --cov=utils tests/ 
 ```
 
-NB. Tests are currently only written for the utils module as this provides the functions upon which we build the analysis
+NB. Tests are currently only written for the `utils` module as this provides the functions upon which we build the analysis

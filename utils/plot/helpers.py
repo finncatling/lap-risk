@@ -22,7 +22,7 @@ def plot_saver(
     *plot_func_args,
     output_dir: str,
     output_filename: str,
-    extensions: Tuple[str] = ("pdf", "eps"),
+    extensions: Tuple[str] = ("pdf", ),
     **plot_func_kwargs,
 ) -> None:
     """Wraps plotting function so figures are saved. output_filename should
