@@ -24,7 +24,6 @@ def initial_df_specification_fixture() -> dict:
     return get_initial_df_specification()
 
 
-# TODO: Consider widening scope from https://tinyurl.com/y6t7m77q
 @pytest.fixture(scope="function", params=[1, 2, 3])
 def initial_df_permutations_fixture(
     request,
