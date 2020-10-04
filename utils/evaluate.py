@@ -20,8 +20,38 @@ def score_calibration(
     n_splines: int,
     lam_candidates: np.ndarray
 ) -> (np.ndarray, np.ndarray, float, float):
-    """Derive smooth model calibration curve using a GAM. Report calibration
-        error versus line of identity."""
+    """Given binary labels and corresponding predicted probabilities from a
+        binary logistic model, derives a smooth calibration curve for that
+        binary logistic model. Reports calibration error versus line of
+        identity.
+
+        calib_gam models y_true as multivariate Bernoulli-distributed
+        (equivalent to multivariate binomial distribution where trials=1). This
+        distribution is parameterised by sigmoid(f(y_pred)) and f() is a
+        learned spline transformation. f() transforms y_pred from [0, 1] to
+        [-inf, inf], and sigmoid() transforms f(y_pred) back to [0, 1].
+
+        For each mortality label y_true[i], calib_gam.pred(y_pred[i]) = x,
+        where y_true[i] ~ Bernoulli(p=x). For a perfectly-calibrated binary
+        logistic model calib_gam.pred() is the identity function.
+
+    Args:
+        y_true: Binary labels in {0., 1.}
+        y_pred: Predicted probabilities in [0, 1] corresponding to labels
+        n_splines: Number of splines used to transform y_pred
+        lam_candidates: Candidates for the penalty on the second derivative of
+            the spline transformation
+
+    Returns:
+        Linearly-spaced probabilities spanning [0, 1]. Use as the binary
+            logistic model's predicted probabilities on the x axis of the
+            calibration plot
+        Estimated actual probabilities (estimated by calib_gam) corresponding
+            to the predicted probabilities above. Use as the y axis of the
+            calibration plot
+        Mean absolute calibration error
+        The member of of lam_candidates used to fit the final calib_gam
+    """
     calib_gam = GAM(
         s(0, n_splines=n_splines),
         distribution=BinomialDist(levels=1),

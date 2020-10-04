@@ -47,7 +47,7 @@ def test_score_calibration(labels_and_well_calibrated_pred_probs):
     calibration_error_threshold = 0.03
     y_true, y_pred = labels_and_well_calibrated_pred_probs
 
-    # Test that we report low calibration error with these labels & predictions
+    # Test that we report low calibration error with these perfect predictions
     _, our_cal_curve, our_calib_mae, _ = evaluate.score_calibration(
         y_true=y_true,
         y_pred=y_pred,
