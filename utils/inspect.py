@@ -1,5 +1,4 @@
 from typing import List
-from warnings import warn
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -172,19 +171,3 @@ def multi_dot_chart(
 
     plt.legend(loc="lower right")
     plt.show()
-
-
-def report_ohe_category_assignment(data: pd.DataFrame,
-                                   category_name: str) -> None:
-    """Given a DataFrame where the columns one-hot-encode a categorical
-        variable, reports the number / proportion of rows where a category is
-        assigned."""
-    if data.loc[data.sum(1) > 1].shape[0]:
-        warn("Data contains some cases with more than one category encoded")
-    n_cases_total = data.shape[0]
-    n_cases_assigned = data.loc[data.sum(1) == 1].shape[0]
-    print(
-        f"{n_cases_assigned} cases out of {n_cases_total} ("
-        f"{100 * np.round(n_cases_assigned / n_cases_total, 3)}%) now have "
-        f"an assigned {category_name}"
-    )

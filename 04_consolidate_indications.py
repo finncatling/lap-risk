@@ -6,13 +6,13 @@ from pprint import PrettyPrinter
 
 from utils.constants import DATA_DIR, STATS_OUTPUT_DIR
 from utils.data_check import load_nela_data_and_sanity_check
-from utils.inspect import report_ohe_category_assignment
 from utils.io import make_directory, save_object
 from utils.indications import (
     INDICATION_PREFIX,
     MISSING_IND_CATEGORY,
     get_indication_variable_names,
-    get_common_single_indications
+    get_common_single_indications,
+    ohe_single_indications, report_ohe_category_assignment
 )
 from utils.report import Reporter
 
@@ -59,15 +59,14 @@ pp.pprint([ind[len(INDICATION_PREFIX):] for ind in common_single_inds])
 
 
 reporter.first(
-    "Making a new one-hot-encoded DataFrame containing just the "
-    "common single indications"
+    "Making a new one-hot-encoded DataFrame containing just the common single "
+    "indications where they occur in isolation"
 )
-new_ind_df = pd.DataFrame(
-    np.zeros((df.shape[0], len(common_single_inds))), columns=common_single_inds
+ohe_single_ind_df = ohe_single_indications(
+    indication_df=ind_df,
+    indication_subset_names=common_single_inds
 )
-for csi in common_single_inds:
-    new_ind_df.loc[((ind_df.sum(1) == 1) & (ind_df[csi] == 1)), csi] = 1.0
-report_ohe_category_assignment(new_ind_df, "indication")
+report_ohe_category_assignment(ohe_single_ind_df, "indication")
 
 
 reporter.first(
@@ -80,7 +79,7 @@ for ind_pair, keep_ind_index in (
     (("Perforation", "AbdominalAbscess"), 0),
 ):
     print(f"Changing {ind_pair} to {ind_pair[keep_ind_index]}")
-    new_ind_df.loc[
+    ohe_single_ind_df.loc[
         (
             (ind_df.sum(1) == 2)
             & (ind_df[f"{INDICATION_PREFIX}{ind_pair[0]}"] == 1)
@@ -88,7 +87,7 @@ for ind_pair, keep_ind_index in (
         ),
         f"{INDICATION_PREFIX}{ind_pair[keep_ind_index]}",
     ] = 1
-    report_ohe_category_assignment(new_ind_df, "indication")
+    report_ohe_category_assignment(ohe_single_ind_df, "indication")
 
 
 reporter.first(
@@ -99,7 +98,7 @@ for ind_trio, keep_ind_index in (
     (("Perforation", "Peritonitis", "AbdominalAbscess"), 1),
 ):
     print(f"Changing {ind_trio} to {ind_trio[keep_ind_index]}")
-    new_ind_df.loc[
+    ohe_single_ind_df.loc[
         (
             (ind_df.sum(1) == 3)
             & (ind_df[f"{INDICATION_PREFIX}{ind_trio[0]}"] == 1)
@@ -108,16 +107,16 @@ for ind_trio, keep_ind_index in (
         ),
         f"{INDICATION_PREFIX}{ind_trio[keep_ind_index]}",
     ] = 1
-    report_ohe_category_assignment(new_ind_df, "indication")
+    report_ohe_category_assignment(ohe_single_ind_df, "indication")
 
 
 reporter.first(
     "Assigning cases with no indication in the original data to a "
     "new 'indication missing' category"
 )
-new_ind_df[MISSING_IND_CATEGORY] = np.zeros(df.shape[0])
-new_ind_df.loc[ind_df.sum(1) == 0, MISSING_IND_CATEGORY] = 1.0
-report_ohe_category_assignment(new_ind_df, "indication")
+ohe_single_ind_df[MISSING_IND_CATEGORY] = np.zeros(df.shape[0])
+ohe_single_ind_df.loc[ind_df.sum(1) == 0, MISSING_IND_CATEGORY] = 1.0
+report_ohe_category_assignment(ohe_single_ind_df, "indication")
 
 
 reporter.first(
@@ -125,15 +124,15 @@ reporter.first(
     "a common single indication, and where the case was not "
     "reassigned earlier, to the missing category."
 )
-new_ind_df.loc[
+ohe_single_ind_df.loc[
     (
         (ind_df.sum(1) > 1)
         & (ind_df[common_single_inds].sum(1) > 0)
-        & (new_ind_df.sum(1) == 0)
+        & (ohe_single_ind_df.sum(1) == 0)
     ),
     MISSING_IND_CATEGORY,
 ] = 1.0
-report_ohe_category_assignment(new_ind_df, "indication")
+report_ohe_category_assignment(ohe_single_ind_df, "indication")
 
 
 reporter.first(
@@ -142,17 +141,17 @@ reporter.first(
     "common single indication) to the 'other indication' "
     "category"
 )
-new_ind_df.loc[new_ind_df.sum(1) == 0, f"{INDICATION_PREFIX}Other"] = 1.0
-report_ohe_category_assignment(new_ind_df, "indication")
+ohe_single_ind_df.loc[ohe_single_ind_df.sum(1) == 0, f"{INDICATION_PREFIX}Other"] = 1.0
+report_ohe_category_assignment(ohe_single_ind_df, "indication")
 
 
 reporter.first("Confirming each case now has exactly one assigned indication")
-assert new_ind_df.loc[new_ind_df.sum(1) == 1].shape[0] == new_ind_df.shape[0]
+assert ohe_single_ind_df.loc[ohe_single_ind_df.sum(1) == 1].shape[0] == ohe_single_ind_df.shape[0]
 
 
 reporter.report("Adding new indications encoding to existing data.")
 df = df.drop(indications, axis=1)
-df_with_new_inds = pd.concat((df, new_ind_df), axis=1)
+df_with_new_inds = pd.concat((df, ohe_single_ind_df), axis=1)
 
 
 reporter.report("Saving data for later use")
@@ -163,10 +162,10 @@ df_with_new_inds.to_pickle(
 
 reporter.report("Saving a few summary statistics")
 ci_stats = {
-    "indication_counts": new_ind_df.sum(0).sort_values(ascending=False)
+    "indication_counts": ohe_single_ind_df.sum(0).sort_values(ascending=False)
 }
 ci_stats["indication_proportions"] = (
-    ci_stats["indication_counts"] / new_ind_df.shape[0]
+    ci_stats["indication_counts"] / ohe_single_ind_df.shape[0]
 )
 save_object(
     ci_stats,
