@@ -141,12 +141,17 @@ reporter.first(
     "common single indication) to the 'other indication' "
     "category"
 )
-ohe_single_ind_df.loc[ohe_single_ind_df.sum(1) == 0, f"{INDICATION_PREFIX}Other"] = 1.0
+ohe_single_ind_df.loc[
+    ohe_single_ind_df.sum(1) == 0,
+    f"{INDICATION_PREFIX}Other"
+] = 1.0
 report_ohe_category_assignment(ohe_single_ind_df, "indication")
 
 
 reporter.first("Confirming each case now has exactly one assigned indication")
-assert ohe_single_ind_df.loc[ohe_single_ind_df.sum(1) == 1].shape[0] == ohe_single_ind_df.shape[0]
+assert ohe_single_ind_df.loc[
+    ohe_single_ind_df.sum(1) == 1
+].shape[0] == ohe_single_ind_df.shape[0]
 
 
 reporter.report("Adding new indications encoding to existing data.")
