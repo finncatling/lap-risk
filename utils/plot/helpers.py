@@ -4,7 +4,7 @@ from typing import Tuple, Callable
 
 import numpy as np
 
-from utils.model.novel import INDICATION_PREFIX
+from utils.indications import INDICATION_PREFIX
 
 
 def generate_ci_quantiles(cis: Tuple[float]) -> np.ndarray:

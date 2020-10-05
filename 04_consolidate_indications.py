@@ -1,22 +1,22 @@
 import os
-from typing import List
 
 import numpy as np
 import pandas as pd
+from pprint import PrettyPrinter
 
 from utils.constants import DATA_DIR, STATS_OUTPUT_DIR
 from utils.data_check import load_nela_data_and_sanity_check
 from utils.inspect import report_ohe_category_assignment
 from utils.io import make_directory, save_object
-from utils.model.novel import (
+from utils.indications import (
     INDICATION_PREFIX,
     MISSING_IND_CATEGORY,
-    get_indication_variable_names
+    get_indication_variable_names,
+    get_common_single_indications
 )
 from utils.report import Reporter
 
 
-# TODO: Move this to constants.py
 SINGLE_IND_FREQUENCY_THRESHOLD = 1200
 
 
@@ -45,21 +45,17 @@ ind_df = df[indications].copy()
 
 reporter.report(
     "Defining 'common single indications' as those that occur in "
-    f"isolation more than {SINGLE_IND_FREQUENCY_THRESHOLD} times"
+    f"isolation >= {SINGLE_IND_FREQUENCY_THRESHOLD} times"
 )
-common_single_inds: List[str] = ind_df.loc[
-    ind_df.sum(1) == 1
-    ].sum(0)[
-    ind_df.loc[
-        ind_df.sum(1) == 1
-        ].sum(0) > SINGLE_IND_FREQUENCY_THRESHOLD
-    ].sort_values(ascending=False).index.tolist()
+common_single_inds = get_common_single_indications(
+    indication_df=ind_df,
+    frequency_threshold=SINGLE_IND_FREQUENCY_THRESHOLD
+)
 
 
-print(
-    "The common single indications are",
-    ", ".join([i[len(INDICATION_PREFIX):] for i in common_single_inds]),
-)
+print("The common single indications are:")
+pp = PrettyPrinter()
+pp.pprint([ind[len(INDICATION_PREFIX):] for ind in common_single_inds])
 
 
 reporter.first(

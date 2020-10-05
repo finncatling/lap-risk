@@ -1,8 +1,10 @@
 import operator
-from typing import Dict, List, Tuple, Iterable
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
+
+from utils.indications import ohe_to_single_column
 
 NOVEL_MODEL_VARS = {
     "cat": (
@@ -51,26 +53,6 @@ LACTATE_ALBUMIN_VARS = (
     ALBUMIN_VAR_NAME,
     f"{ALBUMIN_VAR_NAME}{MISSINGNESS_SUFFIX}",
 )
-INDICATION_VAR_NAME = "Indication"
-INDICATION_PREFIX = "S05Ind_"
-MISSING_IND_CATEGORY = f"{INDICATION_PREFIX}Missing"
-
-
-def get_indication_variable_names(
-    columns: Iterable[str],
-    prefix: str = INDICATION_PREFIX
-) -> List[str]:
-    """Given an iterable of column names, isolates just those that are binary
-        indication variables.
-
-    Args:
-        columns: Column names
-        prefix: Prefix of the variables which are binary indications
-
-    Returns:
-        Binary indication variables
-    """
-    return [c for c in columns if prefix in c]
 
 
 def combine_categories(
@@ -104,15 +86,6 @@ def add_missingness_indicators(df: pd.DataFrame,
         df[c_missing] = np.zeros(df.shape[0])
         df.loc[df[v].isnull(), c_missing] = 1.0
     return df
-
-
-def ohe_to_single_column(
-    df: pd.DataFrame, variable_name: str, categories: List[str]
-) -> pd.DataFrame:
-    """Changes a variable that is one-hot encoded over multiple DataFrame
-        columns to integers in a single column."""
-    df[variable_name] = df[categories].idxmax(axis=1)
-    return df.drop(categories, axis=1)
 
 
 def label_encode(
