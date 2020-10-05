@@ -1,9 +1,11 @@
-from typing import Dict, Any, Tuple, List
+from typing import Tuple, List
 
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+
+from utils.evaluate import stratify_y_pred
 
 
 def plot_stratified_risk_distributions(
@@ -16,10 +18,10 @@ def plot_stratified_risk_distributions(
 ) -> Tuple[Figure, Axes]:
     """Plots predicted risks, stratified by mortality label."""
     fig, ax = plt.subplots()
+    stratified_y_pred = stratify_y_pred(y_true, y_pred)
     for i, outcome in enumerate(("Alive", "Dead")):
-        stratified_y_pred = y_pred[np.where(y_true == i)[0]]
         ax.hist(
-            stratified_y_pred,
+            stratified_y_pred[i],
             label=outcome,
             bins=hist_bins,
             density=hist_density,

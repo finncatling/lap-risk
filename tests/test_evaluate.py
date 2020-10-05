@@ -122,3 +122,12 @@ def test_tjurs_coef():
         y_true=np.array([1., 1., 0., 0.]),
         y_pred=np.array([0.75, 0.25, 0.75, 0.25])
     ) == 0.0
+
+
+def test_stratify_y_pred():
+    y_pred_0, y_pred_1 = evaluate.stratify_y_pred(
+        y_true=np.array([0., 1., 0., 1.]),
+        y_pred=np.array([0.25, 0.75, 0.35, 0.65])
+    )
+    assert (y_pred_0 == np.array([0.25, 0.35])).all()
+    assert (y_pred_1 == np.array([0.75, 0.65])).all()

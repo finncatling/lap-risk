@@ -68,6 +68,24 @@ def score_calibration(
     return p, cal_curve, calib_mae, calib_gam.terms.lam
 
 
+def stratify_y_pred(
+    y_true: np.ndarray,
+    y_pred: np.ndarray
+) -> (np.ndarray, np.ndarray):
+    """Splits predicted probabilities into those where true label is 0 and
+        those where true label is 1.
+
+    Args:
+        y_true: True labels
+        y_pred: Predicted probabilities
+
+    Returns:
+        Predicted probabilities where true label is 0
+        Predicted probabilities where true label is 1
+    """
+    return y_pred[np.where(y_true == 0)[0]], y_pred[np.where(y_true == 1)[0]]
+
+
 def somers_dxy(y_true, y_pred):
     """Somers' Dxy simply rescales AUROC (AKA c statistic) so that Dxy = 0
         corresponds to random predictions and Dxy = 1 corresponds to
@@ -79,10 +97,8 @@ def somers_dxy(y_true, y_pred):
 def tjurs_coef(y_true, y_pred):
     """Tjur's coefficient of discrimination is the average predicted risk
         when y = 1, minus the average predicted risk when y = 0."""
-    strata = []
-    for y in (0, 1):
-        strata.append(y_pred[np.where(y_true == y)].mean())
-    return strata[1] - strata[0]
+    y_pred_0, y_pred_1 = stratify_y_pred(y_true, y_pred)
+    return y_pred_1.mean() - y_pred_0.mean()
 
 
 def score_predictions(
