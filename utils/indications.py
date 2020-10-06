@@ -62,17 +62,19 @@ def ohe_single_indications(
     indication_subset_names: List[str]
 ) -> pd.DataFrame:
     """Makes a new one-hot-encoded DataFrame whose column names are
-        indication_subset_names. Values are 1.0 in cases where that indication
-        occurs in isolation, otherwise 0.0"""
+        indication_subset_names. Values are 1 in cases where that indication
+        occurs in isolation, otherwise 0"""
     ohe_indication_df = pd.DataFrame(
-        np.zeros((indication_df.shape[0], len(indication_subset_names))),
+        data=np.zeros(
+            (indication_df.shape[0], len(indication_subset_names))
+        ).astype(int),
         columns=indication_subset_names
     )
     for name in indication_subset_names:
         ohe_indication_df.loc[
             ((indication_df.sum(1) == 1) & (indication_df[name] == 1)),
             name
-        ] = 1.0
+        ] = 1
 
     # Check that no cases have more than one category encoded
     assert not ohe_indication_df.loc[ohe_indication_df.sum(1) > 1].shape[0]
