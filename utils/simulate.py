@@ -3,7 +3,7 @@ import pandas as pd
 from scipy import stats
 from typing import Iterable, Tuple
 
-from utils.model.novel import get_indication_variable_names
+from utils.indications import get_indication_variable_names
 
 
 class TruncatedDistribution:

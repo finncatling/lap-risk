@@ -15,8 +15,8 @@ from utils.model.novel import (
     LACTATE_VAR_NAME,
     NOVEL_MODEL_VARS,
     WINSOR_QUANTILES,
-    INDICATION_VAR_NAME,
 )
+from utils.indications import INDICATION_VAR_NAME
 from utils.model.albumin import albumin_model_factory
 
 
