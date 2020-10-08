@@ -1,15 +1,21 @@
+import pytest
 import numpy as np
 import pandas as pd
 
 from utils.model import novel
 
 
-def test_combine_categories():
+@pytest.fixture()
+def missing_categories_df_fixture() -> pd.DataFrame:
+    return pd.DataFrame({
+        'a': [1., 2., 3., np.nan],
+        'b': [4., 5., 4., 6.]
+    })
+
+
+def test_combine_categories(missing_categories_df_fixture):
     combined_df = novel.combine_categories(
-        df=pd.DataFrame({
-            'a': [1., 2., 3., np.nan],
-            'b': [4., 5., 4., 6.]
-        }),
+        df=missing_categories_df_fixture,
         category_mapping={
             'a': {
                 1.: 1.,
@@ -29,14 +35,16 @@ def test_combine_categories():
     }).equals(combined_df)
 
 
-def test_add_missingness_indicators(initial_df_permutations_fixture):
-    cols = initial_df_permutations_fixture.shape[1]
-    df2 = novel.add_missingness_indicators(
-        initial_df_permutations_fixture,
-        ["S01AgeOnArrival", "S03SerumCreatinine"]
+def test_add_missingness_indicators(missing_categories_df_fixture):
+    missing_indicator_df = novel.add_missingness_indicators(
+        df=missing_categories_df_fixture,
+        variables=['a']
     )
-    cols = df2.shape[1] - cols
-    assert cols == 2
+    assert pd.DataFrame({
+        'a': [1., 2., 3., np.nan],
+        'b': [4., 5., 4., 6.],
+        'a_missing': [0., 0., 0., 1.]
+    }).equals(missing_indicator_df)
 
 
 def test_preprocess_novel_pre_split():
