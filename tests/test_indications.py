@@ -89,4 +89,22 @@ def test_ohe_single_indications(
         indication_df=indications_df_fixture,
         indication_subset_names=common_single_indications_fixture
     )
-    assert all(ohe_single_indications_df_fixture == ohe_ind_df)
+    assert ohe_single_indications_df_fixture.equals(ohe_ind_df)
+
+
+def test_ohe_to_single_column():
+    ohe_df = pd.DataFrame({
+        'a_0': [0, 1, 0, 1],
+        'a_1': [1, 0, 0, 0],
+        'a_2': [0, 0, 1, 0],
+        'disregard': [0.1, 8.4, 3.2, 12.],
+    })
+    single_a_column_df = indications.ohe_to_single_column(
+        df=ohe_df,
+        variable_name='a',
+        categories=['a_0', 'a_1', 'a_2']
+    )
+    assert pd.DataFrame({
+        'disregard': [0.1, 8.4, 3.2, 12.],
+        'a': ['a_1', 'a_0', 'a_2', 'a_0']
+    }).equals(single_a_column_df)

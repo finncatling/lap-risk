@@ -49,3 +49,7 @@ def test_add_missingness_indicators(missing_categories_df_fixture):
 
 def test_preprocess_novel_pre_split():
     assert False
+
+
+def test_label_encode():
+    assert False

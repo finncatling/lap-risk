@@ -3,7 +3,6 @@ import pandas as pd
 import pytest
 
 from utils import split
-from utils.model.novel import NOVEL_MODEL_VARS
 
 
 def test_drop_incomplete_cases(simple_df_with_missingness_fixture):
