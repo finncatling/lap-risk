@@ -23,10 +23,10 @@ def test_combine_categories():
             },
         }
     )
-    assert all(pd.DataFrame({
+    assert pd.DataFrame({
         'a': [1., 2., 2., np.nan],
         'b': [6., 5., 6., 6.]
-    }) == combined_df)
+    }).equals(combined_df)
 
 
 def test_add_missingness_indicators(initial_df_permutations_fixture):
