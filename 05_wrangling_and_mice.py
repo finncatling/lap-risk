@@ -10,7 +10,7 @@ from utils.constants import (
     NOVEL_MODEL_OUTPUT_DIR
 )
 from utils.model.shared import flatten_model_var_dict
-from utils.io import make_directory, load_object, save_object
+from utils.io import load_object, save_object
 from utils.model.novel import (
     NOVEL_MODEL_VARS,
     MULTI_CATEGORY_LEVELS,
@@ -21,8 +21,9 @@ from utils.model.novel import (
     WINSOR_QUANTILES,
 )
 from utils.indications import (
-    INDICATION_VAR_NAME, INDICATION_PREFIX,
-    MISSING_IND_CATEGORY
+    INDICATION_VAR_NAME,
+    MISSING_IND_CATEGORY,
+    get_indication_variable_names
 )
 from utils.impute import ImputationInfo, SplitterWinsorMICE
 from utils.split import TrainTestSplitter
@@ -42,18 +43,27 @@ df: pd.DataFrame = pd.read_pickle(
 )
 
 
-# TODO: Use function to find these
 reporter.report("Finding names of indication variables")
-indications = [c for c in df.columns if INDICATION_PREFIX in c]
+indications = get_indication_variable_names(df.columns)
 
 
 reporter.report("Removing variables not used in the novel model")
 df = df[flatten_model_var_dict(NOVEL_MODEL_VARS) + indications]
 
 
-reporter.report("Preparing details of discrete variables")
+reporter.report("Preparing dictionary of non-binary categorical variables")
 multi_category_levels: Dict[str, Tuple] = copy.deepcopy(MULTI_CATEGORY_LEVELS)
 multi_category_levels[INDICATION_VAR_NAME] = tuple(indications)
+save_object(
+    multi_category_levels,
+    os.path.join(
+        NOVEL_MODEL_OUTPUT_DIR,
+        "05_multi_category_levels_with_indications.pkl"
+    )
+)
+
+
+reporter.report("Preparing list of binary variables")
 binary_vars = list(
     set(NOVEL_MODEL_VARS["cat"]) -
     set(multi_category_levels.keys())
@@ -83,19 +93,6 @@ assert df.shape[0] == df.dropna(axis=0, how="all").shape[0]
 
 reporter.report("Saving preprocessed data for later use")
 df.to_pickle(os.path.join(DATA_DIR, "05_output_df.pkl"))
-
-
-reporter.report(
-    "Saving levels of categorical variables (with indications "
-    "added) for later use"
-)
-save_object(
-    multi_category_levels,
-    os.path.join(
-        NOVEL_MODEL_OUTPUT_DIR,
-        "05_multi_category_levels_with_indications.pkl"
-    ),
-)
 
 
 reporter.report("Making DataFrame and variable list for use in MICE")
