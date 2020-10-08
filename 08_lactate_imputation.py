@@ -24,17 +24,13 @@ reporter = Reporter()
 reporter.title("Fit lactate imputation models")
 
 
-reporter.report("Creating output dirs (if they don't already exist)")
-make_directory(NOVEL_MODEL_OUTPUT_DIR)
-
-
 reporter.report("Loading previous analysis outputs needed for imputation")
-df = pd.read_pickle(os.path.join(DATA_DIR, "df_preprocessed_for_novel_pre_split.pkl"))
+df = pd.read_pickle(os.path.join(DATA_DIR, "05_output_df.pkl"))
 cat_imputer: CategoricalImputer = load_object(
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "categorical_imputer.pkl")
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "06_categorical_imputer.pkl")
 )
 multi_category_levels: Dict[str, Tuple] = load_object(
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "multi_category_levels_with_indications.pkl")
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_multi_category_levels_with_indications.pkl")
 )
 
 

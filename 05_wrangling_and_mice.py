@@ -32,20 +32,17 @@ reporter = Reporter()
 reporter.title(
     "Wrangle NELA data in preparation for later input to the "
     "novel model. Perform MICE for continuous variables apart from "
-    "lactate and albumin, and for binary discrete variables"
+    "lactate and albumin, and for binary variables"
 )
 
 
-reporter.report("Creating output dirs (if they don't already exist)")
-make_directory(NOVEL_MODEL_OUTPUT_DIR)
-
-
-reporter.report("Loading manually-wrangled NELA data")
-df = pd.read_pickle(
-    os.path.join(DATA_DIR, "df_after_univariate_wrangling_new_indications.pkl")
+reporter.report("Loading NELA data output from 04_consolidate_indications.py")
+df: pd.DataFrame = pd.read_pickle(
+    os.path.join(DATA_DIR, "04_output_df.pkl")
 )
 
 
+# TODO: Use function to find these
 reporter.report("Finding names of indication variables")
 indications = [c for c in df.columns if INDICATION_PREFIX in c]
 
@@ -85,7 +82,7 @@ assert df.shape[0] == df.dropna(axis=0, how="all").shape[0]
 
 
 reporter.report("Saving preprocessed data for later use")
-df.to_pickle(os.path.join(DATA_DIR, "df_preprocessed_for_novel_pre_split.pkl"))
+df.to_pickle(os.path.join(DATA_DIR, "05_output_df.pkl"))
 
 
 reporter.report(
@@ -96,7 +93,7 @@ save_object(
     multi_category_levels,
     os.path.join(
         NOVEL_MODEL_OUTPUT_DIR,
-        "multi_category_levels_with_indications.pkl"
+        "05_multi_category_levels_with_indications.pkl"
     ),
 )
 
@@ -142,13 +139,13 @@ imputation_stages.add_stage(
 reporter.report("Saving imputation stage information for later use")
 save_object(
     imputation_stages,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "imputation_stages.pkl")
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_imputation_stages.pkl")
 )
 
 
 reporter.report("Loading data needed for train-test splitting")
 tt_splitter: TrainTestSplitter = load_object(
-    os.path.join(INTERNAL_OUTPUT_DIR, "train_test_splitter.pkl")
+    os.path.join(INTERNAL_OUTPUT_DIR, "01_train_test_splitter.pkl")
 )
 
 
@@ -174,7 +171,7 @@ swm.split_winsorize_mice()
 reporter.report("Saving MICE imputations for later use")
 save_object(
     swm,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "splitter_winsor_mice.pkl")
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_splitter_winsor_mice.pkl")
 )
 
 
