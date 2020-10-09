@@ -22,9 +22,6 @@ reporter.report("Loading previous analysis outputs needed for imputation")
 df = pd.read_pickle(
     os.path.join(DATA_DIR, "05_preprocessed_df.pkl")
 )
-n_imputations: int = load_object(
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_imputation_info.pkl")
-)['n_imputations']
 swm: SplitterWinsorMICE = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_splitter_winsor_mice.pkl")
 )
@@ -41,7 +38,7 @@ cat_imputer = CategoricalImputer(
     df=df.drop(list(LACTATE_ALBUMIN_VARS), axis=1),
     splitter_winsor_mice=swm,
     cat_vars=list(multi_category_levels.keys()),
-    n_imputations_per_mice=n_imputations,
+    n_imputations_per_mice=1,
     random_seed=RANDOM_SEED,
 )
 cat_imputer.fit()
