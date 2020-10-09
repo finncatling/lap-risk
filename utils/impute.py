@@ -288,7 +288,8 @@ class CategoricalImputer(Splitter):
             random_seed: For reproducibility
         """
         super().__init__(
-            df, splitter_winsor_mice.tts,
+            df,
+            splitter_winsor_mice.tts,
             splitter_winsor_mice.target_variable_name
         )
         self.swm = splitter_winsor_mice
