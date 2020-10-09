@@ -301,11 +301,11 @@ class Splitter:
         return X_train, y_train, X_test, y_test
 
     def _split_then_join_Xy(self, i: int) -> (pd.DataFrame, pd.DataFrame):
-        """Thin wrapper around ._split() which adds y_train back into X_train,
-            and adds y_test back into X_test. This is convenient for input to
-            the MICE and categorical imputation models, which use the target
-            as a feature."""
-        X_train, y_train, X_test, y_test = self._split(i)
-        X_train[self.target_variable_name] = y_train
-        X_test[self.target_variable_name] = y_test
-        return X_train, X_test
+        """Thin wrapper around ._split() which adds y_train (the mortality
+            labels) back into X_train, and adds y_test back into X_test. This
+            is convenient for input to the MICE and categorical imputation
+            models, which use the target as a feature."""
+        train, y_train, test, y_test = self._split(i)
+        train[self.target_variable_name] = y_train
+        test[self.target_variable_name] = y_test
+        return train, test
