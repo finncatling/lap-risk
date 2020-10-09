@@ -192,8 +192,7 @@ class SplitterWinsorMICE(Splitter):
         """'Burn-in' and 'skip' imputations are discarded."""
         for _ in range(self.n_mice_burn_in):
             mice_data.update_all()
-        # TODO: Remove progressbar here (just for testing purposes)
-        for imputation_i in pb(range(self.n_mice_imputations)):
+        for imputation_i in range(self.n_mice_imputations):
             if imputation_i:
                 mice_data.update_all(self.n_mice_skip + 1)
             self._store_imputed(split_i, fold, imputation_i, mice_data.data)
