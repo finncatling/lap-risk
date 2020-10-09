@@ -82,24 +82,23 @@ df = preprocess_novel_pre_split(
 )
 
 
-reporter.report(
-    "Checking that there are no cases where all features are "
-    "missing (these cases would be dropped by statsmodels MICEData,"
-    " which could create problems with the post-imputation data "
-    "reconstruction)"
-)
-# TODO: Do this after dropping features to make mice_df?
-assert df.shape[0] == df.dropna(axis=0, how="all").shape[0]
-
-
 reporter.report("Saving preprocessed data for later use")
 df.to_pickle(os.path.join(DATA_DIR, "05_preprocessed_df.pkl"))
 
 
-reporter.report("Making DataFrame and variable list for use in MICE")
+reporter.report(
+    "Making DataFrame and for use in MICE, and checking that there are no "
+    "cases where all features are missing (these cases would be dropped by "
+    "statsmodels MICEData, which could create problems with the "
+    "post-imputation data reconstruction)"
+)
 mice_df = df.drop(
     list(multi_category_levels.keys()) + list(LACTATE_ALBUMIN_VARS), axis=1
 ).copy()
+assert mice_df.shape[0] == mice_df.dropna(axis=0, how="all").shape[0]
+
+
+reporter.report("Making continuous variable list for use in MICE")
 mice_cont_vars = list(NOVEL_MODEL_VARS["cont"])
 mice_cont_vars.remove(LACTATE_VAR_NAME)
 mice_cont_vars.remove(ALBUMIN_VAR_NAME)
