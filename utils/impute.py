@@ -38,6 +38,46 @@ def find_missing_indices(df: pd.DataFrame) -> Dict[str, np.ndarray]:
     return missing_i
 
 
+class ImputationInfo:
+    """Hold info related to a (possibly multi-stage) imputation process.	
+        The number of imputations calculated for a subsequent stage is always	
+        a multiple of the number needed in the previous stage."""
+
+    def __init__(self):
+        self.descriptions: List[str] = []
+        self.n_min_imputations: List[int] = []
+        self.fraction_incomplete: List[float] = []
+        self.n_imputations: List[int] = []
+        self.multiple_of_previous_n_imputations: List[int] = []
+
+    def add_stage(self, description: str, df: pd.DataFrame) -> None:
+        """Add information about an imputation stage, and calculate the number	
+            of imputations it will require.	
+        Args:	
+            description: Description of this imputation stage	
+            df: Containing variables to be imputed during this stage. May also	
+                contain other variables as long as they have no missing values
+        """
+        self.descriptions.append(description)
+        self._determine_adjusted_n_imputations(df)
+
+    def _determine_adjusted_n_imputations(self, df: pd.DataFrame):
+        """If there is a previous imputation stage, increase n_imputations (the	
+            number of imputations required for this stage according to White et	
+            al) so that it is a multiple of n_imputations from the previous	
+            stage."""
+        n_min_imputations, fraction_incomplete = determine_n_imputations(df)
+        self.n_min_imputations.append(n_min_imputations)
+        self.fraction_incomplete.append(fraction_incomplete)
+        multiple = 1
+        if len(self.n_imputations):
+            multiple = int(np.ceil(n_min_imputations / self.n_imputations[-1]))
+            self.n_imputations.append(multiple * self.n_imputations[-1])
+        else:
+            self.n_imputations.append(n_min_imputations)
+        self.multiple_of_previous_n_imputations.append(multiple)
+
+
 class SplitterWinsorMICE(Splitter):
     """Performs winsorization then MICE for each predefined train-test split.
         MICE is limited to the continuous variables and binary variables
