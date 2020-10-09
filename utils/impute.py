@@ -42,7 +42,11 @@ class SplitterWinsorMICE(Splitter):
     """Performs winsorization then MICE for each predefined train-test split.
         MICE is limited to the continuous variables and binary variables
         (except those related to lactate and albumin). For efficiency, we store
-        only the imputed values and their indices."""
+        only the imputed values and their indices.
+
+        Note that we use the target variable (mortality) as a feature in this
+        imputation model. Our earlier code (in data_check.py) guarantees that
+        the target variable is complete, so no values are imputed for it."""
 
     def __init__(
         self,
@@ -60,11 +64,10 @@ class SplitterWinsorMICE(Splitter):
     ):
         """
         Args:
-            df: DataFrame containing all continuous variables (except lactate-
-                and albumin-related variables), all binary variables, the
-                non-binary discrete variables for imputation at this stage, and
-                the target (mortality labels). This DataFrame still contains all
-                its missing values, i.e. no imputation yet
+            df: DataFrame containing the continuous variables and binary variables
+                (except those related to lactate and albumin), and the target
+                (mortality labels). This DataFrame still contains all its
+                missing values, i.e. no imputation yet
             train_test_splitter: Pickled TrainTestSplitter object fit in earlier
                 parts of the analysis
             target_variable_name: Name of the mortality variable
@@ -112,12 +115,11 @@ class SplitterWinsorMICE(Splitter):
 
     @property
     def all_vars(self):
-        return self.cont_vars + self.binary_vars
+        return self.cont_vars + self.binary_vars + [self.target_variable_name]
 
     def _sanity_check_variables(self):
-        """Check that, apart from target (accounted for with the minus 1), df
-            only contains the continuous and binary variables specified."""
-        assert len(self.all_vars) == len(self.df.columns) - 1
+        """Check that df only contains the variables specified."""
+        assert len(self.all_vars) == len(self.df.columns)
         for var in self.all_vars:
             assert var in self.df.columns
 
@@ -127,13 +129,13 @@ class SplitterWinsorMICE(Splitter):
             fold), then run MICE for train and test folds of all train-test
             splits."""
         for i in pb(range(self.tts.n_splits), prefix="Split iteration"):
-            X_train, _, X_test, _ = self._split(i)
-            X_train, X_test = self._winsorize(i, X_train, X_test)
-            X_dfs = {"train": X_train, "test": X_test}
+            train, test = self._split_then_join_Xy(i)
+            train, test = self._winsorize(i, train, test)
+            dfs = {"train": train, "test": test}
             for fold in ("train", "test"):
-                self._single_fold_mice(i, fold, X_dfs[fold])
+                self._single_fold_mice(i, fold, dfs[fold])
 
-    def get_imputed_X_df(
+    def get_imputed_df(
         self, split_i: int, fold: str, mice_imp_i: int
     ) -> pd.DataFrame:
         """Reconstructs imputed DataFrame from a given MICE iteration, for a
@@ -145,12 +147,12 @@ class SplitterWinsorMICE(Splitter):
             mice_imp_i: MICE imputation index (for this train-test split)
 
         Returns:
-            Columns are self.cont_vars + self.binary_vars
+            Columns are self.all_vars (so includes target)
         """
         if fold == "train":
-            imp_df, _, _, _ = self._split(split_i)
+            imp_df, _ = self._split_then_join_Xy(split_i)
         elif fold == "test":
-            _, _, imp_df, _ = self._split(split_i)
+            _, imp_df = self._split_then_join_Xy(split_i)
         for var_name, missing_i in self.missing_i[fold][split_i].items():
             imp_df.iloc[missing_i, imp_df.columns.get_loc(var_name)] = (
                 self.imputed[fold][split_i][mice_imp_i][var_name]
@@ -158,33 +160,36 @@ class SplitterWinsorMICE(Splitter):
         return imp_df
 
     def _winsorize(
-        self, split_i: int, X_train: pd.DataFrame, X_test: pd.DataFrame
+        self, split_i: int, train: pd.DataFrame, test: pd.DataFrame
     ) -> (pd.DataFrame, pd.DataFrame):
-        X_train, winsor_thresholds = winsorize_novel(
-            X_train,
+        train, winsor_thresholds = winsorize_novel(
+            train,
             cont_vars=self.cont_vars,
             quantiles=self.winsor_quantiles,
             include=self.winsor_include,
         )
-        X_test, _ = winsorize_novel(X_test, thresholds=winsor_thresholds)
+        test, _ = winsorize_novel(test, thresholds=winsor_thresholds)
         self.winsor_thresholds[split_i] = winsor_thresholds
-        return X_train, X_test
+        return train, test
 
-    def _single_fold_mice(self, split_i: int, fold: str, X_df: pd.DataFrame):
+    def _single_fold_mice(self, split_i: int, fold: str, df: pd.DataFrame):
         """Set up and run MICE for a single fold from a single train-test
             split."""
-        mice_data = MICEData(X_df)
+        mice_data = MICEData(df)
         self.missing_i[fold][split_i] = copy.deepcopy(mice_data.ix_miss)
         mice_data = self._set_mice_imputers(mice_data)
         self.imputed[fold][split_i] = {}  # dict will hold fold's imputed values
         self._run_mice_loop(split_i, fold, mice_data)
 
     def _set_mice_imputers(self, mice_data: MICEData) -> MICEData:
+        """Although we set an imputer for the target variable, this variable is
+            guaranteed complete by our earlier code so no values will be
+            imputed."""
         for var in self.cont_vars:
             mice_data.set_imputer(
                 var, model_class=linear_model.OLS, fit_kwds={"disp": False}
             )
-        for var in self.binary_vars:
+        for var in self.binary_vars + [self.target_variable_name]:
             mice_data.set_imputer(
                 var, model_class=discrete_model.Logit, fit_kwds={"disp": False}
             )
@@ -294,7 +299,9 @@ class CategoricalImputer(Splitter):
                          train_cat: pd.DataFrame):
         """Fit imputers for every non-binary categorical variable, for a single
             MICE imputation, in a single train-test split."""
-        train_cont_bin = self.swm.get_imputed_X_df(split_i, "train", mice_imp_i)
+        train_cont_bin = self.swm.get_imputed_df(split_i, "train", mice_imp_i)
+        # TODO: Adjust later code given that swn.get_imputed_df() now contains
+        #   the target column
         self._fit_scalers(split_i, mice_imp_i, train_cont_bin)
         train_cont_bin = self._scale(split_i, mice_imp_i, train_cont_bin)
         self._imputers[split_i][mice_imp_i] = {}
@@ -386,7 +393,9 @@ class CategoricalImputer(Splitter):
             Columns are (self.cat_vars + self.swm.cont_vars +
                          self.swm.binary_vars)
         """
-        cont_bin_df = self.swm.get_imputed_X_df(split_i, fold, mice_imp_i)
+        # TODO: Adjust later code given that swn.get_imputed_df() now contains
+        #   the target column
+        cont_bin_df = self.swm.get_imputed_df(split_i, fold, mice_imp_i)
         cont_bin_df_scaled = self._scale(split_i, mice_imp_i, cont_bin_df)
         cat_df = self._get_categorical_df(split_i, fold)
         for cat_var_name in self.cat_vars:

@@ -299,3 +299,13 @@ class Splitter:
         self.split_stats["n_total_train_cases"][i] = n_total_train_cases
         self.split_stats["n_included_train_cases"][i] = n_included_train_cases
         return X_train, y_train, X_test, y_test
+
+    def _split_then_join_Xy(self, i: int) -> (pd.DataFrame, pd.DataFrame):
+        """Thin wrapper around ._split() which adds y_train back into X_train,
+            and adds y_test back into X_test. This is convenient for input to
+            the MICE and categorical imputation models, which use the target
+            as a feature."""
+        X_train, y_train, X_test, y_test = self._split(i)
+        X_train[self.target_variable_name] = y_train
+        X_test[self.target_variable_name] = y_test
+        return X_train, X_test
