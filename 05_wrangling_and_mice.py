@@ -63,13 +63,6 @@ save_object(
 )
 
 
-reporter.report("Preparing list of binary variables")
-binary_vars = list(
-    set(NOVEL_MODEL_VARS["cat"]) -
-    set(multi_category_levels.keys())
-)
-
-
 reporter.report("Doing pre-train-test-split data preprocessing")
 df = preprocess_novel_pre_split(
     df,
@@ -96,12 +89,6 @@ mice_df = df.drop(
     list(multi_category_levels.keys()) + list(LACTATE_ALBUMIN_VARS), axis=1
 ).copy()
 assert mice_df.shape[0] == mice_df.dropna(axis=0, how="all").shape[0]
-
-
-reporter.report("Making continuous variable list for use in MICE")
-mice_cont_vars = list(NOVEL_MODEL_VARS["cont"])
-mice_cont_vars.remove(LACTATE_VAR_NAME)
-mice_cont_vars.remove(ALBUMIN_VAR_NAME)
 
 
 reporter.report(
@@ -144,6 +131,19 @@ reporter.report("Loading data needed for train-test splitting")
 tt_splitter: TrainTestSplitter = load_object(
     os.path.join(INTERNAL_OUTPUT_DIR, "01_train_test_splitter.pkl")
 )
+
+
+reporter.report("Making list of binary variables for use in MICE")
+binary_vars = list(
+    set(NOVEL_MODEL_VARS["cat"]) -
+    set(multi_category_levels.keys())
+)
+
+
+reporter.report("Making list of continuous variables for use in MICE")
+mice_cont_vars = list(NOVEL_MODEL_VARS["cont"])
+mice_cont_vars.remove(LACTATE_VAR_NAME)
+mice_cont_vars.remove(ALBUMIN_VAR_NAME)
 
 
 reporter.report("Running MICE")
