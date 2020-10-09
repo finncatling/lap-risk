@@ -8,7 +8,8 @@ import pandas as pd
 from utils.constants import (
     DATA_DIR,
     INTERNAL_OUTPUT_DIR,
-    NOVEL_MODEL_OUTPUT_DIR
+    NOVEL_MODEL_OUTPUT_DIR,
+    RANDOM_SEED
 )
 from utils.model.shared import flatten_model_var_dict
 from utils.io import load_object, save_object
@@ -142,6 +143,7 @@ swm = SplitterWinsorMICE(
     n_mice_imputations=n_imputations,
     n_mice_burn_in=10,
     n_mice_skip=3,
+    random_seed=RANDOM_SEED
 )
 swm.split_winsorize_mice()
 

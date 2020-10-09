@@ -40,12 +40,9 @@ def find_missing_indices(df: pd.DataFrame) -> Dict[str, np.ndarray]:
 
 class SplitterWinsorMICE(Splitter):
     """Performs winsorization then MICE for each predefined train-test split.
-        MICE is limited to the variables identified in the ImputationInfo for
-        the first imputation stage. For efficiency, we store only the imputed
-        values and their indices.
-
-        NB. statsmodels doesn't provide the option to pass a random seed,
-        so the MICE outputs will differ each of each run"""
+        MICE is limited to the continuous variables and binary variables
+        (except those related to lactate and albumin). For efficiency, we store
+        only the imputed values and their indices."""
 
     def __init__(
         self,
@@ -59,6 +56,7 @@ class SplitterWinsorMICE(Splitter):
         n_mice_imputations: int,
         n_mice_burn_in: int,
         n_mice_skip: int,
+        random_seed: int
     ):
         """
         Args:
@@ -83,6 +81,9 @@ class SplitterWinsorMICE(Splitter):
                 discarded before the first retained DataFrame
             n_mice_skip: Number of MICE-imputed DataFrames that will be
                 discarded between retained DataFrames
+            random_seed: statsmodels MICE doesn't provide the option to pass in
+                a random seed, so we use this to set the global numpy random
+                seed instead
         """
         super().__init__(df, train_test_splitter, target_variable_name)
         self.cont_vars = cont_variables
@@ -93,6 +94,7 @@ class SplitterWinsorMICE(Splitter):
         self.n_mice_imputations = n_mice_imputations
         self.n_mice_burn_in = n_mice_burn_in
         self.n_mice_skip = n_mice_skip
+        np.random.seed(random_seed)
         self.winsor_thresholds: Dict[int,  # train-test split index
                                      Dict[str,  # variable name
                                           Tuple[float, float]]] = {}
