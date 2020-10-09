@@ -41,8 +41,7 @@ class ImputationInfo:
         The number of imputations calculated for a subsequent stage is always
         a multiple of the number needed in the previous stage."""
 
-    def __init__(self, overall_description: Union[None, str] = None):
-        self.overall_description = overall_description
+    def __init__(self):
         self.descriptions: List[str] = []
         self.impute_vars: List[List[str]] = []
         self.all_vars: List[List[str]] = []
