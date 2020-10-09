@@ -550,7 +550,8 @@ class LactateAlbuminImputer(Splitter):
             )
         except KeyError:
             target, w_thresholds = winsorize_novel(
-                target, cont_vars=[self.cont_vars],
+                target,
+                cont_vars=list(self.cont_vars),
                 quantiles=self.winsor_quantiles
             )
             self._winsor_thresholds[split_i] = w_thresholds[self.imp_target]
