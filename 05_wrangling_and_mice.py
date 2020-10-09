@@ -128,8 +128,7 @@ tt_splitter: TrainTestSplitter = load_object(
 
 reporter.report("Making list of binary variables for use in MICE")
 binary_vars = list(
-    set(NOVEL_MODEL_VARS["cat"]) -
-    set(multi_category_levels.keys())
+    set(NOVEL_MODEL_VARS["cat"]) - set(multi_category_levels.keys())
 )
 
 
