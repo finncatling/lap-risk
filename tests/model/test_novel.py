@@ -1,8 +1,9 @@
 import copy
+from typing import Tuple, Dict
+
 import numpy as np
 import pandas as pd
 import pytest
-from typing import Tuple, Dict
 from pandas.api.types import is_numeric_dtype
 
 from utils.indications import (
@@ -17,6 +18,7 @@ from utils.model.novel import (
     LACTATE_VAR_NAME,
     ALBUMIN_VAR_NAME,
     preprocess_novel_pre_split,
+    winsorize_novel
 )
 from utils.model.shared import flatten_model_var_dict
 
@@ -130,3 +132,21 @@ def test_preprocess_novel_pre_split(initial_df_permutations_fixture):
         "Target",
         "Indication"
     }
+
+
+# TODO: Switch to deterministic test, if possible
+def test_winsorise_novel(initial_df_permutations_fixture):
+    winsorised, thresholds = winsorize_novel(
+        df=initial_df_permutations_fixture,
+        thresholds=None,
+        cont_vars=NOVEL_MODEL_VARS["cont"],
+        quantiles=(0.2, 0.8)
+    )
+
+    # check the columns have changed
+    with pytest.raises(AssertionError):
+        for i in NOVEL_MODEL_VARS["cont"]:
+            np.testing.assert_array_equal(
+                initial_df_permutations_fixture[i].values,
+                winsorised[i].values
+            )
