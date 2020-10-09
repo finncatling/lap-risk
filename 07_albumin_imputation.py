@@ -23,7 +23,7 @@ reporter.title("Fit albumin imputation models")
 
 reporter.report("Loading previous analysis outputs needed for imputation")
 df = pd.read_pickle(
-    os.path.join(DATA_DIR, "05_output_df.pkl")
+    os.path.join(DATA_DIR, "05_preprocessed_df.pkl")
 )
 cat_imputer: CategoricalImputer = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "06_categorical_imputer.pkl")

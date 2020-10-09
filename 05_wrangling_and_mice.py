@@ -88,11 +88,12 @@ reporter.report(
     " which could create problems with the post-imputation data "
     "reconstruction)"
 )
+# TODO: Do this after dropping features to make mice_df?
 assert df.shape[0] == df.dropna(axis=0, how="all").shape[0]
 
 
 reporter.report("Saving preprocessed data for later use")
-df.to_pickle(os.path.join(DATA_DIR, "05_output_df.pkl"))
+df.to_pickle(os.path.join(DATA_DIR, "05_preprocessed_df.pkl"))
 
 
 reporter.report("Making DataFrame and variable list for use in MICE")
