@@ -214,6 +214,9 @@ class CategoricalImputer(Splitter):
     """Imputes missing values of non-binary categorical variables, using
         output of earlier MICE."""
 
+    # TODO: Remove n_imputations_per_mice and associated logic if #44
+    #   accepted, i.e. if we use a single n_imputations throughout the analysis
+
     def __init__(
         self,
         df: pd.DataFrame,
