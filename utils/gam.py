@@ -8,8 +8,11 @@ from pygam import GAM
 
 def combine_mi_gams(gams: List[GAM]) -> GAM:
     """Given a list of GAMs fitted to different datasets outputted from some
-        multiple imputation procedure, combines these using Rubin's rules. See
-        https://bit.ly/37BgOEh for more details.
+        multiple imputation procedure, combines these using Rubin's rules.
+
+        See White et al, Section 1.2 (https://pubmed.ncbi.nlm.nih.gov/21225900/)
+        for a general description of Rubin's rules, and https://bit.ly/37BgOEh
+        for discussion of their application to GAMs.
 
         Each GAM, and the terms within it, should have the same parameters. E.g.
         spline terms for the same feature should have the same number and order

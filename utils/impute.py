@@ -19,8 +19,10 @@ from utils.split import Splitter, TrainTestSplitter
 
 
 def determine_n_imputations(df: pd.DataFrame) -> (int, float):
-    """White et al recommend using 100 * f MICE imputations, where f is the
-        fraction of incomplete cases in the DataFrame."""
+    """White et al (https://pubmed.ncbi.nlm.nih.gov/21225900/), Section 7.3
+        recommends the following rule of thumb: The number of MICE imputations
+        should be at least 100 * f MICE imputations, where f is the fraction of
+        incomplete cases in the DataFrame."""
     fraction_incomplete = 1 - (df.dropna(how="any").shape[0] / df.shape[0])
     n_imputations = int(np.ceil(fraction_incomplete * 100))
     return n_imputations, fraction_incomplete
@@ -58,12 +60,12 @@ class ImputationInfo:
 
         Args:
             description: Description of this imputation stage
-            df: Data used in this imputation stage, i.e. variables to be
-                imputed and variables used as features in the imputation
+            df: Data used in this imputation stage. Should contain variables
+                to be imputed and variables used as features in the imputation
                 model (in MICE these two variable sets intersect). May also
-                contain complete variables which are unused as imputation
+                contain COMPLETE variables which are unused as imputation
                 features
-            variables_to_impute: Names of variables to be imputed in this
+            variables_to_impute: Names of variables in df to be imputed in this
                 stage
         """
         all_vars = list(df.columns)
