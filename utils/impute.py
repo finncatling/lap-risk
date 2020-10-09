@@ -125,8 +125,8 @@ class SplitterWinsorMICE(Splitter):
             n_mice_skip: Number of MICE-imputed DataFrames that will be
                 discarded between retained DataFrames
             random_seed: statsmodels MICE doesn't provide the option to pass in
-                a random seed, so we use this to set the global numpy random
-                seed instead
+                a random seed, so we use this to set a different global numpy
+                random seed for each split
         """
         super().__init__(df, train_test_splitter, target_variable_name)
         self.cont_vars = cont_variables
@@ -137,7 +137,7 @@ class SplitterWinsorMICE(Splitter):
         self.n_mice_imputations = n_mice_imputations
         self.n_mice_burn_in = n_mice_burn_in
         self.n_mice_skip = n_mice_skip
-        np.random.seed(random_seed)
+        self.random_seed = random_seed
         self.winsor_thresholds: Dict[int,  # train-test split index
                                      Dict[str,  # variable name
                                           Tuple[float, float]]] = {}
@@ -215,6 +215,7 @@ class SplitterWinsorMICE(Splitter):
     def _single_fold_mice(self, split_i: int, fold: str, df: pd.DataFrame):
         """Set up and run MICE for a single fold from a single train-test
             split."""
+        np.random.seed(self.random_seed + split_i)
         mice_data = MICEData(df)
         self.missing_i[fold][split_i] = copy.deepcopy(mice_data.ix_miss)
         mice_data = self._set_mice_imputers(mice_data)
