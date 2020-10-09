@@ -36,6 +36,7 @@ multi_category_levels: Dict[str, Tuple] = load_object(
 )
 
 
+# TODO: Ensure this still works as intended using consistent n_imputations (#44)
 reporter.report("Fitting imputers for albumin")
 alb_imputer = LactateAlbuminImputer(
     df=df.loc[:, [ALBUMIN_VAR_NAME, NOVEL_MODEL_VARS["target"]]],

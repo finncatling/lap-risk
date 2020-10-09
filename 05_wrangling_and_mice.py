@@ -2,6 +2,7 @@ import copy
 import os
 from typing import Tuple, Dict
 
+import numpy as np
 import pandas as pd
 
 from utils.constants import (
@@ -25,7 +26,7 @@ from utils.indications import (
     MISSING_IND_CATEGORY,
     get_indication_variable_names
 )
-from utils.impute import ImputationInfo, SplitterWinsorMICE
+from utils.impute import determine_n_imputations, SplitterWinsorMICE
 from utils.split import TrainTestSplitter
 from utils.report import Reporter
 
@@ -79,6 +80,22 @@ reporter.report("Saving preprocessed data for later use")
 df.to_pickle(os.path.join(DATA_DIR, "05_preprocessed_df.pkl"))
 
 
+reporter.report("Determining fraction of cases with missing data")
+n_imputations, fraction_incomplete_cases = determine_n_imputations(df)
+print(f"{np.round(100 * fraction_incomplete_cases, 2)} cases have missing "
+      f"data, so we will perform {n_imputations} imputations")
+
+
+reporter.report("Saving imputation information for later use")
+save_object(
+    {
+        'n_imputations': n_imputations,
+        'fraction_incomplete_cases': fraction_incomplete_cases
+    },
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_imputation_info.pkl")
+)
+
+
 reporter.report(
     "Making DataFrame and for use in MICE, and checking that there are no "
     "cases where all features are missing (these cases would be dropped by "
@@ -89,42 +106,6 @@ mice_df = df.drop(
     list(multi_category_levels.keys()) + list(LACTATE_ALBUMIN_VARS), axis=1
 ).copy()
 assert mice_df.shape[0] == mice_df.dropna(axis=0, how="all").shape[0]
-
-
-reporter.report(
-    "Define stages of imputation, and the number of imputations "
-    "needed at each stage"
-)
-imputation_stages = ImputationInfo()
-imputation_stages.add_stage(
-    description=(
-        "MICE for continuous variables (except lactate and albumin) "
-        "and non-binary discrete variables"
-    ),
-    df=mice_df.drop(NOVEL_MODEL_VARS["target"], axis=1),
-    variables_to_impute=list(
-        mice_df.drop(NOVEL_MODEL_VARS["target"], axis=1).columns
-    ),
-)
-imputation_stages.add_stage(
-    description="Non-binary discrete variables",
-    df=df.drop(
-        list(LACTATE_ALBUMIN_VARS) + [NOVEL_MODEL_VARS["target"]], axis=1
-    ),
-    variables_to_impute=list(multi_category_levels.keys()),
-)
-imputation_stages.add_stage(
-    description="Lactate and albumin",
-    df=df.drop(NOVEL_MODEL_VARS["target"], axis=1),
-    variables_to_impute=[LACTATE_VAR_NAME, ALBUMIN_VAR_NAME],
-)
-
-
-reporter.report("Saving imputation stage information for later use")
-save_object(
-    imputation_stages,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_imputation_stages.pkl")
-)
 
 
 reporter.report("Loading data needed for train-test splitting")
@@ -158,7 +139,7 @@ swm = SplitterWinsorMICE(
         "S01AgeOnArrival": (False, True),
         "S03GlasgowComaScore": (False, False),
     },
-    n_mice_imputations=imputation_stages.n_imputations[0],
+    n_mice_imputations=n_imputations,
     n_mice_burn_in=10,
     n_mice_skip=3,
 )

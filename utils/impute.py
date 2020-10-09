@@ -38,65 +38,6 @@ def find_missing_indices(df: pd.DataFrame) -> Dict[str, np.ndarray]:
     return missing_i
 
 
-class ImputationInfo:
-    """Hold info related to a (possibly multi-stage) imputation process.
-        The number of imputations calculated for a subsequent stage is always
-        a multiple of the number needed in the previous stage."""
-
-    def __init__(self):
-        self.descriptions: List[str] = []
-        self.impute_vars: List[List[str]] = []
-        self.all_vars: List[List[str]] = []
-        self.n_min_imputations: List[int] = []
-        self.fraction_incomplete: List[float] = []
-        self.n_imputations: List[int] = []
-        self.multiple_of_previous_n_imputations: List[int] = []
-
-    def add_stage(
-        self, description: str, df: pd.DataFrame, variables_to_impute: List[str]
-    ) -> None:
-        """Add information about an imputation stage, and calculate the number
-            of imputations it will require.
-
-        Args:
-            description: Description of this imputation stage
-            df: Data used in this imputation stage. Should contain variables
-                to be imputed and variables used as features in the imputation
-                model (in MICE these two variable sets intersect). May also
-                contain COMPLETE variables which are unused as imputation
-                features
-            variables_to_impute: Names of variables in df to be imputed in this
-                stage
-        """
-        all_vars = list(df.columns)
-        self._sanity_check(variables_to_impute, all_vars)
-        self.descriptions.append(description)
-        self.impute_vars.append(variables_to_impute)
-        self.all_vars.append(all_vars)
-        self._determine_adjusted_n_imputations(df)
-
-    @staticmethod
-    def _sanity_check(impute_vars: List[str], all_vars: List[str]):
-        for var in impute_vars:
-            assert var in all_vars
-
-    def _determine_adjusted_n_imputations(self, df: pd.DataFrame):
-        """If there is a previous imputation stage, increase n_imputations (the
-            number of imputations required for this stage according to White et
-            al) so that it is a multiple of n_imputations from the previous
-            stage."""
-        n_min_imputations, fraction_incomplete = determine_n_imputations(df)
-        self.n_min_imputations.append(n_min_imputations)
-        self.fraction_incomplete.append(fraction_incomplete)
-        multiple = 1
-        if len(self.n_imputations):
-            multiple = int(np.ceil(n_min_imputations / self.n_imputations[-1]))
-            self.n_imputations.append(multiple * self.n_imputations[-1])
-        else:
-            self.n_imputations.append(n_min_imputations)
-        self.multiple_of_previous_n_imputations.append(multiple)
-
-
 class SplitterWinsorMICE(Splitter):
     """Performs winsorization then MICE for each predefined train-test split.
         MICE is limited to the variables identified in the ImputationInfo for
