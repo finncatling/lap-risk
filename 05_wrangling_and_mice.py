@@ -2,6 +2,7 @@ import copy
 import os
 from typing import Tuple, Dict
 
+import numpy as np
 import pandas as pd
 
 from utils.constants import (
@@ -10,7 +11,7 @@ from utils.constants import (
     NOVEL_MODEL_OUTPUT_DIR
 )
 from utils.model.shared import flatten_model_var_dict
-from utils.io import make_directory, load_object, save_object
+from utils.io import load_object, save_object
 from utils.model.novel import (
     NOVEL_MODEL_VARS,
     MULTI_CATEGORY_LEVELS,
@@ -21,10 +22,11 @@ from utils.model.novel import (
     WINSOR_QUANTILES,
 )
 from utils.indications import (
-    INDICATION_VAR_NAME, INDICATION_PREFIX,
-    MISSING_IND_CATEGORY
+    INDICATION_VAR_NAME,
+    MISSING_IND_CATEGORY,
+    get_indication_variable_names
 )
-from utils.impute import ImputationInfo, SplitterWinsorMICE
+from utils.impute import determine_n_imputations, SplitterWinsorMICE
 from utils.split import TrainTestSplitter
 from utils.report import Reporter
 
@@ -32,34 +34,33 @@ reporter = Reporter()
 reporter.title(
     "Wrangle NELA data in preparation for later input to the "
     "novel model. Perform MICE for continuous variables apart from "
-    "lactate and albumin, and for binary discrete variables"
+    "lactate and albumin, and for binary variables"
 )
 
 
-reporter.report("Creating output dirs (if they don't already exist)")
-make_directory(NOVEL_MODEL_OUTPUT_DIR)
-
-
-reporter.report("Loading manually-wrangled NELA data")
-df = pd.read_pickle(
-    os.path.join(DATA_DIR, "df_after_univariate_wrangling_new_indications.pkl")
+reporter.report("Loading NELA data output from 04_consolidate_indications.py")
+df: pd.DataFrame = pd.read_pickle(
+    os.path.join(DATA_DIR, "04_output_df.pkl")
 )
 
 
 reporter.report("Finding names of indication variables")
-indications = [c for c in df.columns if INDICATION_PREFIX in c]
+indications = get_indication_variable_names(df.columns)
 
 
 reporter.report("Removing variables not used in the novel model")
 df = df[flatten_model_var_dict(NOVEL_MODEL_VARS) + indications]
 
 
-reporter.report("Preparing details of discrete variables")
+reporter.report("Preparing dictionary of non-binary categorical variables")
 multi_category_levels: Dict[str, Tuple] = copy.deepcopy(MULTI_CATEGORY_LEVELS)
 multi_category_levels[INDICATION_VAR_NAME] = tuple(indications)
-binary_vars = list(
-    set(NOVEL_MODEL_VARS["cat"]) -
-    set(multi_category_levels.keys())
+save_object(
+    multi_category_levels,
+    os.path.join(
+        NOVEL_MODEL_OUTPUT_DIR,
+        "05_multi_category_levels_with_indications.pkl"
+    )
 )
 
 
@@ -75,81 +76,55 @@ df = preprocess_novel_pre_split(
 )
 
 
-reporter.report(
-    "Checking that there are no cases where all features are "
-    "missing (these cases would be dropped by statsmodels MICEData,"
-    " which could create problems with the post-imputation data "
-    "reconstruction)"
-)
-assert df.shape[0] == df.dropna(axis=0, how="all").shape[0]
-
-
 reporter.report("Saving preprocessed data for later use")
-df.to_pickle(os.path.join(DATA_DIR, "df_preprocessed_for_novel_pre_split.pkl"))
+df.to_pickle(os.path.join(DATA_DIR, "05_preprocessed_df.pkl"))
+
+
+reporter.report("Determining fraction of cases with missing data")
+n_imputations, fraction_incomplete_cases = determine_n_imputations(df)
+print(f"{np.round(100 * fraction_incomplete_cases, 2)}% of cases have missing "
+      f"data, so we will perform {n_imputations} imputations")
+
+
+reporter.report("Saving imputation information for later use")
+save_object(
+    {
+        'n_imputations': n_imputations,
+        'fraction_incomplete_cases': fraction_incomplete_cases
+    },
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_imputation_info.pkl")
+)
 
 
 reporter.report(
-    "Saving levels of categorical variables (with indications "
-    "added) for later use"
+    "Making DataFrame for use in MICE, and checking that there are no "
+    "cases where all features are missing (these cases would be dropped by "
+    "statsmodels MICEData, which could create problems with the "
+    "post-imputation data reconstruction)"
 )
-save_object(
-    multi_category_levels,
-    os.path.join(
-        NOVEL_MODEL_OUTPUT_DIR,
-        "multi_category_levels_with_indications.pkl"
-    ),
-)
-
-
-reporter.report("Making DataFrame and variable list for use in MICE")
 mice_df = df.drop(
     list(multi_category_levels.keys()) + list(LACTATE_ALBUMIN_VARS), axis=1
 ).copy()
-mice_cont_vars = list(NOVEL_MODEL_VARS["cont"])
-mice_cont_vars.remove(LACTATE_VAR_NAME)
-mice_cont_vars.remove(ALBUMIN_VAR_NAME)
-
-
-reporter.report(
-    "Define stages of imputation, and the number of imputations "
-    "needed at each stage"
-)
-imputation_stages = ImputationInfo()
-imputation_stages.add_stage(
-    description=(
-        "MICE for continuous variables (except lactate and albumin) "
-        "and non-binary discrete variables"
-    ),
-    df=mice_df.drop(NOVEL_MODEL_VARS["target"], axis=1),
-    variables_to_impute=list(
-        mice_df.drop(NOVEL_MODEL_VARS["target"], axis=1).columns
-    ),
-)
-imputation_stages.add_stage(
-    description="Non-binary discrete variables",
-    df=df.drop(
-        list(LACTATE_ALBUMIN_VARS) + [NOVEL_MODEL_VARS["target"]], axis=1
-    ),
-    variables_to_impute=list(multi_category_levels.keys()),
-)
-imputation_stages.add_stage(
-    description="Lactate and albumin",
-    df=df.drop(NOVEL_MODEL_VARS["target"], axis=1),
-    variables_to_impute=[LACTATE_VAR_NAME, ALBUMIN_VAR_NAME],
-)
-
-
-reporter.report("Saving imputation stage information for later use")
-save_object(
-    imputation_stages,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "imputation_stages.pkl")
-)
+assert mice_df.shape[0] == mice_df.dropna(axis=0, how="all").shape[0]
 
 
 reporter.report("Loading data needed for train-test splitting")
 tt_splitter: TrainTestSplitter = load_object(
-    os.path.join(INTERNAL_OUTPUT_DIR, "train_test_splitter.pkl")
+    os.path.join(INTERNAL_OUTPUT_DIR, "01_train_test_splitter.pkl")
 )
+
+
+reporter.report("Making list of binary variables for use in MICE")
+binary_vars = list(
+    set(NOVEL_MODEL_VARS["cat"]) -
+    set(multi_category_levels.keys())
+)
+
+
+reporter.report("Making list of continuous variables for use in MICE")
+mice_cont_vars = list(NOVEL_MODEL_VARS["cont"])
+mice_cont_vars.remove(LACTATE_VAR_NAME)
+mice_cont_vars.remove(ALBUMIN_VAR_NAME)
 
 
 reporter.report("Running MICE")
@@ -164,7 +139,7 @@ swm = SplitterWinsorMICE(
         "S01AgeOnArrival": (False, True),
         "S03GlasgowComaScore": (False, False),
     },
-    n_mice_imputations=imputation_stages.n_imputations[0],
+    n_mice_imputations=n_imputations,
     n_mice_burn_in=10,
     n_mice_skip=3,
 )
@@ -174,7 +149,7 @@ swm.split_winsorize_mice()
 reporter.report("Saving MICE imputations for later use")
 save_object(
     swm,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "splitter_winsor_mice.pkl")
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_splitter_winsor_mice.pkl")
 )
 
 

@@ -6,7 +6,7 @@ from pprint import PrettyPrinter
 
 from utils.constants import DATA_DIR, STATS_OUTPUT_DIR
 from utils.data_check import load_nela_data_and_sanity_check
-from utils.io import make_directory, save_object
+from utils.io import save_object
 from utils.indications import (
     INDICATION_PREFIX,
     MISSING_IND_CATEGORY,
@@ -28,10 +28,6 @@ reporter.title(
     "model. See additional data exploration and summary statistics "
     "in the consolidate_indications.ipynb notebook"
 )
-
-
-reporter.report("Creating output dirs (if they don't already exist)")
-make_directory(STATS_OUTPUT_DIR)
 
 
 reporter.report("Loading manually-wrangled NELA data")
@@ -160,7 +156,7 @@ df_with_new_inds = pd.concat((df, ohe_indication_df.astype(float)), axis=1)
 
 reporter.report("Saving data for later use")
 df_with_new_inds.to_pickle(
-    os.path.join(DATA_DIR, "df_after_univariate_wrangling_new_indications.pkl")
+    os.path.join(DATA_DIR, "04_output_df.pkl")
 )
 
 
@@ -173,7 +169,7 @@ ci_stats["indication_proportions"] = (
 )
 save_object(
     ci_stats,
-    os.path.join(STATS_OUTPUT_DIR, "4_consolidate_indications.pkl")
+    os.path.join(STATS_OUTPUT_DIR, "04_indication_stats.pkl")
 )
 
 

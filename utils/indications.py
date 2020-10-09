@@ -67,7 +67,7 @@ def ohe_single_indications(
     ohe_indication_df = pd.DataFrame(
         data=np.zeros(
             (indication_df.shape[0], len(indication_subset_names))
-        ).astype(int),
+        ).astype('int64'),
         columns=indication_subset_names
     )
     for name in indication_subset_names:

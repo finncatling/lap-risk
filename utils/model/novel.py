@@ -89,7 +89,9 @@ def add_missingness_indicators(df: pd.DataFrame,
 
 
 def label_encode(
-    df: pd.DataFrame, multi_cat_levels: Dict, missing_indication_value: str
+    df: pd.DataFrame,
+    multi_cat_levels: Dict[str, Tuple],
+    missing_indication_value: str
 ) -> pd.DataFrame:
     """Encode labels for each novel-model categorical variable as integers, with
         missingness support."""
@@ -134,7 +136,6 @@ def winsorize_novel(
 
     df = df.copy()
     ops = (operator.lt, operator.gt)
-    # breakpoint()
     if thresholds:
         for v, thresholds in thresholds.items():
             for i, threshold in enumerate(thresholds):
@@ -144,7 +145,6 @@ def winsorize_novel(
         thresholds = {}
         for v in cont_vars:
             thresholds[v] = list(df[v].quantile(quantiles))
-            # breakpoint()
             for i, threshold in enumerate(thresholds[v]):
                 try:
                     if include[v][i]:
@@ -164,7 +164,7 @@ def preprocess_novel_pre_split(
     indication_variable_name: str,
     indications: List[str],
     missing_indication_value: str,
-    multi_category_levels: Dict,
+    multi_category_levels: Dict[str, Tuple],
 ) -> pd.DataFrame:
     """In preparation for later data input to the novel model, does the data
         preprocessing steps which can be safely performed before train-test

@@ -19,8 +19,10 @@ from utils.split import Splitter, TrainTestSplitter
 
 
 def determine_n_imputations(df: pd.DataFrame) -> (int, float):
-    """White et al recommend using 100 * f MICE imputations, where f is the
-        fraction of incomplete cases in the DataFrame."""
+    """White et al (https://pubmed.ncbi.nlm.nih.gov/21225900/), Section 7.3
+        recommends the following rule of thumb: The number of MICE imputations
+        should be at least 100 * f MICE imputations, where f is the fraction of
+        incomplete cases in the DataFrame."""
     fraction_incomplete = 1 - (df.dropna(how="any").shape[0] / df.shape[0])
     n_imputations = int(np.ceil(fraction_incomplete * 100))
     return n_imputations, fraction_incomplete
@@ -34,66 +36,6 @@ def find_missing_indices(df: pd.DataFrame) -> Dict[str, np.ndarray]:
         null = pd.isnull(df[col])
         missing_i[col] = np.flatnonzero(null)
     return missing_i
-
-
-class ImputationInfo:
-    """Hold info related to a (possibly multi-stage) imputation process.
-        The number of imputations calculated for a subsequent stage is always
-        a multiple of the number needed in the previous stage."""
-
-    def __init__(self, overall_description: Union[None, str] = None):
-        self.overall_description = overall_description
-        self.descriptions: List[str] = []
-        self.impute_vars: List[List[str]] = []
-        self.all_vars: List[List[str]] = []
-        self.n_min_imputations: List[int] = []
-        self.fraction_incomplete: List[float] = []
-        self.n_imputations: List[int] = []
-        self.multiple_of_previous_n_imputations: List[int] = []
-
-    def add_stage(
-        self, description: str, df: pd.DataFrame, variables_to_impute: List[str]
-    ) -> None:
-        """Add information about an imputation stage, and calculate the number
-            of imputations it will require.
-
-        Args:
-            description: Description of this imputation stage
-            df: Data used in this imputation stage, i.e. variables to be
-                imputed and variables used as features in the imputation
-                model (in MICE these two variable sets intersect). May also
-                contain complete variables which are unused as imputation
-                features
-            variables_to_impute: Names of variables to be imputed in this
-                stage
-        """
-        all_vars = list(df.columns)
-        self._sanity_check(variables_to_impute, all_vars)
-        self.descriptions.append(description)
-        self.impute_vars.append(variables_to_impute)
-        self.all_vars.append(all_vars)
-        self._determine_adjusted_n_imputations(df)
-
-    @staticmethod
-    def _sanity_check(impute_vars: List[str], all_vars: List[str]):
-        for var in impute_vars:
-            assert var in all_vars
-
-    def _determine_adjusted_n_imputations(self, df: pd.DataFrame):
-        """If there is a previous imputation stage, increase n_imputations (the
-            number of imputations required for this stage according to White et
-            al) so that it is a multiple of n_imputations from the previous
-            stage."""
-        n_min_imputations, fraction_incomplete = determine_n_imputations(df)
-        self.n_min_imputations.append(n_min_imputations)
-        self.fraction_incomplete.append(fraction_incomplete)
-        multiple = 1
-        if len(self.n_imputations):
-            multiple = int(np.ceil(n_min_imputations / self.n_imputations[-1]))
-            self.n_imputations.append(multiple * self.n_imputations[-1])
-        else:
-            self.n_imputations.append(n_min_imputations)
-        self.multiple_of_previous_n_imputations.append(multiple)
 
 
 class SplitterWinsorMICE(Splitter):
@@ -248,7 +190,6 @@ class SplitterWinsorMICE(Splitter):
 
     def _run_mice_loop(self, split_i: int, fold: str, mice_data: MICEData):
         """'Burn-in' and 'skip' imputations are discarded."""
-        breakpoint()
         for _ in range(self.n_mice_burn_in):
             mice_data.update_all()
         for imputation_i in range(self.n_mice_imputations):
@@ -271,6 +212,9 @@ class SplitterWinsorMICE(Splitter):
 class CategoricalImputer(Splitter):
     """Imputes missing values of non-binary categorical variables, using
         output of earlier MICE."""
+
+    # TODO: Remove n_imputations_per_mice and associated logic if #44
+    #   accepted, i.e. if we use a single n_imputations throughout the analysis
 
     def __init__(
         self,
@@ -606,7 +550,8 @@ class LactateAlbuminImputer(Splitter):
             )
         except KeyError:
             target, w_thresholds = winsorize_novel(
-                target, cont_vars=[self.cont_vars],
+                target,
+                cont_vars=list(self.cont_vars),
                 quantiles=self.winsor_quantiles
             )
             self._winsor_thresholds[split_i] = w_thresholds[self.imp_target]

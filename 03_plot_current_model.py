@@ -7,7 +7,7 @@ from utils.plot.evaluate import (
 from utils.plot.helpers import plot_saver
 from utils.report import Reporter
 from utils.constants import FIGURES_OUTPUT_DIR, CURRENT_MODEL_OUTPUT_DIR
-from utils.io import load_object, make_directory
+from utils.io import load_object
 from utils.evaluate import ModelScorer
 
 
@@ -18,13 +18,9 @@ reporter.title(
 )
 
 
-reporter.report("Creating output dirs (if they don't already exist)")
-make_directory(FIGURES_OUTPUT_DIR)
-
-
 reporter.report("Loading results of model scoring")
 scorer: ModelScorer = load_object(
-    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "scorer.pkl")
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_scorer.pkl")
 )
 
 
@@ -35,7 +31,7 @@ plot_saver(
     calib_curves=scorer.calib_curves,
     curve_transparency=0.15,
     output_dir=FIGURES_OUTPUT_DIR,
-    output_filename="current_model_calibration",
+    output_filename="03_current_model_calibration",
 )
 
 
@@ -45,7 +41,7 @@ plot_saver(
     y_true=np.hstack(scorer.y_true),
     y_pred=np.hstack(scorer.y_pred),
     output_dir=FIGURES_OUTPUT_DIR,
-    output_filename="current_model_risk_distributions",
+    output_filename="03_current_model_risk_distributions",
 )
 
 

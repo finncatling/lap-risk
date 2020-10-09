@@ -4,7 +4,10 @@ from datetime import datetime
 from utils.constants import (
     RANDOM_SEED,
     STATS_OUTPUT_DIR,
-    INTERNAL_OUTPUT_DIR
+    INTERNAL_OUTPUT_DIR,
+    CURRENT_MODEL_OUTPUT_DIR,
+    NOVEL_MODEL_OUTPUT_DIR,
+    FIGURES_OUTPUT_DIR
 )
 from utils.data_check import load_nela_data_and_sanity_check
 from utils.io import make_directory
@@ -17,13 +20,16 @@ from utils.split import TrainTestSplitter
 
 reporter = Reporter()
 reporter.title(
-    "Derive case indices needed to repeatedly split NELA data "
-    "into train and test folds"
+    "Derive case indices needed to repeatedly split NELA data into train and "
+    "test folds"
 )
 
 
-reporter.report("Creating external outputs dir (if it doesn't already exist)")
-make_directory(os.path.join(STATS_OUTPUT_DIR))
+reporter.report("Creating output directories (if they don't already exist)")
+make_directory(STATS_OUTPUT_DIR)
+make_directory(FIGURES_OUTPUT_DIR)
+make_directory(NOVEL_MODEL_OUTPUT_DIR)
+make_directory(CURRENT_MODEL_OUTPUT_DIR)
 
 
 reporter.report("Loading manually-wrangled NELA data")
@@ -48,7 +54,7 @@ tt_splitter.split()
 reporter.report("Saving TrainTestSplitter for use later in analysis")
 save_object(
     tt_splitter,
-    os.path.join(INTERNAL_OUTPUT_DIR, "train_test_splitter.pkl")
+    os.path.join(INTERNAL_OUTPUT_DIR, "01_train_test_splitter.pkl")
 )
 
 
@@ -64,7 +70,7 @@ tt_split_stats = {
 }
 save_object(
     tt_split_stats,
-    os.path.join(STATS_OUTPUT_DIR, "1_train_test_split_stats.pkl")
+    os.path.join(STATS_OUTPUT_DIR, "01_train_test_split_stats.pkl")
 )
 
 

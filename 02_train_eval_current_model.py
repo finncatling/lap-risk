@@ -11,7 +11,7 @@ from utils.constants import (
 )
 from utils.data_check import load_nela_data_and_sanity_check
 from utils.evaluate import ModelScorer
-from utils.io import make_directory, load_object, save_object
+from utils.io import load_object, save_object
 from utils.model.current import (
     preprocess_current,
     SplitterTrainerPredictor,
@@ -30,11 +30,6 @@ reporter.title(
     "model on the different train folds, and evaluate the models "
     "obtained on the corresponding test folds"
 )
-
-
-reporter.report("Creating output dirs (if they don't already exist)")
-make_directory(STATS_OUTPUT_DIR)
-make_directory(CURRENT_MODEL_OUTPUT_DIR)
 
 
 reporter.report("Loading manually-wrangled NELA data")
@@ -95,7 +90,7 @@ preprocessed_df, _ = preprocess_current(
 
 reporter.report("Loading data needed for train-test splitting")
 tt_splitter: TrainTestSplitter = load_object(
-    os.path.join(INTERNAL_OUTPUT_DIR, "train_test_splitter.pkl")
+    os.path.join(INTERNAL_OUTPUT_DIR, "01_train_test_splitter.pkl")
 )
 
 
@@ -112,7 +107,7 @@ stp.split_train_predict()
 reporter.report("Saving SplitterTrainerPredictor for later use")
 save_object(
     stp,
-    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "splitter_trainer_predictor.pkl")
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_splitter_trainer_predictor.pkl")
 )
 
 
@@ -129,7 +124,7 @@ scorer.print_scores(dec_places=3)
 
 
 reporter.first("Saving ModelScorer for later use")
-save_object(scorer, os.path.join(CURRENT_MODEL_OUTPUT_DIR, "scorer.pkl"))
+save_object(scorer, os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_scorer.pkl"))
 
 
 reporter.report("Saving summary statistics for external use")
@@ -147,7 +142,7 @@ current_model_stats = {
 }
 save_object(
     current_model_stats,
-    os.path.join(STATS_OUTPUT_DIR, "2_train_eval_current_model_stats.pkl"),
+    os.path.join(STATS_OUTPUT_DIR, "02_current_model_stats.pkl"),
 )
 
 
