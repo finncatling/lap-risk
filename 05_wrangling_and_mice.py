@@ -81,9 +81,7 @@ df.to_pickle(os.path.join(DATA_DIR, "05_preprocessed_df.pkl"))
 
 
 reporter.report("Determining fraction of cases with missing data")
-n_imputations, fraction_incomplete_cases = determine_n_imputations(
-    df.drop([LACTATE_VAR_NAME, ALBUMIN_VAR_NAME], axis=1)
-)
+n_imputations, fraction_incomplete_cases = determine_n_imputations()
 print(f"{np.round(100 * fraction_incomplete_cases, 2)}% of cases have missing "
       f"data, so we will perform {n_imputations} imputations")
 
