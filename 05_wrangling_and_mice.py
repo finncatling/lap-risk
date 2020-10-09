@@ -81,8 +81,10 @@ df.to_pickle(os.path.join(DATA_DIR, "05_preprocessed_df.pkl"))
 
 
 reporter.report("Determining fraction of cases with missing data")
-n_imputations, fraction_incomplete_cases = determine_n_imputations(df)
-print(f"{np.round(100 * fraction_incomplete_cases, 2)} cases have missing "
+n_imputations, fraction_incomplete_cases = determine_n_imputations(
+    df.drop([LACTATE_VAR_NAME, ALBUMIN_VAR_NAME], axis=1)
+)
+print(f"{np.round(100 * fraction_incomplete_cases, 2)}% of cases have missing "
       f"data, so we will perform {n_imputations} imputations")
 
 
@@ -97,7 +99,7 @@ save_object(
 
 
 reporter.report(
-    "Making DataFrame and for use in MICE, and checking that there are no "
+    "Making DataFrame for use in MICE, and checking that there are no "
     "cases where all features are missing (these cases would be dropped by "
     "statsmodels MICEData, which could create problems with the "
     "post-imputation data reconstruction)"
