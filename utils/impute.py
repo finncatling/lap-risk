@@ -118,7 +118,7 @@ class Imputer(Splitter):
         test[self.target_variable_name] = y_test
         return train, test
 
-    def get_imputed_df(
+    def get_imputed_variables(
         self, split_i: int, fold_name: str, imp_i: int
     ) -> pd.DataFrame:
         """Reconstructs imputed DataFrame containing all the POTENTIALLY
@@ -300,19 +300,11 @@ class CategoricalImputer(Imputer):
     """Imputes missing values of non-binary categorical variables, using
         output of earlier MICE."""
 
-    # TODO: Remove n_imputations_per_mice and associated logic if #44
-    #   accepted, i.e. if we use a single n_imputations throughout the analysis
-
-    # TODO: Don't store imputation models, just impute values straight away
-    #   and discard the models. This may mean we don't have to store scalers
-    #   either
-
     def __init__(
         self,
         df: pd.DataFrame,
         splitter_winsor_mice: SplitterWinsorMICE,
         cat_vars: List[str],
-        n_imputations_per_mice: int,
         random_seed,
     ):
         """Args:
@@ -325,9 +317,6 @@ class CategoricalImputer(Imputer):
                 the results of MICE for the continuous variables (except lactate
                 and albumin) and the binary variables
             cat_vars: Non-binary categorical variables for imputation
-            n_imputations_per_mice: Number of imputed datasets that will need to
-                be produced by this class, expressed as a multiple of the
-                number of MICE imputations already carried out
             random_seed: For reproducibility
         """
         super().__init__(
@@ -337,15 +326,7 @@ class CategoricalImputer(Imputer):
         )
         self.swm = splitter_winsor_mice
         self.cat_vars = cat_vars
-        self.imp_multiple = n_imputations_per_mice
         self.random_seed = random_seed
-        self._scalers: Dict[int,  # train-test split index
-                            Dict[int,  # MICE imputation index
-                                 RobustScaler]] = {}
-        self._imputers: Dict[int,  # train-test split index
-                             Dict[int,  # MICE imputation index
-                                  Dict[str,  # variable name
-                                       LogisticRegression]]] = {}
 
     def impute(self):
         """Impute missing values for every non-binary categorical variable,
@@ -358,9 +339,12 @@ class CategoricalImputer(Imputer):
             in every MICE imputation, for a single train-test split."""
         train, test = self._split_then_join_Xy(split_i)
         self._find_missing_indices(split_i, train, test)
-        self._scalers[split_i], self._imputers[split_i] = {}, {}
         for mice_imp_i in range(self.swm.n_mice_imputations):
-            self._single_mice_imp(split_i, mice_imp_i, train[self.cat_vars])
+            self._single_mice_imp(
+                split_i=split_i,
+                mice_imp_i=mice_imp_i,
+                train_cat_vars=train[self.cat_vars]
+            )
 
     def _find_missing_indices(
         self, split_i: int, train: pd.DataFrame, test: pd.DataFrame
@@ -379,78 +363,149 @@ class CategoricalImputer(Imputer):
             )
 
     def _single_mice_imp(
-        self, split_i: int, mice_imp_i: int, train_cat_vars: pd.DataFrame
-    ):
-        """Impute missing values for every non-binary categorical variable, for
-            a single MICE imputation, in a single train-test split."""
-        train_cont_bin_target_vars = self.swm.get_imputed_df(
-            split_i, "train", mice_imp_i
-        )
-        # TODO: Adjust later code given that swn.get_imputed_df() now contains
-        #   the target column
-        self._fit_scalers(split_i, mice_imp_i, train_cont_bin_target_vars)
-        train_cont_bin_target_vars = self._scale(
-            split_i, mice_imp_i, train_cont_bin_target_vars)
-        self._imputers[split_i][mice_imp_i] = {}
-        for cat_var_name in self.cat_vars:
-            self._fit_imputer(
-                split_i,
-                mice_imp_i,
-                train_cont_bin_target_vars,
-                train_cat_vars[cat_var_name]
-            )
-
-    def _fit_scalers(self, split_i: int, mice_imp_i: int,
-                     train_cont_bin: pd.DataFrame):
-        """Fit scalers for continuous features. We need to scale them in order
-            to use fast solvers for multinomial logistic regression in
-            sklearn."""
-        self._scalers[split_i][mice_imp_i] = RobustScaler()
-        self._scalers[split_i][mice_imp_i].fit(
-            train_cont_bin.loc[:, self.swm.cont_vars].values
-        )
-
-    def _scale(self, split_i: int, mice_imp_i: int,
-               X: pd.DataFrame) -> pd.DataFrame:
-        """Scale continuous features."""
-        X = X.copy()
-        X.loc[:, self.swm.cont_vars] = self._scalers[split_i][
-            mice_imp_i].transform(
-            X.loc[:, self.swm.cont_vars].values
-        )
-        return X
-
-    def _fit_imputer(
         self,
         split_i: int,
         mice_imp_i: int,
-        train_cont_bin: pd.DataFrame,
-        cat_var: pd.Series,
+        train_cat_vars: pd.DataFrame,
     ):
+        """Impute missing values for every non-binary categorical variable, for
+            a single MICE imputation, in a single train-test split."""
+        cont_bin_target_vars = {
+            "train": self.swm.get_imputed_variables(
+                split_i, "train", mice_imp_i
+            ),
+            "test": self.swm.get_imputed_variables(
+                split_i, "test", mice_imp_i
+            ),
+        }
+        cont_bin_target_vars = self._scale(cont_bin_target_vars)
+        self._impute_all_cat_vars(
+            split_i=split_i,
+            mice_imp_i=mice_imp_i,
+            imp_folds_features=cont_bin_target_vars,
+            imp_train_targets=train_cat_vars
+        )
+
+    def _scale(self, dfs: Dict[str, pd.DataFrame]) -> Dict[str, pd.DataFrame]:
+        scalers = self._fit_scalers(dfs["train"])
+        for fold_name in dfs.keys():
+            dfs[fold_name] = self._scale_fold(
+                fold=dfs[fold_name],
+                scalers=scalers
+            )
+        return dfs
+
+    def _fit_scalers(self, train: pd.DataFrame) -> RobustScaler:
+        """Fit scalers for continuous features. We need to scale them in order
+            to use fast solvers for multinomial logistic regression in
+            sklearn."""
+        scalers = RobustScaler()
+        scalers.fit(train.loc[:, self.swm.cont_vars].values)
+        return scalers
+
+    def _scale_fold(
+        self,
+        fold: pd.DataFrame,
+        scalers: RobustScaler
+    ) -> pd.DataFrame:
+        """Scale continuous features."""
+        fold.loc[
+            :,
+            self.swm.cont_vars
+        ] = scalers.fit_transform(
+            fold.loc[
+                :,
+                self.swm.cont_vars
+            ].values
+        )
+        return fold
+
+    def _impute_all_cat_vars(
+        self,
+        split_i: int,
+        mice_imp_i: int,
+        imp_folds_features: Dict[str, pd.DataFrame],
+        imp_train_targets: pd.DataFrame,
+    ):
+        """Impute values for all non-binary categorical variables, in
+            a single MICE imputation, in a single train-test split.
+
+        Args:
+            split_i: Index of the train-test split
+            mice_imp_i: Index of the MICE imputation
+            imp_folds_features: Keys are 'train' and 'test'. Values are the
+                (partly MICE-imputed) continuous, binary and target variables
+                from that fold, which will be used as the imputation model's
+                features
+            imp_train_targets: All non-binary categorical variables from the
+                train fold
+        """
+        imputers = self._fit_imputers(
+            split_i=split_i,
+            imp_train_features=imp_folds_features["train"],
+            imp_train_targets=imp_train_targets
+        )
+        for fold_name in imp_folds_features:
+            for cat_var_name in imp_train_targets.columns:
+                self._impute_single_cat_var(
+                    split_i=split_i,
+                    mice_imp_i=mice_imp_i,
+                    fold_name=fold_name,
+                    cat_var_name=cat_var_name,
+                    imp_features=imp_folds_features[fold_name],
+                    imputer=imputers[cat_var_name]
+                )
+
+    def _fit_imputers(
+        self,
+        split_i: int,
+        imp_train_features: pd.DataFrame,
+        imp_train_targets: pd.DataFrame,
+    ) -> Dict[str, Union[LogisticRegression, None]]:
+        """Fit imputation models for all non-binary categorical variables, in
+            a single MICE imputation, in a single train-test split.
+
+        Args:
+            split_i: Index of the train-test split
+            imp_train_features: The (partly MICE-imputed) continuous, binary and
+                target variables used as the imputation model's features
+            imp_train_targets: All non-binary categorical variables
+        """
+        imputers = {}
+        for cat_var_name in self.cat_vars:
+            imputers[cat_var_name] = self._fit_single_imputer(
+                split_i=split_i,
+                imp_train_features=imp_train_features,
+                imp_train_target=imp_train_targets[cat_var_name]
+            )
+        return imputers
+
+    def _fit_single_imputer(
+        self,
+        split_i: int,
+        imp_train_features: pd.DataFrame,
+        imp_train_target: pd.Series,
+    ) -> Union[LogisticRegression, None]:
         """Fit imputation model of a single non-binary categorical variable, in
             a single MICE imputation, in a single train-test split. We only fit
             the model if there is at least one missing value of cat_var in the
             train or test fold (otherwise there would be nothing for the model
-            to impute later)
+            to impute later). Returns None if imputation model not fit.
 
         Args:
             split_i: Index of the train-test split
-            mice_imp_i: Index of the MICE imputation within this TTS
-            train_cont_bin: The (partly MICE-imputed) continuous and binary
-                variables used as the imputation model's features
-            cat_var: The non-binary categorical variable being modelled
+            imp_train_features: The (partly MICE-imputed) continuous, binary and
+                target variables used as the imputation model's features
+            imp_train_target: The non-binary categorical variable being modelled
         """
-        if any(
-            (
-                self.missing_i["train"][split_i][cat_var.name].shape[0],
-                self.missing_i["test"][split_i][cat_var.name].shape[0],
+        if any((
+            self.missing_i["train"][split_i][imp_train_target.name].shape[0],
+            self.missing_i["test"][split_i][imp_train_target.name].shape[0],
+        )):
+            obs_i = imp_train_features.index.difference(
+                self.missing_i["train"][split_i][imp_train_target.name]
             )
-        ):
-            obs_i = train_cont_bin.index.difference(
-                self.missing_i["train"][split_i][cat_var.name]
-            )
-            self._imputers[split_i][mice_imp_i][
-                cat_var.name] = LogisticRegression(
+            imputer = LogisticRegression(
                 penalty="none",
                 solver="sag",
                 max_iter=3000,
@@ -458,82 +513,57 @@ class CategoricalImputer(Imputer):
                 n_jobs=-1,
                 random_state=self.random_seed,
             )
-            self._imputers[split_i][mice_imp_i][cat_var.name].fit(
-                train_cont_bin.iloc[obs_i].values, cat_var.iloc[obs_i].values
+            imputer.fit(
+                imp_train_features.iloc[obs_i].values,
+                imp_train_target.iloc[obs_i].values
             )
+            return imputer
 
-    def impute_X_df(
-        self, fold: str, split_i: int, mice_imp_i: int, cat_imp_i: int
-    ) -> pd.DataFrame:
-        """Imputes missing values of the non-binary categorical variables for a
-            given MICE iteration, for a given fold, from a given train-test
-            split. Constructs DataFrame (no missing values) containing all the
-            categorical and continuous variables, except lactate and albumin,
-            and the albumin and lactate missingness indicators. Uses a
-            pseudo-index to allow different imputations (e.g. multiple
-            categorical imputations per MICE imputation) to be reproduced.
-
-        Args:
-            split_i: Train-test split iteration index
-            fold: in ('train', 'test')
-            mice_imp_i: MICE imputation index (for this train-test split)
-            cat_imp_i: Pseudo index for this categorical imputation
-
-        Returns:
-            Columns are (self.cat_vars + self.swm.cont_vars +
-                         self.swm.binary_vars)
-        """
-        # TODO: Adjust later code given that swn.get_imputed_df() now contains
-        #   the target column
-        cont_bin_df = self.swm.get_imputed_df(split_i, fold, mice_imp_i)
-        cont_bin_df_scaled = self._scale(split_i, mice_imp_i, cont_bin_df)
-        cat_df = self._get_categorical_df(split_i, fold)
-        for cat_var_name in self.cat_vars:
-            cat_df = self._impute_cat_var(
-                split_i,
-                mice_imp_i,
-                fold,
-                cat_var_name,
-                cont_bin_df_scaled,
-                cat_df,
-                cat_imp_i,
-            )
-        return cat_df.join(cont_bin_df)
-
-    def _get_categorical_df(self, split_i: int, fold: str) -> pd.DataFrame:
-        if fold == "train":
-            X_df, _, _, _ = self._split(split_i)
-        elif fold == "test":
-            _, _, X_df, _ = self._split(split_i)
-        return X_df[self.cat_vars]
-
-    def _impute_cat_var(
+    def _impute_single_cat_var(
         self,
         split_i: int,
         mice_imp_i: int,
-        fold: str,
+        fold_name: str,
         cat_var_name: str,
-        cont_bin_df_scaled: pd.DataFrame,
-        cat_df: pd.DataFrame,
-        cat_imp_i: int,
-    ) -> pd.DataFrame:
+        imp_features: pd.DataFrame,
+        imputer: Union[LogisticRegression, None]
+    ):
         """pred_probs is of shape (n_missing_values, n_classes), where each row
             corresponds to a missing value of cat_var_name, and each columns is
             the predicted probability that the missing value is that class.
             Rather than imputing each missing value using idxmax(pred_probs), we
             impute each missing value probabilistically using pred_probs."""
-        missing_i = self.missing_i[fold][split_i][cat_var_name]
+        missing_i = self.missing_i[fold_name][split_i][cat_var_name]
         if missing_i.shape[0]:
-            imputer = self._imputers[split_i][mice_imp_i][cat_var_name]
             pred_probs = imputer.predict_proba(
-                cont_bin_df_scaled.loc[missing_i].values)
-            rnd = np.random.RandomState(self.random_seed + cat_imp_i)
+                imp_features.loc[missing_i].values
+            )
+            rnd = np.random.RandomState(self.random_seed + mice_imp_i)
             pred_classes = np.empty_like(missing_i)
             for i in range(missing_i.shape[0]):
-                pred_classes[i] = rnd.choice(imputer.classes_,
-                                             p=pred_probs[i, :])
-            cat_df.loc[missing_i, cat_var_name] = pred_classes
-        return cat_df
+                pred_classes[i] = rnd.choice(
+                    imputer.classes_,
+                    p=pred_probs[i, :]
+                )
+            self.imputed[fold_name][split_i][mice_imp_i][cat_var_name] = (
+                pred_classes
+            )
+
+    def get_imputed_df(
+        self, fold_name: str, split_i: int, imp_i: int
+    ) -> pd.DataFrame:
+        """Constructs DataFrame containing the continuous and binary variables
+            (except those related to lactate and albumin), the target variable
+            and the non-binary categorical variables, including their imputed
+            missing values for a given fold, train-test split and imputation
+            (MICE and categorical imputation) iteration."""
+        cont_bin_target_df = self.swm.get_imputed_variables(
+            split_i=split_i, fold_name=fold_name, imp_i=imp_i
+        )
+        cat_df = self.get_imputed_variables(
+            split_i=split_i, fold_name=fold_name, imp_i=imp_i
+        )
+        return cont_bin_target_df.join(cat_df)
 
 
 class LactateAlbuminImputer(Imputer):
@@ -669,6 +699,8 @@ class LactateAlbuminImputer(Imputer):
 
     def _fit_combine_gams(self, split_i: int, obs_target_train: pd.DataFrame):
         gams = []
+        # TODO: Update this nested loop now that we are doing only one earlier
+        #   stage of imputation
         for mice_imp_i in range(self.cat_imputer.swm.n_mice_imputations):
             for cat_imp_i in range(self.cat_imputer.imp_multiple):
                 features_train = self.cat_imputer.impute_X_df(
