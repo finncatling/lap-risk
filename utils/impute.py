@@ -339,6 +339,7 @@ class CategoricalImputer(Imputer):
             in every MICE imputation, for a single train-test split."""
         train, test = self._split_then_join_Xy(split_i)
         self._find_missing_indices(split_i, train, test)
+        self._initialise_subdicts_for_imputation_storage(split_i)
         for mice_imp_i in range(self.swm.n_mice_imputations):
             self._single_mice_imp(
                 split_i=split_i,
@@ -361,6 +362,12 @@ class CategoricalImputer(Imputer):
             self.missing_i[fold_name][split_i] = find_missing_indices(
                 df[self.cat_vars]
             )
+
+    def _initialise_subdicts_for_imputation_storage(self, split_i: int):
+        for fold_name in self.imputed.keys():
+            self.imputed[fold_name][split_i] = {}
+            for mice_imp_i in range(self.swm.n_mice_imputations):
+                self.imputed[fold_name][split_i][mice_imp_i] = {}
 
     def _single_mice_imp(
         self,
