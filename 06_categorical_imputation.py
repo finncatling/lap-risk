@@ -41,7 +41,7 @@ cat_imputer = CategoricalImputer(
     n_imputations_per_mice=1,
     random_seed=RANDOM_SEED,
 )
-cat_imputer.fit()
+cat_imputer.impute()
 
 
 reporter.report("Saving categorical imputer for later use")

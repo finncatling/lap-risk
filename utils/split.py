@@ -283,7 +283,7 @@ class Splitter:
         pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray
     ):
         """Train-test split, according to the pre-defined splits calculated
-            in 01_train_test_split.py"""
+            in 01_train_test_split.py."""
         (
             X_train,
             y_train,
@@ -299,13 +299,3 @@ class Splitter:
         self.split_stats["n_total_train_cases"][i] = n_total_train_cases
         self.split_stats["n_included_train_cases"][i] = n_included_train_cases
         return X_train, y_train, X_test, y_test
-
-    def _split_then_join_Xy(self, i: int) -> (pd.DataFrame, pd.DataFrame):
-        """Thin wrapper around ._split() which adds y_train (the mortality
-            labels) back into X_train, and adds y_test back into X_test. This
-            is convenient for input to the MICE and categorical imputation
-            models, which use the target as a feature."""
-        train, y_train, test, y_test = self._split(i)
-        train[self.target_variable_name] = y_train
-        test[self.target_variable_name] = y_test
-        return train, test
