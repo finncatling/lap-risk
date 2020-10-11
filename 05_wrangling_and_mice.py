@@ -138,10 +138,6 @@ mice_cont_vars.remove(LACTATE_VAR_NAME)
 mice_cont_vars.remove(ALBUMIN_VAR_NAME)
 
 
-# TODO: Remove this testing line
-tt_splitter.n_splits = 1
-
-
 reporter.report("Running MICE")
 swm = SplitterWinsorMICE(
     df=mice_df,
