@@ -119,7 +119,7 @@ class Imputer(Splitter):
         return train, test
 
     def get_imputed_variables(
-        self, split_i: int, fold_name: str, imp_i: int
+        self, fold_name: str, split_i: int, imp_i: int
     ) -> pd.DataFrame:
         """Reconstructs imputed DataFrame containing all the POTENTIALLY
             imputed variables from a given imputation iteration, for a given
@@ -143,10 +143,12 @@ class Imputer(Splitter):
         elif fold_name == "test":
             _, imp_df = self._split_then_join_Xy(split_i)
         imp_df = imp_df[list(self.missing_i[fold_name][split_i].keys())]
-        for var_name, missing_i in self.missing_i[fold_name][split_i].items():
-            imp_df.iloc[missing_i, imp_df.columns.get_loc(var_name)] = (
-                self.imputed[fold_name][split_i][imp_i][var_name]
-            )
+        for var_name, imp in self.imputed[fold_name][split_i][imp_i].items():
+            imp_df.iloc[
+                self.missing_i[fold_name][split_i][var_name],
+                imp_df.columns.get_loc(var_name)
+            ] = imp
+        assert imp_df.dropna(how='any').shape[0] == imp_df.shape[0]
         return imp_df
 
 
@@ -292,7 +294,9 @@ class SplitterWinsorMICE(Imputer):
         for var_name, missing_i in self.missing_i[fold][split_i].items():
             self.imputed[fold][split_i][imputation_i][var_name] = (
                 imp_df.iloc[
-                    missing_i, imp_df.columns.get_loc(var_name)].copy().values
+                    missing_i,
+                    imp_df.columns.get_loc(var_name)
+                ].copy().values
             )
 
 
@@ -378,12 +382,9 @@ class CategoricalImputer(Imputer):
         """Impute missing values for every non-binary categorical variable, for
             a single MICE imputation, in a single train-test split."""
         cont_bin_target_vars = {
-            "train": self.swm.get_imputed_variables(
-                split_i, "train", mice_imp_i
-            ),
-            "test": self.swm.get_imputed_variables(
-                split_i, "test", mice_imp_i
-            ),
+            "train": self.swm.get_imputed_variables("train", split_i,
+                                                    mice_imp_i),
+            "test": self.swm.get_imputed_variables("test", split_i, mice_imp_i),
         }
         cont_bin_target_vars = self._scale(cont_bin_target_vars)
         self._impute_all_cat_vars(
@@ -564,12 +565,11 @@ class CategoricalImputer(Imputer):
             and the non-binary categorical variables, including their imputed
             missing values for a given fold, train-test split and imputation
             (MICE and categorical imputation) iteration."""
-        cont_bin_target_df = self.swm.get_imputed_variables(
-            split_i=split_i, fold_name=fold_name, imp_i=imp_i
-        )
-        cat_df = self.get_imputed_variables(
-            split_i=split_i, fold_name=fold_name, imp_i=imp_i
-        )
+        cont_bin_target_df = self.swm.get_imputed_variables(fold_name=fold_name,
+                                                            split_i=split_i,
+                                                            imp_i=imp_i)
+        cat_df = self.get_imputed_variables(fold_name=fold_name,
+                                            split_i=split_i, imp_i=imp_i)
         return cont_bin_target_df.join(cat_df)
 
 
