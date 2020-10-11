@@ -2,13 +2,13 @@ import copy
 import os
 from typing import Tuple, Dict
 
-import numpy as np
 import pandas as pd
 
 from utils.constants import (
     DATA_DIR,
     INTERNAL_OUTPUT_DIR,
-    NOVEL_MODEL_OUTPUT_DIR
+    NOVEL_MODEL_OUTPUT_DIR,
+    RANDOM_SEED
 )
 from utils.model.shared import flatten_model_var_dict
 from utils.io import load_object, save_object
@@ -26,7 +26,7 @@ from utils.indications import (
     MISSING_IND_CATEGORY,
     get_indication_variable_names
 )
-from utils.impute import determine_n_imputations, SplitterWinsorMICE
+from utils.impute import ImputationInfo, SplitterWinsorMICE
 from utils.split import TrainTestSplitter
 from utils.report import Reporter
 
@@ -80,19 +80,31 @@ reporter.report("Saving preprocessed data for later use")
 df.to_pickle(os.path.join(DATA_DIR, "05_preprocessed_df.pkl"))
 
 
-reporter.report("Determining fraction of cases with missing data")
-n_imputations, fraction_incomplete_cases = determine_n_imputations(df)
-print(f"{np.round(100 * fraction_incomplete_cases, 2)}% of cases have missing "
-      f"data, so we will perform {n_imputations} imputations")
+reporter.report(
+    "Define stages of imputation, and the number of imputations needed at each "
+    "stage"
+)
+imputation_stages = ImputationInfo()
+imputation_stages.add_stage(
+    description=(
+        "MICE for continuous variables (except lactate and albumin) "	
+        "and binary variables, then separate imputation of non-binary discrete "
+        "variables"
+    ),
+    df=df.drop(
+        list(LACTATE_ALBUMIN_VARS) + [NOVEL_MODEL_VARS["target"]], axis=1
+    )
+)
+imputation_stages.add_stage(
+    description="Lactate and albumin",
+    df=df[[LACTATE_VAR_NAME, ALBUMIN_VAR_NAME]]
+)
 
 
-reporter.report("Saving imputation information for later use")
+reporter.report("Saving imputation stage information for later use")
 save_object(
-    {
-        'n_imputations': n_imputations,
-        'fraction_incomplete_cases': fraction_incomplete_cases
-    },
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_imputation_info.pkl")
+    imputation_stages,
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_imputation_stages.pkl")
 )
 
 
@@ -116,8 +128,7 @@ tt_splitter: TrainTestSplitter = load_object(
 
 reporter.report("Making list of binary variables for use in MICE")
 binary_vars = list(
-    set(NOVEL_MODEL_VARS["cat"]) -
-    set(multi_category_levels.keys())
+    set(NOVEL_MODEL_VARS["cat"]) - set(multi_category_levels.keys())
 )
 
 
@@ -139,9 +150,10 @@ swm = SplitterWinsorMICE(
         "S01AgeOnArrival": (False, True),
         "S03GlasgowComaScore": (False, False),
     },
-    n_mice_imputations=n_imputations,
+    n_mice_imputations=imputation_stages.n_imputations[0],
     n_mice_burn_in=10,
     n_mice_skip=3,
+    random_seed=RANDOM_SEED
 )
 swm.split_winsorize_mice()
 

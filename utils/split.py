@@ -283,7 +283,7 @@ class Splitter:
         pd.DataFrame, np.ndarray, pd.DataFrame, np.ndarray
     ):
         """Train-test split, according to the pre-defined splits calculated
-            in 01_train_test_split.py"""
+            in 01_train_test_split.py."""
         (
             X_train,
             y_train,
