@@ -1,5 +1,5 @@
 import operator
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -111,10 +111,10 @@ def label_encode(
 
 def winsorize_novel(
     df: pd.DataFrame,
-    thresholds: Dict[str, Tuple[float, float]] = None,
-    cont_vars: List[str] = None,
-    quantiles: Tuple[float, float] = None,
-    include: Dict[str, Tuple[bool, bool]] = None,
+    thresholds: Union[Dict[str, Tuple[float, float]], None] = None,
+    cont_vars: Union[List[str], None] = None,
+    quantiles: Union[Tuple[float, float], None] = None,
+    include: Union[Dict[str, Tuple[bool, bool]], None] = None,
 ) -> (pd.DataFrame, Dict[str, Tuple[float, float]]):
     """Winsorize continuous variables at thresholds in thresholds_dict, or at
         specified quantiles if thresholds_dict is None. If thresholds_dict is

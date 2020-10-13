@@ -170,7 +170,7 @@ class SplitterWinsorMICE(Imputer):
         cont_variables: List[str],
         binary_variables: List[str],
         winsor_quantiles: Tuple[float, float],
-        winsor_include: Dict[str, Tuple[bool, bool]],
+        winsor_include: Union[Dict[str, Tuple[bool, bool]], None],
         n_mice_imputations: int,
         n_mice_burn_in: int,
         n_mice_skip: int,
