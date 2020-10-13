@@ -13,11 +13,6 @@ def test_determine_n_imputations(simple_df_with_missingness_fixture):
     assert n_imputations == 40
 
 
-class TestSplitterWinsorMICE:
-    def test_placeholder(self):
-        assert False
-
-
 def test_find_missing_indices(simple_df_with_missingness_fixture):
     missing_i = impute.find_missing_indices(simple_df_with_missingness_fixture)
     assert {
@@ -49,3 +44,8 @@ class TestImputationInfo:
         assert ii.n_min_imputations == [40, 60]
         assert ii.n_imputations == [40, 80]
         assert ii.multiple_of_previous_n_imputations == [1, 2]
+
+
+class TestSplitterWinsorMICE:
+    def test_placeholder(self):
+        assert False
