@@ -137,8 +137,8 @@ def winsorize_novel(
     df = df.copy()
     ops = (operator.lt, operator.gt)
     if thresholds:
-        for v, thresholds in thresholds.items():
-            for i, threshold in enumerate(thresholds):
+        for v, thresholds_tuple in thresholds.items():
+            for i, threshold in enumerate(thresholds_tuple):
                 if threshold is not None:
                     df.loc[ops[i](df[v], threshold), v] = threshold
     else:
