@@ -38,7 +38,7 @@ cat_imputer = CategoricalImputer(
     df=df.drop(list(LACTATE_ALBUMIN_VARS), axis=1),
     splitter_winsor_mice=swm,
     cat_vars=list(multi_category_levels.keys()),
-    random_seed=RANDOM_SEED,
+    random_seed=RANDOM_SEED
 )
 cat_imputer.impute()
 
