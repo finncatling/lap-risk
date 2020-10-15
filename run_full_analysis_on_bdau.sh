@@ -1,5 +1,6 @@
 #!/bin/bash
 
+shopt -s expand_aliases
 alias pipenv='/opt/python/3.8.6/bin/pipenv'
 
 pipenv run taskset -c 32-39 python 01_train_test_split.py
