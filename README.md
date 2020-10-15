@@ -1,10 +1,10 @@
 # lap-risk
 
-Modelling mortality risk in emergency laparotomy, using data from the NELA
+Modelling mortality risk in emergency laparotomy, using data from the NELA.
 
 ## Install
 
-We manage dependencies with [pipenv](https://pipenv-fork.readthedocs.io/en/latest/).
+This codebase is written in Python 3.8.6. We manage dependencies with pipenv. You'll need to [install Python and pip](https://pipenv-fork.readthedocs.io/en/latest/install.html#make-sure-you-ve-got-python-pip), then [install pipenv](https://pipenv-fork.readthedocs.io/en/latest/install.html#installing-pipenv) in order to get started.
 
 If working in the Imperial BDAU, pipenv isn't in path. We can define a convenient alias for it in this case:
 
