@@ -40,6 +40,8 @@ When running in the Imperial BDAU, we should limit the number of cores used for 
 taskset -c 0-7 python 01_train_test_split.py
 ```
 
+The convenience shell script `run_full_analysis_on_bdau.sh` automates running the analysis (not the initial install) on the BDAU. It runs each python script in sequence inside our pipenv environment, restricting itself to 8 cores. 
+
 ## Running tests
 
 Install dev packages with:
