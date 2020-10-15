@@ -393,9 +393,12 @@ class CategoricalImputer(Imputer):
         """Impute missing values for every non-binary categorical variable, for
             a single MICE imputation, in a single train-test split."""
         cont_bin_target_vars = {
-            "train": self.swm.get_imputed_variables("train", split_i,
-                                                    mice_imp_i),
-            "test": self.swm.get_imputed_variables("test", split_i, mice_imp_i),
+            "train": self.swm.get_imputed_variables(
+                "train", split_i, mice_imp_i
+            ),
+            "test": self.swm.get_imputed_variables(
+                "test", split_i, mice_imp_i
+            ),
         }
         cont_bin_target_vars = self._scale(cont_bin_target_vars)
         self._impute_all_cat_vars(
