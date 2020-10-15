@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from utils import split
+from utils.split import TrainTestSplitter
 
 
 def test_drop_incomplete_cases(simple_df_with_missingness_fixture):
@@ -19,6 +20,30 @@ def test_drop_incomplete_cases(simple_df_with_missingness_fixture):
     }, index=[0, 3, 4]).equals(complete_df)
     # check input DataFrame not changed
     assert simple_df_with_missingness_fixture.shape == (5, 2)
+
+
+@pytest.fixture(scope='class')
+def df_for_train_test_split_fixture() -> pd.DataFrame:
+    return pd.DataFrame({
+        'institution': [0, 0, 1, 2, 3],
+        'a': [0., 0., 1., np.nan, 1.],
+        'b': [1.6, 3.8, np.nan, np.nan, 9.1],
+        'c': [np.nan, 1., 2., np.nan, 2.]
+    }, index=[0, 1, 3, 4, 5])
+
+
+@pytest.fixture(scope='class')
+def train_test_split_fixture(df_for_train_test_split_fixture):
+    tts = TrainTestSplitter(
+        df=df_for_train_test_split_fixture,
+        split_variable_name='institution',
+        test_fraction=0.25,
+        n_splits=2,
+        current_nela_model_vars=['a', 'b'],
+        random_seed=1
+    )
+    tts.split()
+    return tts
 
 
 class TestTrainTestSplitter:
