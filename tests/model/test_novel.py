@@ -134,19 +134,45 @@ def test_preprocess_novel_pre_split(initial_df_permutations_fixture):
     }
 
 
-# TODO: Switch to deterministic test, if possible
-def test_winsorise_novel(initial_df_permutations_fixture):
-    winsorised, thresholds = winsorize_novel(
-        df=initial_df_permutations_fixture,
-        thresholds=None,
-        cont_vars=NOVEL_MODEL_VARS["cont"],
-        quantiles=(0.2, 0.8)
-    )
+class TestWinsoriseNovel:
+    @pytest.fixture()
+    def input_df_fixture(self):
+        return pd.DataFrame({
+            'a': [0.0, 0.25, 0.5, 0.75, 1.0],
+            'b': [1.0, 1.25, 1.5, 1.75, 2.0],
+            'ignore': [0, 1, 0, 1, 0]
+        })
 
-    # check the columns have changed
-    with pytest.raises(AssertionError):
-        for i in NOVEL_MODEL_VARS["cont"]:
-            np.testing.assert_array_equal(
-                initial_df_permutations_fixture[i].values,
-                winsorised[i].values
-            )
+    @pytest.fixture()
+    def thresholds_fixture(self):
+        return {'a': [0.2, 0.8], 'b': [None, 1.8]}
+
+    @pytest.fixture()
+    def output_df_fixture(self):
+        return pd.DataFrame({
+            'a': [0.2, 0.25, 0.5, 0.75, 0.8],
+            'b': [1.0, 1.25, 1.5, 1.75, 1.8],
+            'ignore': [0, 1, 0, 1, 0]
+        })
+
+    def test_winsorise_novel_quantiles_input(
+        self, input_df_fixture, output_df_fixture, thresholds_fixture
+    ):
+        winsor_df, thresholds = novel.winsorize_novel(
+            df=input_df_fixture,
+            cont_vars=['a', 'b'],
+            quantiles=(0.2, 0.8),
+            include={'b': (False, True)}
+        )
+        assert thresholds == thresholds_fixture
+        assert output_df_fixture.equals(winsor_df)
+
+    def test_winsorise_novel_thresholds_input(
+        self, input_df_fixture, output_df_fixture, thresholds_fixture
+    ):
+        winsor_df, thresholds = novel.winsorize_novel(
+            df=input_df_fixture,
+            thresholds=thresholds_fixture
+        )
+        assert thresholds == thresholds_fixture
+        assert output_df_fixture.equals(winsor_df)

@@ -170,7 +170,7 @@ class SplitterWinsorMICE(Imputer):
         cont_variables: List[str],
         binary_variables: List[str],
         winsor_quantiles: Tuple[float, float],
-        winsor_include: Dict[str, Tuple[bool, bool]],
+        winsor_include: Union[Dict[str, Tuple[bool, bool]], None],
         n_mice_imputations: int,
         n_mice_burn_in: int,
         n_mice_skip: int,
@@ -205,7 +205,7 @@ class SplitterWinsorMICE(Imputer):
         super().__init__(df, train_test_splitter, target_variable_name)
         self.cont_vars = cont_variables
         self.binary_vars = binary_variables
-        self._sanity_check_variables()
+        self._sanity_check()
         self.winsor_quantiles = winsor_quantiles
         self.winsor_include = winsor_include
         self.n_mice_imputations = n_mice_imputations
@@ -220,11 +220,22 @@ class SplitterWinsorMICE(Imputer):
     def all_vars(self):
         return self.cont_vars + self.binary_vars + [self.target_variable_name]
 
+    def _sanity_check(self):
+        self._sanity_check_variables()
+        self._sanity_check_missingness()
+
     def _sanity_check_variables(self):
         """Check that df only contains the variables specified."""
         assert len(self.all_vars) == len(self.df.columns)
         for var in self.all_vars:
             assert var in self.df.columns
+
+    def _sanity_check_missingness(self):
+        """Checking that there are no rows in self.df where all values are
+            missing (these cases would be dropped by statsmodels MICEData,
+            which could create problems with the post-imputation data
+            reconstruction)"""
+        assert self.df.shape[0] == self.df.dropna(axis=0, how="all").shape[0]
 
     def split_winsorize_mice(self):
         """Split df according to pre-defined train-test splits, perform

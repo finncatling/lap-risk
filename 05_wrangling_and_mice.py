@@ -108,16 +108,10 @@ save_object(
 )
 
 
-reporter.report(
-    "Making DataFrame for use in MICE, and checking that there are no "
-    "cases where all features are missing (these cases would be dropped by "
-    "statsmodels MICEData, which could create problems with the "
-    "post-imputation data reconstruction)"
-)
+reporter.report("Making DataFrame for use in MICE")
 mice_df = df.drop(
     list(multi_category_levels.keys()) + list(LACTATE_ALBUMIN_VARS), axis=1
 ).copy()
-assert mice_df.shape[0] == mice_df.dropna(axis=0, how="all").shape[0]
 
 
 reporter.report("Loading data needed for train-test splitting")
