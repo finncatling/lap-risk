@@ -1,8 +1,12 @@
+from unittest import mock
+
 import numpy as np
 import pandas as pd
 import pytest
+from scipy.special import expit
 
 from utils import impute
+from utils.split import TrainTestSplitter
 
 
 def test_determine_n_imputations(simple_df_with_missingness_fixture):
@@ -47,5 +51,130 @@ class TestImputationInfo:
 
 
 class TestSplitterWinsorMICE:
-    def test_placeholder(self):
-        assert False
+    @pytest.fixture(scope='class')
+    def df_fixture(self) -> pd.DataFrame:
+        n_rows = 20
+        rnd = np.random.RandomState(1)
+        df = pd.DataFrame({'cont': np.linspace(-1, 1, num=n_rows)})
+        df['bin'] = rnd.choice(2, size=n_rows)
+        df['target'] = rnd.binomial(n=1, p=expit(df.cont + df.bin))
+        df.loc[1, 'cont'] = np.nan
+        df.loc[8, 'bin'] = np.nan
+        return df
+
+    @pytest.fixture(scope='class')
+    def mock_train_test_split_fixture(self, df_fixture) -> TrainTestSplitter:
+        """We use a mock to allow deterministic splitting"""
+        even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
+        odd_i = np.arange(1, df_fixture.shape[0], 2)
+        tts = mock.create_autospec(TrainTestSplitter)
+        tts.train_i = [even_i, odd_i]
+        tts.test_i = [odd_i, even_i]
+        tts.n_splits = len(tts.train_i)
+        return tts
+
+    @pytest.fixture(scope='class')
+    def splitter_winsor_mice_fixture(
+        self, df_fixture, mock_train_test_split_fixture
+    ) -> impute.SplitterWinsorMICE:
+        swm = impute.SplitterWinsorMICE(
+            df=df_fixture,
+            train_test_splitter=mock_train_test_split_fixture,
+            target_variable_name='target',
+            cont_variables=['cont'],
+            binary_variables=['bin'],
+            winsor_quantiles=(0.01, 0.99),
+            winsor_include=None,
+            n_mice_imputations=2,
+            n_mice_burn_in=1,
+            n_mice_skip=1,
+            random_seed=1
+        )
+        swm.split_winsorize_mice()
+        return swm
+
+    def test_all_vars(self, splitter_winsor_mice_fixture):
+        assert splitter_winsor_mice_fixture.all_vars == [
+            'cont', 'bin', 'target'
+        ]
+
+    def test_winsor_thresholds(self, splitter_winsor_mice_fixture):
+        for i in range(splitter_winsor_mice_fixture.n_mice_imputations):
+            assert all(
+                [-1 < threshold < 1 for threshold in
+                 splitter_winsor_mice_fixture.winsor_thresholds[i]['cont']]
+            )
+
+    def test_missing_i(self, splitter_winsor_mice_fixture):
+        """Tested using loop as direct equality test runs into 'the truth
+            value of an empty ndarray is ambiguous' errors."""
+        assert (
+            set(splitter_winsor_mice_fixture.missing_i.keys()) ==
+            {'train', 'test'}
+        )
+        for fold_name, split in splitter_winsor_mice_fixture.missing_i.items():
+            assert set(split.keys()) == {0, 1}
+            for split_i, variables in split.items():
+                assert set(variables.keys()) == {'cont', 'bin', 'target'}
+                for variable_name, missing_i in variables.items():
+                    if ((
+                        fold_name == 'train' and
+                        split_i == 0 and
+                        variable_name == 'bin'
+                    ) or (
+                        fold_name == 'test' and
+                        split_i == 1 and
+                        variable_name == 'bin'
+                    )):
+                        assert missing_i == np.array([4], dtype='int64')
+                    elif ((
+                              fold_name == 'train' and
+                              split_i == 1 and
+                              variable_name == 'cont'
+                          ) or (
+                              fold_name == 'test' and
+                              split_i == 0 and
+                              variable_name == 'cont'
+                          )):
+                        assert missing_i == np.array([0], dtype='int64')
+                    else:
+                        assert missing_i.size == 0
+
+    def test_imputed(self, splitter_winsor_mice_fixture):
+        """Tested using loop as direct equality test runs into 'the truth
+            value of an empty ndarray is ambiguous' errors."""
+        assert (
+            set(splitter_winsor_mice_fixture.imputed.keys()) ==
+            {'train', 'test'}
+        )
+        for fold_name, split in splitter_winsor_mice_fixture.imputed.items():
+            assert set(split.keys()) == {0, 1}
+            for split_i, imputations in split.items():
+                assert set(imputations.keys()) == {0, 1}
+                for imp_i, variables in imputations.items():
+                    assert set(variables.keys()) == {'cont', 'bin', 'target'}
+                    for variable_name, imputed in variables.items():
+                        if ((
+                            fold_name == 'train' and
+                            split_i == 0 and
+                            variable_name == 'bin'
+                        ) or (
+                            fold_name == 'test' and
+                            split_i == 1 and
+                            variable_name == 'bin'
+                        )):
+                            assert imputed.size == 1
+                            assert imputed[0] in {0, 1}
+                        elif ((
+                                  fold_name == 'train' and
+                                  split_i == 1 and
+                                  variable_name == 'cont'
+                              ) or (
+                                  fold_name == 'test' and
+                                  split_i == 0 and
+                                  variable_name == 'cont'
+                              )):
+                            assert imputed.size == 1
+                            assert -1 < imputed[0] < 1
+                        else:
+                            assert imputed.size == 0
