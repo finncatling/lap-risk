@@ -108,11 +108,26 @@ class Imputer(Splitter):
                                           np.ndarray]]]] = {'train': {},
                                                             'test': {}}
 
+    def _find_missing_indices(
+        self,
+        split_i: int,
+        train: pd.DataFrame,
+        test: pd.DataFrame,
+        variable_names: List[str]
+    ):
+        """Find the indices (for the indexed train-test split) of the missing
+            values of the specified variables. These missing values are
+            consistent across MICE imputations."""
+        for fold_name, df in {"train": train, "test": test}.items():
+            self.missing_i[fold_name][split_i] = find_missing_indices(
+                df[variable_names]
+            )
+
     def _split_then_join_Xy(self, i: int) -> (pd.DataFrame, pd.DataFrame):
         """Thin wrapper around ._split() which adds y_train (the mortality
             labels) back into X_train, and adds y_test back into X_test.
-            This is convenient for input to the MICE and categorical imputation
-            models, which use the target as a feature."""
+            This is convenient for input to the MICE and categorical
+            imputation models, which use the target as a feature."""
         train, y_train, test, y_test = self._split(i)
         train[self.target_variable_name] = y_train
         test[self.target_variable_name] = y_test
@@ -310,6 +325,15 @@ class SplitterWinsorMICE(Imputer):
                 ].copy().values
             )
 
+    def _find_missing_indices(
+        self,
+        split_i: int,
+        train: pd.DataFrame,
+        test: pd.DataFrame,
+        variable_names: List[str]
+    ):
+        raise NotImplementedError
+
 
 class CategoricalImputer(Imputer):
     """Imputes missing values of non-binary categorical variables, using
@@ -353,29 +377,13 @@ class CategoricalImputer(Imputer):
         """Impute missing values for every non-binary categorical variable,
             in every MICE imputation, for a single train-test split."""
         train, test = self._split_then_join_Xy(split_i)
-        self._find_missing_indices(split_i, train, test)
+        self._find_missing_indices(split_i, train, test, self.cat_vars)
         self._initialise_subdicts_for_imputation_storage(split_i)
         for mice_imp_i in range(self.swm.n_mice_imputations):
             self._single_mice_imp(
                 split_i=split_i,
                 mice_imp_i=mice_imp_i,
                 train_cat_vars=train[self.cat_vars]
-            )
-
-    def _find_missing_indices(
-        self, split_i: int, train: pd.DataFrame, test: pd.DataFrame
-    ):
-        """Find the indices (for this train-test split) of the missing values
-            of every non-binary categorical variable. These missing values are
-            consistent across MICE imputations. We find these indices for the
-            train and test folds, although the test-fold indices aren't used
-            until later imputation."""
-        for fold_name, df in {
-            "train": train,
-            "test": test
-        }.items():
-            self.missing_i[fold_name][split_i] = find_missing_indices(
-                df[self.cat_vars]
             )
 
     def _initialise_subdicts_for_imputation_storage(self, split_i: int):
@@ -644,12 +652,6 @@ class LactateAlbuminImputer(Imputer):
         self.multi_cat_vars = multi_cat_vars
         self.ind_var_name = indication_var_name
         self._check_df(df)
-
-        # TODO: Remove this given that defined in parent class?
-        self.missing_i: Dict[
-            str, Dict[int, np.ndarray]  # fold name  # train-test split index
-        ] = {"train": {}, "test": {}}
-
         self._winsor_thresholds: Dict[
             int,  # train-test split index
             Tuple[float, float]
@@ -677,7 +679,12 @@ class LactateAlbuminImputer(Imputer):
             split. target_train and target_test are DataFrames with a single
             column."""
         target_train, _, target_test, _ = self._split(split_i)
-        self._find_missing_indices(split_i, target_train, target_test)
+        self._find_missing_indices(
+            split_i=split_i,
+            train=target_train,
+            test=target_test,
+            variable_names=[self.imp_target]
+        )
         obs_target_train = self._get_observed_values(
             "train", split_i, target_train
         )
@@ -685,24 +692,12 @@ class LactateAlbuminImputer(Imputer):
         obs_target_train = self._fit_transform(split_i, obs_target_train)
         self._fit_combine_gams(split_i, obs_target_train)
 
-    def _find_missing_indices(
-        self, split_i: int, target_train: pd.DataFrame,
-        target_test: pd.DataFrame
-    ):
-        """Find the indices (for this train-test split) of the missing values
-            of the imputation target. We find these indices for the train and
-            test folds, although the test-fold indices aren't used until later
-            imputation."""
-        # TODO: Consider unifying functionality with method in cat imputer
-        fold_dfs = {"train": target_train, "test": target_test}
-        for fold, df in fold_dfs.items():
-            missing_i = find_missing_indices(df)
-            self.missing_i[fold][split_i] = missing_i[self.imp_target]
-
     def _get_observed_values(
         self, fold: str, split_i: int, X: pd.DataFrame
     ) -> pd.DataFrame:
-        return X.loc[X.index.difference(self.missing_i[fold][split_i])]
+        return X.loc[X.index.difference(
+            self.missing_i[fold][split_i][self.imp_target]
+        )]
 
     def _winsorize(self, split_i: int, target: pd.DataFrame) -> pd.DataFrame:
         """Winsorizes the only column in X. Also fits winsor_thresholds for this
