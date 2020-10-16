@@ -6,7 +6,7 @@ import pandas as pd
 from utils.constants import (
     DATA_DIR,
     NOVEL_MODEL_OUTPUT_DIR,
-    RANDOM_SEED,
+    RANDOM_SEED
 )
 from utils.impute import SplitterWinsorMICE, CategoricalImputer
 from utils.model.novel import LACTATE_ALBUMIN_VARS
@@ -33,7 +33,7 @@ multi_category_levels: Dict[str, Tuple] = load_object(
 )
 
 
-reporter.report("Fitting imputers for non-binary categorical variables")
+reporter.report("Imputing non-binary categorical variables")
 cat_imputer = CategoricalImputer(
     df=df.drop(list(LACTATE_ALBUMIN_VARS), axis=1),
     splitter_winsor_mice=swm,
@@ -43,7 +43,7 @@ cat_imputer = CategoricalImputer(
 cat_imputer.impute()
 
 
-reporter.report("Saving categorical imputer for later use")
+reporter.report("Saving non-binary categorical imputer for later use")
 save_object(
     cat_imputer,
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "06_categorical_imputer.pkl")
