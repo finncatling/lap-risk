@@ -665,10 +665,7 @@ class LactateAlbuminImputer(Imputer):
 
     def _check_df(self, df: pd.DataFrame):
         """Check that passed DataFrame has correct columns, and no others."""
-        # TODO: Change to single check using set
-        assert len(df.columns) == 2
-        for col in (self.target_variable_name, self.imp_target):
-            assert col in df.columns
+        assert set(df.columns) == {self.target_variable_name, self.imp_target}
 
     def fit(self):
         """Fit albumin/lactate imputation models for every train-test split."""

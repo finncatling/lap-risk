@@ -10,6 +10,8 @@ def albumin_model_factory(
     multi_cat_levels: Dict[str, Tuple],
     indication_var_name: str
 ) -> GammaGAM:
+    # TODO: White et al recommends using all analysis model variables in the
+    #  imputation model
     # TODO: Check creatinine features in DataFrame - why is it causing
     #  divergence? Should it interact with urea?
     # TODO: Should GCS splines have lower order?
