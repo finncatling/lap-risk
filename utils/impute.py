@@ -673,12 +673,10 @@ class LactateAlbuminImputer(Imputer):
             self._single_train_test_split(i)
 
     def _single_train_test_split(self, split_i: int):
-        """Fit albumin or lactate imputation models for a single
-            train-test split. target_train and target_test are DataFrames with
-            a single column."""
+        """Fit albumin or lactate imputation models for a single train-test
+            split. target_train and target_test are DataFrames with a single
+            column."""
         target_train, _, target_test, _ = self._split(split_i)
-        for X in (target_train, target_test):  # TODO: Remove these 2 lines
-            assert isinstance(X, pd.DataFrame)
         self._find_missing_indices(split_i, target_train, target_test)
         obs_target_train = self._get_observed_values(
             "train", split_i, target_train
