@@ -588,7 +588,14 @@ class CategoricalImputer(Imputer):
 
 
 class LactateAlbuminImputer(Imputer):
-    """Impute missing values of target (lactate or albumin)."""
+    """Impute missing values of lactate or albumin."""
+    # TODO: should we be inheriting from Imputer if we store models rather than
+    #  imputed values? Make sure that Imputer's parent methods work or are
+    #  overridden
+
+    # TODO: Update to use CategoricalImputer.get_imputer_df()
+
+    # TODO: Ensure this still works as intended using new n_imputations (#44)
 
     def __init__(
         self,
@@ -623,7 +630,8 @@ class LactateAlbuminImputer(Imputer):
             indication_var_name: Name of the indication column
         """
         super().__init__(
-            df, categorical_imputer.tts,
+            df,
+            categorical_imputer.tts,
             categorical_imputer.target_variable_name
         )
         self.cat_imputer = categorical_imputer
@@ -636,20 +644,28 @@ class LactateAlbuminImputer(Imputer):
         self.multi_cat_vars = multi_cat_vars
         self.ind_var_name = indication_var_name
         self._check_df(df)
+
+        # TODO: Remove this given that defined in parent class?
         self.missing_i: Dict[
             str, Dict[int, np.ndarray]  # fold name  # train-test split index
         ] = {"train": {}, "test": {}}
+
         self._winsor_thresholds: Dict[
-            int, Tuple[float, float]  # train-test split index
+            int,  # train-test split index
+            Tuple[float, float]
         ] = {}
         self._transformers: Dict[
-            int, Union[GammaTransformer, QuantileTransformer]
-            # train-test split index
+            int,  # train-test split index
+            Union[GammaTransformer, QuantileTransformer]
         ] = {}
-        self._imputers: Dict[int, GAM] = {}  # train-test split index
+        self._imputers: Dict[
+            int,  # train-test split index
+            GAM
+        ] = {}
 
     def _check_df(self, df: pd.DataFrame):
         """Check that passed DataFrame has correct columns, and no others."""
+        # TODO: Change to single check using set
         assert len(df.columns) == 2
         for col in (self.target_variable_name, self.imp_target):
             assert col in df.columns
@@ -660,15 +676,16 @@ class LactateAlbuminImputer(Imputer):
             self._single_train_test_split(i)
 
     def _single_train_test_split(self, split_i: int):
-        """Fit target (albumin or lactate) imputation models for a single
+        """Fit albumin or lactate imputation models for a single
             train-test split. target_train and target_test are DataFrames with
             a single column."""
         target_train, _, target_test, _ = self._split(split_i)
         for X in (target_train, target_test):  # TODO: Remove these 2 lines
             assert isinstance(X, pd.DataFrame)
         self._find_missing_indices(split_i, target_train, target_test)
-        obs_target_train = self._get_observed_values("train", split_i,
-                                                     target_train)
+        obs_target_train = self._get_observed_values(
+            "train", split_i, target_train
+        )
         obs_target_train = self._winsorize(split_i, obs_target_train)
         obs_target_train = self._fit_transform(split_i, obs_target_train)
         self._fit_combine_gams(split_i, obs_target_train)
@@ -681,6 +698,7 @@ class LactateAlbuminImputer(Imputer):
             of the imputation target. We find these indices for the train and
             test folds, although the test-fold indices aren't used until later
             imputation."""
+        # TODO: Consider unifying functionality with method in cat imputer
         fold_dfs = {"train": target_train, "test": target_test}
         for fold, df in fold_dfs.items():
             missing_i = find_missing_indices(df)

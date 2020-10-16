@@ -219,7 +219,6 @@ class TestSplitterWinsorMICE:
         assert imputed[0] in {0, 1}
 
 
-
 class TestCategoricalImputer:
     def test_missing_i(self, categorical_imputer_fixture):
         """Tested using loop as direct equality test runs into 'the truth
@@ -331,3 +330,8 @@ class TestCategoricalImputer:
             ].values
             assert imputed.size == 1
             assert imputed[0] in possible_values
+
+
+class TestLactateAlbuminImputer:
+    def test_placeholder(self):
+        assert False

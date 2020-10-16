@@ -1,20 +1,21 @@
-from typing import Dict, Tuple
 import os
+from typing import Dict, Tuple
+
 import pandas as pd
 
-from utils.report import Reporter
 from utils.constants import DATA_DIR, NOVEL_MODEL_OUTPUT_DIR, FIGURES_OUTPUT_DIR
-from utils.io import save_object, load_object
 from utils.impute import CategoricalImputer, LactateAlbuminImputer
+from utils.indications import INDICATION_VAR_NAME
+from utils.io import save_object, load_object
+from utils.model.albumin import albumin_model_factory, GammaTransformer
 from utils.model.novel import (
     ALBUMIN_VAR_NAME,
     NOVEL_MODEL_VARS,
     WINSOR_QUANTILES,
 )
-from utils.indications import INDICATION_VAR_NAME
-from utils.model.albumin import albumin_model_factory, GammaTransformer
-from utils.plot.pdp import PDPTerm, plot_partial_dependence
 from utils.plot.helpers import sanitize_indication, plot_saver
+from utils.plot.pdp import PDPTerm, plot_partial_dependence
+from utils.report import Reporter
 
 
 reporter = Reporter()
@@ -36,7 +37,6 @@ multi_category_levels: Dict[str, Tuple] = load_object(
 )
 
 
-# TODO: Ensure this still works as intended using consistent n_imputations (#44)
 reporter.report("Fitting imputers for albumin")
 alb_imputer = LactateAlbuminImputer(
     df=df.loc[:, [ALBUMIN_VAR_NAME, NOVEL_MODEL_VARS["target"]]],
@@ -114,7 +114,6 @@ save_object(
     alb_pdp_terms,
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "07_alb_pd_plot_specification.pkl")
 )
-
 
 # TODO: Variables don't look winsorized on the plots - explore why
 # TODO: Indications should be more regularised

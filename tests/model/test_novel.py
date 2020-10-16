@@ -134,7 +134,7 @@ def test_preprocess_novel_pre_split(initial_df_permutations_fixture):
     }
 
 
-class TestWinsoriseNovel:
+class TestWinsorizeNovel:
     @pytest.fixture()
     def input_df_fixture(self):
         return pd.DataFrame({

@@ -6,7 +6,8 @@ from pygam import GammaGAM, s, f, te
 
 
 def albumin_model_factory(
-    columns: pd.Index, multi_cat_levels: Dict[str, Tuple],
+    columns: pd.Index,
+    multi_cat_levels: Dict[str, Tuple],
     indication_var_name: str
 ) -> GammaGAM:
     # TODO: Check creatinine features in DataFrame - why is it causing
