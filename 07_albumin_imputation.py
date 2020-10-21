@@ -121,7 +121,7 @@ save_object(
 
 # TODO: Variables don't look winsorized on the plots - explore why
 # TODO: Indications should be more regularised
-# TODO: Flip axes given that albumin is transformed?
+# TODO: Transform PDPs back into albumin space from Gaussian space?
 
 
 reporter.report("Plotting albumin imputer partial dependence plot")
