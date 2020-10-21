@@ -1,5 +1,5 @@
 import copy
-from typing import List, Dict, Union, Tuple, Any, Callable, Type
+from typing import List, Dict, Union, Tuple, Callable
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,6 @@ from statsmodels.imputation.mice import MICEData
 from statsmodels.regression import linear_model
 
 from utils.gam import combine_mi_gams
-from utils.model.albumin import GammaTransformer
 from utils.model.novel import winsorize_novel, NOVEL_MODEL_VARS
 from utils.split import Splitter, TrainTestSplitter
 
@@ -51,21 +50,23 @@ class ImputationInfo:
         self.multiple_of_previous_n_imputations: List[int] = []
 
     def add_stage(self, description: str, df: pd.DataFrame) -> None:
-        """Add information about an imputation stage, and calculate the number	
-            of imputations it will require.	
-        Args:	
-            description: Description of this imputation stage	
-            df: Containing variables to be imputed during this stage. May also	
-                contain other variables as long as they have no missing values
+        """Add information about an imputation stage, and calculate the
+            number of imputations it will require.
+
+            Args:
+                description: Description of this imputation stage
+                df: Containing variables to be imputed during this stage. May
+                    also contain other variables as long as they have no
+                    missing values
         """
         self.descriptions.append(description)
         self._determine_adjusted_n_imputations(df)
 
     def _determine_adjusted_n_imputations(self, df: pd.DataFrame):
-        """If there is a previous imputation stage, increase n_imputations (the	
-            number of imputations required for this stage according to White et	
-            al) so that it is a multiple of n_imputations from the previous	
-            stage."""
+        """If there is a previous imputation stage, increase n_imputations
+            (the number of imputations required for this stage according to
+            White et al) so that it is a multiple of n_imputations from the
+            previous stage."""
         n_min_imputations, fraction_incomplete = determine_n_imputations(df)
         self.n_min_imputations.append(n_min_imputations)
         self.fraction_incomplete.append(fraction_incomplete)
@@ -80,7 +81,6 @@ class ImputationInfo:
 
 class Imputer(Splitter):
     """Base class for imputers."""
-
     def __init__(
         self,
         df: pd.DataFrame,
@@ -439,14 +439,8 @@ class CategoricalImputer(Imputer):
         scalers: RobustScaler
     ) -> pd.DataFrame:
         """Scale continuous features."""
-        fold.loc[
-            :,
-            self.swm.cont_vars
-        ] = scalers.fit_transform(
-            fold.loc[
-                :,
-                self.swm.cont_vars
-            ].values
+        fold.loc[:, self.swm.cont_vars] = scalers.fit_transform(
+            fold.loc[:, self.swm.cont_vars].values
         )
         return fold
 
@@ -597,6 +591,7 @@ class CategoricalImputer(Imputer):
 
 class LactateAlbuminImputer(Imputer):
     """Impute missing values of lactate or albumin."""
+
     # TODO: should we be inheriting from Imputer if we store models rather than
     #  imputed values? Make sure that Imputer's parent methods work or are
     #  overridden
