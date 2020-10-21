@@ -67,15 +67,23 @@ save_object(
 reporter.report("Specifying properties of albumin GAM partial dependence plot")
 alb_pdp_terms = [
     PDPTerm("S01AgeOnArrival", "Age (years)", (0, 0)),
-    PDPTerm("S03Sodium", "Sodium (mmol/L)", (1, 1)),
-    PDPTerm("S03Potassium", "Potassium (mmol/L)", (1, 2)),
-    PDPTerm("S03Urea", "Urea (mmol/L)", (2, 0)),
+    PDPTerm("S03SystolicBloodPressure", "Systolic pressure (mmHg)", (0, 1)),
+    PDPTerm(
+        "S03Pulse",
+        "Heart rate (BPM)",
+        (0, 2),
+        None,
+        ["Sinus", "Arrhythmia"],
+        "lower right",
+    ),
     PDPTerm(
         "S03WhiteCellCount",
         r"White cell count ($\times$10${^9}$/L)",
         (1, 0)
     ),
-    PDPTerm("S03SystolicBloodPressure", "Systolic pressure (mmHg)", (0, 1)),
+    PDPTerm("S03Sodium", "Sodium (mmol/L)", (1, 1)),
+    PDPTerm("S03Potassium", "Potassium (mmol/L)", (1, 2)),
+    PDPTerm("S03GlasgowComaScore", "Glasgow Coma Score", (2, 0)),
     PDPTerm("S03ASAScore", "ASA physical status", (2, 1), list(range(1, 6))),
     PDPTerm(
         "S03DiagnosedMalignancy",
@@ -94,21 +102,32 @@ alb_pdp_terms = [
         "upper left",
     ),
     PDPTerm(
+        ("S03CardiacSigns", "S03RespiratorySigns"),
+        ("Cardiovascular", "Respiratory"),
+        (3, 1),
+        (None, None),
+        None,
+        None,
+        (45, 205)
+    ),
+    PDPTerm(
+        ("S03SerumCreatinine", "S03Urea"),
+        ("Creatinine (mmol/L)", "Urea (mmol/L)"),
+        (3, 2),
+        (None, None),
+        None,
+        None,
+        (45, 115)
+    ),
+    # PDPTerm("S03Urea", "Urea (mmol/L)", (3, 2)),
+    PDPTerm(
         INDICATION_VAR_NAME,
         "Indication",
-        (slice(3, 5), slice(1, 3)),
+        (slice(4, 6), slice(0, 2)),
         [sanitize_indication(s) for s in
          multi_category_levels[INDICATION_VAR_NAME]],
         ["No CT", "CT"],
         "upper left",
-    ),
-    PDPTerm(
-        "S03Pulse",
-        "Heart rate (BPM)",
-        (0, 2),
-        None,
-        ["Sinus", "Arrhythmia"],
-        "lower right",
     ),
 ]
 
@@ -118,10 +137,6 @@ save_object(
     alb_pdp_terms,
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "07_alb_pd_plot_specification.pkl")
 )
-
-# TODO: Variables don't look winsorized on the plots - explore why
-# TODO: Indications should be more regularised
-# TODO: Transform PDPs back into albumin space from Gaussian space?
 
 
 reporter.report("Plotting albumin imputer partial dependence plot")
