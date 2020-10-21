@@ -613,10 +613,9 @@ class LactateAlbuminImputer(Imputer):
         imputation_model_factory: Callable[
             [pd.Index, Dict[str, Tuple], str], GAM],
         winsor_quantiles: Tuple[float, float],
-        transformer: Type[Union[GammaTransformer, QuantileTransformer]],
-        transformer_args: Dict[str, Any],
         multi_cat_vars: Dict[str, Tuple],
         indication_var_name: str,
+        random_seed
     ):
         """
         Args:
@@ -629,13 +628,10 @@ class LactateAlbuminImputer(Imputer):
                 yet fitted) models of the transformed imputation target
             winsor_quantiles: Lower and upper quantiles to winsorize
                 continuous variables at by default
-            transformer: class that will be used to transform
-                imputation_target
-            transformer_args: arguments to pass to transformer class on
-                instantiation
             multi_cat_vars: Keys are non-binary discrete variables, values are
                 the categories (excluding null values) prior to integer encoding
             indication_var_name: Name of the indication column
+            random_seed: Used for QuantileTransformer
         """
         super().__init__(
             df,
@@ -647,10 +643,9 @@ class LactateAlbuminImputer(Imputer):
         self.lacalb_variable_name = lacalb_variable_name
         self.model_factory = imputation_model_factory
         self.winsor_quantiles = winsor_quantiles
-        self.trans = transformer
-        self.trans_args = transformer_args
         self.multi_cat_vars = multi_cat_vars
         self.ind_var_name = indication_var_name
+        self.random_seed = random_seed
         self._check_df(df)
         self._winsor_thresholds: Dict[
             int,  # train-test split index
@@ -658,7 +653,7 @@ class LactateAlbuminImputer(Imputer):
         ] = {}
         self._transformers: Dict[
             int,  # train-test split index
-            Union[GammaTransformer, QuantileTransformer]
+            QuantileTransformer
         ] = {}
         self._imputers: Dict[
             int,  # train-test split index
@@ -736,13 +731,14 @@ class LactateAlbuminImputer(Imputer):
         split_i: int,
         obs_lacalb_train: pd.DataFrame
     ) -> pd.DataFrame:
-        # TODO: Change to burr12 fit transformed to normal for lactate
-        # TODO: Change to loggamma fit transformed to normal for albumin
-        self._transformers[split_i] = self.trans(**self.trans_args)
-        self._transformers[split_i].fit(obs_lacalb_train.values)
+        self._transformers[split_i] = QuantileTransformer(
+            n_quantiles=10000,
+            output_distribution='normal',
+            random_state=self.random_seed
+        )
         obs_lacalb_train[self.lacalb_variable_name] = self._transformers[
             split_i
-        ].transform(obs_lacalb_train.values)
+        ].fit_transform(obs_lacalb_train.values)
         return obs_lacalb_train
 
     def _fit_combine_gams(

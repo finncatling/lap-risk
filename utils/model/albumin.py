@@ -1,15 +1,14 @@
 from typing import Dict, Tuple
 
-import numpy as np
 import pandas as pd
-from pygam import GammaGAM, s, f, te
+from pygam import GAM, s, f, te
 
 
 def albumin_model_factory(
     columns: pd.Index,
     multi_cat_levels: Dict[str, Tuple],
     indication_var_name: str
-) -> GammaGAM:
+) -> GAM:
     # TODO: White et al recommends using all analysis model variables in the
     #  imputation model
     # TODO: Check creatinine features in DataFrame - why is it causing
@@ -17,7 +16,7 @@ def albumin_model_factory(
     # TODO: Should GCS splines have lower order?
     # TODO: Consider edge knots
     # TODO: Consider reducing n_splines for most continuous variables
-    return GammaGAM(
+    return GAM(
         s(columns.get_loc("S01AgeOnArrival"), lam=500)
         + s(columns.get_loc("S03Sodium"), lam=400)
         + s(columns.get_loc("S03Potassium"), lam=300)
@@ -58,36 +57,3 @@ def albumin_model_factory(
             dtype=("numerical", "categorical"),
         )
     )
-
-
-class GammaTransformer:
-    """Transforms variable to more closely approximate (in the case of albumin)
-        a gamma distribution. Syntax resembles the transformers from sklearn."""
-
-    def __init__(self, eps: float = 1e-16):
-        self.low, self.high = None, None
-        self.eps = eps
-
-    def fit(self, X: np.ndarray):
-        """X is of shape (n_samples, n_features) for compatibility with sklearn,
-            but this method doesn't fit separate transformers for each feature.
-            Arrays passed to this class should already be Winsorized, so that
-            (self.low, self.high) equals winsor_thresholds for that train-test
-            split."""
-        self.low, self.high = X.min(), X.max()
-
-    def transform(self, X: np.ndarray):
-        """X is of shape (n_samples, n_features) for compatibility with sklearn,
-            but this method doesn't transform features separately. We add eps to
-            remove zeros, as gamma is strictly positive."""
-        return (self.high - X) + self.eps
-
-    def inverse_transform(self, X: np.ndarray):
-        """X is of shape (n_samples, n_features) for compatibility with sklearn,
-            but this method doesn't transform features separately. Any (e.g.
-            imputed) values outside the range [self.low, self.high] is
-            winsorized."""
-        X = self.high - X
-        X[np.where(X > self.high)] = self.high
-        X[np.where(X < self.low)] = self.low
-        return X

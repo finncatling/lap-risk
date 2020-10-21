@@ -3,11 +3,16 @@ from typing import Dict, Tuple
 
 import pandas as pd
 
-from utils.constants import DATA_DIR, NOVEL_MODEL_OUTPUT_DIR, FIGURES_OUTPUT_DIR
+from utils.constants import (
+    DATA_DIR,
+    NOVEL_MODEL_OUTPUT_DIR,
+    FIGURES_OUTPUT_DIR,
+    RANDOM_SEED
+)
 from utils.impute import CategoricalImputer, LactateAlbuminImputer
 from utils.indications import INDICATION_VAR_NAME
 from utils.io import save_object, load_object
-from utils.model.albumin import albumin_model_factory, GammaTransformer
+from utils.model.albumin import albumin_model_factory
 from utils.model.novel import (
     ALBUMIN_VAR_NAME,
     NOVEL_MODEL_VARS,
@@ -44,10 +49,9 @@ alb_imputer = LactateAlbuminImputer(
     lacalb_variable_name=ALBUMIN_VAR_NAME,
     imputation_model_factory=albumin_model_factory,
     winsor_quantiles=WINSOR_QUANTILES,
-    transformer=GammaTransformer,
-    transformer_args={},
     multi_cat_vars=multi_category_levels,
     indication_var_name=INDICATION_VAR_NAME,
+    random_seed=RANDOM_SEED
 )
 alb_imputer.tts.n_splits = 1  # TODO: Remove this testing line
 alb_imputer.fit()
