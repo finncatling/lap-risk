@@ -325,6 +325,16 @@ class SplitterWinsorMICE(Imputer):
                 ].copy().values
             )
 
+    def winsorize_after_get_imputed_variables(
+        self, fold_name: str, split_i: int, imp_i: int
+    ) -> pd.DataFrame:
+        """Extends .get_imputed_variables() in base class with winsorization."""
+        imp_df, _ = winsorize_novel(
+            self.get_imputed_variables(fold_name, split_i, imp_i),
+            thresholds=self.winsor_thresholds[split_i]
+        )
+        return imp_df
+
     def _find_missing_indices(
         self,
         split_i: int,
@@ -581,11 +591,14 @@ class CategoricalImputer(Imputer):
             and the non-binary categorical variables, including their imputed
             missing values for a given fold, train-test split and imputation
             (MICE and categorical imputation) iteration."""
-        cont_bin_target_df = self.swm.get_imputed_variables(fold_name=fold_name,
-                                                            split_i=split_i,
-                                                            imp_i=imp_i)
+        cont_bin_target_df = self.swm.winsorize_after_get_imputed_variables(
+            fold_name=fold_name,
+            split_i=split_i,
+            imp_i=imp_i
+        )
         cat_df = self.get_imputed_variables(fold_name=fold_name,
-                                            split_i=split_i, imp_i=imp_i)
+                                            split_i=split_i,
+                                            imp_i=imp_i)
         return cont_bin_target_df.join(cat_df)
 
 
@@ -772,4 +785,5 @@ class LactateAlbuminImputer(Imputer):
 
 
 # TODO: Class which takes CategoricalImputer and LactateImputer / AlbuminImputer
-#   for and yields complete X DataFrames plus mortality labels
+#   for and constructs complete X DataFrames plus mortality labels. This class
+#   should winsorize lactate and albumin during dataframe construction
