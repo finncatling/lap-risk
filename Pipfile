@@ -16,11 +16,11 @@ arviz = "0.10.0"
 progressbar2 = "3.53.1"
 pexpect = "*"
 ptyprocess = "*"
-fitter = "*"
 
 [dev-packages]
 pytest = "6.0.2"
 pytest-cov = "*"
+fitter = "*"
 
 [requires]
 python_full_version = "3.8.6"
