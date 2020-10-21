@@ -1,14 +1,14 @@
 from typing import Dict, Tuple
 
 import pandas as pd
-from pygam import GAM, s, f, te
+from pygam import LinearGAM, s, f, te
 
 
 def albumin_model_factory(
     columns: pd.Index,
     multi_cat_levels: Dict[str, Tuple],
     indication_var_name: str
-) -> GAM:
+) -> LinearGAM:
     # TODO: White et al recommends using all analysis model variables in the
     #  imputation model
     # TODO: Check creatinine features in DataFrame - why is it causing
@@ -16,7 +16,7 @@ def albumin_model_factory(
     # TODO: Should GCS splines have lower order?
     # TODO: Consider edge knots
     # TODO: Consider reducing n_splines for most continuous variables
-    return GAM(
+    return LinearGAM(
         s(columns.get_loc("S01AgeOnArrival"), lam=500)
         + s(columns.get_loc("S03Sodium"), lam=400)
         + s(columns.get_loc("S03Potassium"), lam=300)
