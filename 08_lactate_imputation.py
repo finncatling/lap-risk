@@ -38,7 +38,7 @@ reporter.report("Fitting imputers for lactate")
 lac_imputer = LactateAlbuminImputer(
     df=df.loc[:, [LACTATE_VAR_NAME, NOVEL_MODEL_VARS["target"]]],
     categorical_imputer=cat_imputer,
-    imputation_target=LACTATE_VAR_NAME,
+    lacalb_variable_name=LACTATE_VAR_NAME,
     # TODO: Make lactate_model_factory
     imputation_model_factory=lactate_model_factory,
     winsor_quantiles=WINSOR_QUANTILES,

@@ -41,7 +41,7 @@ reporter.report("Fitting imputers for albumin")
 alb_imputer = LactateAlbuminImputer(
     df=df.loc[:, [ALBUMIN_VAR_NAME, NOVEL_MODEL_VARS["target"]]],
     categorical_imputer=cat_imputer,
-    imputation_target=ALBUMIN_VAR_NAME,
+    lacalb_variable_name=ALBUMIN_VAR_NAME,
     imputation_model_factory=albumin_model_factory,
     winsor_quantiles=WINSOR_QUANTILES,
     transformer=GammaTransformer,
