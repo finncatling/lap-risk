@@ -214,7 +214,7 @@ def splitter_winsor_mice_fixture(
         target_variable_name='target',
         cont_variables=['cont'],
         binary_variables=['bin'],
-        winsor_quantiles=(0.01, 0.99),
+        winsor_quantiles=novel.WINSOR_QUANTILES,
         winsor_include=None,
         n_mice_imputations=2,
         n_mice_burn_in=1,
@@ -434,6 +434,13 @@ class TestCategoricalImputer:
             'cont', 'bin', 'multicat', 'target'
         }
         train_unimputed, _ = categorical_imputer_fixture._split_then_join_Xy(0)
+        train_unimputed, _ = novel.winsorize_novel(
+            df=train_unimputed,
+            quantiles=novel.WINSOR_QUANTILES,
+            cont_vars=['cont']
+        )
+        print(train_imputed)
+        print(train_unimputed)
         assert train_imputed[['cont', 'target']].equals(
             train_unimputed[['cont', 'target']]
         )
