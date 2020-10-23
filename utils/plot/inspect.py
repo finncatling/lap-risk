@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from utils.impute import LactateAlbuminImputer
+from utils.model.novel import LactateAlbuminImputer
 
 
 def inspect_transformed_lac_alb(

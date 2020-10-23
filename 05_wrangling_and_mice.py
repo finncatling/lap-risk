@@ -18,14 +18,14 @@ from utils.model.novel import (
     LACTATE_VAR_NAME,
     ALBUMIN_VAR_NAME,
     preprocess_novel_pre_split,
-    WINSOR_QUANTILES,
+    WINSOR_QUANTILES, SplitterWinsorMICE,
 )
 from utils.indications import (
     INDICATION_VAR_NAME,
     MISSING_IND_CATEGORY,
     get_indication_variable_names
 )
-from utils.impute import ImputationInfo, SplitterWinsorMICE
+from utils.impute import ImputationInfo
 from utils.split import TrainTestSplitter
 from utils.report import Reporter
 

@@ -9,7 +9,6 @@ from utils.constants import (
     FIGURES_OUTPUT_DIR,
     RANDOM_SEED
 )
-from utils.impute import CategoricalImputer, LactateAlbuminImputer
 from utils.indications import INDICATION_VAR_NAME
 from utils.io import save_object, load_object
 from utils.model.albumin import albumin_model_factory
@@ -18,7 +17,7 @@ from utils.model.novel import (
     ALBUMIN_VAR_NAME,
     LACTATE_VAR_NAME,
     NOVEL_MODEL_VARS,
-    WINSOR_QUANTILES,
+    WINSOR_QUANTILES, CategoricalImputer, LactateAlbuminImputer,
 )
 from utils.plot.helpers import sanitize_indication, plot_saver
 from utils.plot.pdp import PDPTerm, plot_partial_dependence

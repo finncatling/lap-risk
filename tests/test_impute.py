@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 from scipy.special import expit
 
+import utils.model.novel
 from utils import impute
 from utils.split import TrainTestSplitter
 
@@ -81,8 +82,8 @@ def mock_train_test_split_fixture(df_fixture) -> TrainTestSplitter:
 @pytest.fixture(scope='module')
 def splitter_winsor_mice_fixture(
     df_fixture, mock_train_test_split_fixture
-) -> impute.SplitterWinsorMICE:
-    swm = impute.SplitterWinsorMICE(
+) -> utils.model.novel.SplitterWinsorMICE:
+    swm = utils.model.novel.SplitterWinsorMICE(
         df=df_fixture.drop('multicat', axis=1),
         train_test_splitter=mock_train_test_split_fixture,
         target_variable_name='target',
@@ -102,8 +103,8 @@ def splitter_winsor_mice_fixture(
 @pytest.fixture(scope='module')
 def categorical_imputer_fixture(
     df_fixture, splitter_winsor_mice_fixture
-) -> impute.CategoricalImputer:
-    cat_imputer = impute.CategoricalImputer(
+) -> utils.model.novel.CategoricalImputer:
+    cat_imputer = utils.model.novel.CategoricalImputer(
         df=df_fixture,
         splitter_winsor_mice=splitter_winsor_mice_fixture,
         cat_vars=['multicat'],
