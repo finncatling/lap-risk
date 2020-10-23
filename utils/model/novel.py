@@ -875,28 +875,56 @@ class LactateAlbuminImputer(Imputer):
         lac_alb_imp_i: int,
         missingness_indicator: bool = True
     ) -> pd.DataFrame:
-        """Override base class method as we don't store the imputed lactate /
-            albumin values, but rather store the imputation models and use them
-            to impute as and when needed."""
+        """Impute missing albumin / lactate values, then use the observed and
+            imputed values to construct a DataFrame with a single complete
+            column of albumin / lactate values. Optionally, add a second column
+            which is 1 where values were originally missing, otherwise 0."""
+        missing_features = self._get_features_where_lacalb_missing(
+            fold_name, split_i, mice_imp_i)
+        lacalb_imputed = self._get_imputed_lacalb(
+            missing_features, split_i, lac_alb_imp_i)
+        lacalb = self._get_complete_lacalb(
+            lacalb_imputed, fold_name, split_i)
+        lacalb = self._winsorize(split_i, lacalb)
+        if missingness_indicator:
+            lacalb = add_missingness_indicators(
+                df=lacalb, variables=[self.lacalb_variable_name])
+        return lacalb
+
+    def _get_features_where_lacalb_missing(
+        self,
+        fold_name: str,
+        split_i: int,
+        mice_imp_i: int
+    ) -> pd.DataFrame:
         features = self.cat_imputer.get_imputed_df(
-            fold_name, split_i, mice_imp_i
-        )
+            fold_name, split_i, mice_imp_i)
         features.drop(self.target_variable_name, axis=1)
-        features_where_lacalb_missing = features.loc[
-            self.missing_i[fold_name][split_i][self.lacalb_variable_name]
-        ]
+        return features.loc[
+            self.missing_i[fold_name][split_i][self.lacalb_variable_name]]
+
+    def _get_imputed_lacalb(
+        self,
+        missing_features: pd.DataFrame,
+        split_i: int,
+        lac_alb_imp_i: int
+    ) -> np.ndarray:
+        # TODO: Check shape of returned value - is .flatten() necessary?
         lacalb_imputed_trans = quick_sample(
             gam=self.imputers[split_i],
-            sample_at_X=features_where_lacalb_missing.values,
+            sample_at_X=missing_features.values,
             quantity='y',
             n_draws=1,
-            random_seed=lac_alb_imp_i
-        )
-        # TODO: Check shape of lacalb_imputed_trans - is .flatten() necessary?
-        lacalb_imputed = self.transformers[
-            split_i
-        ].inverse_transform(lacalb_imputed_trans.flatten())
+            random_seed=lac_alb_imp_i)
+        return self.transformers[split_i].inverse_transform(
+            lacalb_imputed_trans.flatten())
 
+    def _get_complete_lacalb(
+        self,
+        lacalb_imputed: pd.DataFrame,
+        fold_name: str,
+        split_i: int
+    ) -> pd.DataFrame:
         if fold_name == 'train':
             lacalb, _, _, _ = self._split(split_i)
         elif fold_name == 'test':
@@ -905,22 +933,19 @@ class LactateAlbuminImputer(Imputer):
         lacalb.loc[
             self.missing_i[fold_name][split_i][self.lacalb_variable_name]
         ] = lacalb_imputed
-        lacalb = self._winsorize(split_i, lacalb)
-        if missingness_indicator:
-            lacalb = add_missingness_indicators(
-                df=lacalb, variables=[self.lacalb_variable_name]
-            )
         return lacalb
 
     def get_imputed_variables(self, fold_name, split_i, imp_i):
-        """Override base class method which shouldn't be used."""
+        """Override base class method which shouldn't be used, as we don't
+            store the imputed lactate / albumin values, but rather store the
+            imputation models and use them to impute as and when needed."""
         raise NotImplementedError
 
 
 class NovelModel:
     """Handles the process of repeated of train-test splitting, re-fitting the
-        novel mortality model using the training fold. Also allows prediction of
-        mortality risk distribution for each case in the test fold."""
+        novel mortality model using the training fold. Also allows prediction
+        of mortality risk distribution for each case in the test fold."""
 
     def __init__(
         self,
