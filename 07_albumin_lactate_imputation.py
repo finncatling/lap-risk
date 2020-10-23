@@ -13,8 +13,10 @@ from utils.impute import CategoricalImputer, LactateAlbuminImputer
 from utils.indications import INDICATION_VAR_NAME
 from utils.io import save_object, load_object
 from utils.model.albumin import albumin_model_factory
+from utils.model.lactate import lactate_model_factory
 from utils.model.novel import (
     ALBUMIN_VAR_NAME,
+    LACTATE_VAR_NAME,
     NOVEL_MODEL_VARS,
     WINSOR_QUANTILES,
 )
@@ -24,7 +26,7 @@ from utils.report import Reporter
 
 
 reporter = Reporter()
-reporter.title("Fit albumin imputation models")
+reporter.title("Fit albumin and lactate imputation models")
 
 
 reporter.report("Loading previous analysis outputs needed for imputation")
@@ -42,30 +44,8 @@ multi_category_levels: Dict[str, Tuple] = load_object(
 )
 
 
-reporter.report("Fitting imputers for albumin")
-alb_imputer = LactateAlbuminImputer(
-    df=df.loc[:, [ALBUMIN_VAR_NAME, NOVEL_MODEL_VARS["target"]]],
-    categorical_imputer=cat_imputer,
-    lacalb_variable_name=ALBUMIN_VAR_NAME,
-    imputation_model_factory=albumin_model_factory,
-    winsor_quantiles=WINSOR_QUANTILES,
-    multi_cat_vars=multi_category_levels,
-    indication_var_name=INDICATION_VAR_NAME,
-    random_seed=RANDOM_SEED
-)
-alb_imputer.tts.n_splits = 1  # TODO: Remove this testing line
-alb_imputer.fit()
-
-
-reporter.report("Saving draft albumin imputer for later use")
-save_object(
-    alb_imputer,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "07_draft_albumin_imputer.pkl")
-)
-
-
-reporter.report("Specifying properties of albumin GAM partial dependence plot")
-alb_pdp_terms = [
+reporter.report("Specifying properties of GAM partial dependence plot")
+pdp_terms = [
     PDPTerm("S01AgeOnArrival", "Age (years)", (0, 0)),
     PDPTerm("S03SystolicBloodPressure", "Systolic pressure (mmHg)", (0, 1)),
     PDPTerm(
@@ -132,23 +112,48 @@ alb_pdp_terms = [
 ]
 
 
-reporter.report("Saving albumin partial dependence plot specification")
+reporter.report("Saving partial dependence plot specification")
 save_object(
-    alb_pdp_terms,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "07_alb_pd_plot_specification.pkl")
+    pdp_terms,
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "07_pd_plot_specification.pkl")
 )
 
 
-reporter.report("Plotting albumin imputer partial dependence plot")
-plot_saver(
-    plot_partial_dependence,
-    gam=alb_imputer._imputers[0],
-    pdp_terms=alb_pdp_terms,
-    output_dir=FIGURES_OUTPUT_DIR,
-    output_filename="07_albumin_imputer_pd_plot",
-)
+for pretty_name, variable_name, model_factory in (
+    ('albumin', ALBUMIN_VAR_NAME, albumin_model_factory),
+    ('lactate', LACTATE_VAR_NAME, lactate_model_factory)
+): 
+    reporter.report(f"Fitting imputers for {pretty_name}")
+    imputer = LactateAlbuminImputer(
+        df=df.loc[:, [variable_name, NOVEL_MODEL_VARS["target"]]],
+        categorical_imputer=cat_imputer,
+        lacalb_variable_name=variable_name,
+        imputation_model_factory=model_factory,
+        winsor_quantiles=WINSOR_QUANTILES,
+        multi_cat_vars=multi_category_levels,
+        indication_var_name=INDICATION_VAR_NAME,
+        random_seed=RANDOM_SEED
+    )
+    imputer.tts.n_splits = 1  # TODO: Remove this testing line
+    imputer.fit()
+
+    reporter.report(f"Saving draft {pretty_name} imputer for later use")
+    save_object(
+        imputer,
+        os.path.join(
+            NOVEL_MODEL_OUTPUT_DIR,
+            f"07_draft_{pretty_name}_imputer.pkl"
+        )
+    )
+
+    reporter.report(f"Plotting {pretty_name} imputer partial dependence plot")
+    plot_saver(
+        plot_partial_dependence,
+        gam=imputer.imputers[0],
+        pdp_terms=pdp_terms,
+        output_dir=FIGURES_OUTPUT_DIR,
+        output_filename=f"07_{pretty_name}_imputer_pd_plot",
+    )
 
 
 reporter.last("Done.")
-
-# TODO: Save summary stats (including those from MICE) for external use

@@ -98,7 +98,6 @@ def test_preprocess_novel_pre_split(initial_df_permutations_fixture):
     df = preprocess_novel_pre_split(
         df,
         category_mapping={"S03ECG": {1.0: 0.0, 4.0: 1.0, 8.0: 1.0}},
-        add_missingness_indicators_for=[LACTATE_VAR_NAME, ALBUMIN_VAR_NAME],
         indication_variable_name=INDICATION_VAR_NAME,
         indications=indications,
         missing_indication_value=MISSING_IND_CATEGORY,
@@ -120,8 +119,6 @@ def test_preprocess_novel_pre_split(initial_df_permutations_fixture):
         "S03SerumCreatinine",
         "S03PreOpArterialBloodLactate",
         "S03PreOpLowestAlbumin",
-        "S03PreOpArterialBloodLactate_missing",
-        "S03PreOpLowestAlbumin_missing",
         "S03Sodium",
         "S03Potassium",
         "S03Urea",

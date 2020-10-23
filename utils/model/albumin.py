@@ -32,7 +32,7 @@ def albumin_model_factory(
         + s(columns.get_loc("S03Sodium"), lam=400)
         + s(columns.get_loc("S03Potassium"), lam=300)
         + s(columns.get_loc("S03GlasgowComaScore"), n_splines=13, lam=150)
-        + f(columns.get_loc("S03ASAScore"), coding="dummy")
+        + f(columns.get_loc("S03ASAScore"), coding="dummy", lam=50)
         + te(
             columns.get_loc("S03DiagnosedMalignancy"),
             columns.get_loc("S02PreOpCTPerformed"),

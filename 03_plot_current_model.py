@@ -20,7 +20,7 @@ reporter.title(
 
 reporter.report("Loading results of model scoring")
 scorer: ModelScorer = load_object(
-    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_scorer.pkl")
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model_scorer.pkl")
 )
 
 

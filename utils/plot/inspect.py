@@ -26,7 +26,7 @@ def inspect_transformed_lac_alb(
         obs_target = imputer._winsorize(train_test_split_i, target[fold])
         ax[i].hist(obs_target.values.flatten(), label="original", **hist_args)
 
-        obs_target_trans = imputer._transformers[train_test_split_i].transform(
+        obs_target_trans = imputer.transformers[train_test_split_i].transform(
             obs_target
         )
         ax[i].hist(

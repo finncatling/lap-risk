@@ -4,7 +4,7 @@ from typing import List, Dict, Union, Tuple, Callable
 import numpy as np
 import pandas as pd
 from progressbar import progressbar as pb
-from pygam import GAM
+from pygam import LinearGAM
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import QuantileTransformer
 from sklearn.preprocessing import RobustScaler
@@ -12,8 +12,12 @@ from statsmodels.discrete import discrete_model
 from statsmodels.imputation.mice import MICEData
 from statsmodels.regression import linear_model
 
-from utils.gam import combine_mi_gams
-from utils.model.novel import winsorize_novel, NOVEL_MODEL_VARS
+from utils.gam import combine_mi_gams, quick_sample
+from utils.model.novel import (
+    winsorize_novel,
+    NOVEL_MODEL_VARS,
+    add_missingness_indicators
+)
 from utils.split import Splitter, TrainTestSplitter
 
 
@@ -596,22 +600,22 @@ class CategoricalImputer(Imputer):
             split_i=split_i,
             imp_i=imp_i
         )
-        cat_df = self.get_imputed_variables(fold_name=fold_name,
-                                            split_i=split_i,
-                                            imp_i=imp_i)
+        cat_df = self.get_imputed_variables(
+            fold_name=fold_name,
+            split_i=split_i,
+            imp_i=imp_i
+        )
         return cont_bin_target_df.join(cat_df)
 
 
 class LactateAlbuminImputer(Imputer):
-    """Impute missing values of lactate or albumin."""
+    """Impute missing values of lactate or albumin. There is no simple way
+        to random seed GAM model fitting so imputation models will be different
+        on each training iteration."""
 
     # TODO: should we be inheriting from Imputer if we store models rather than
     #  imputed values? Make sure that Imputer's parent methods work or are
     #  overridden
-
-    # TODO: Update to use CategoricalImputer.get_imputer_df()
-
-    # TODO: Ensure this still works as intended using new n_imputations (#44)
 
     def __init__(
         self,
@@ -619,7 +623,7 @@ class LactateAlbuminImputer(Imputer):
         categorical_imputer: CategoricalImputer,
         lacalb_variable_name: str,
         imputation_model_factory: Callable[
-            [pd.Index, Dict[str, Tuple], str], GAM],
+            [pd.Index, Dict[str, Tuple], str], LinearGAM],
         winsor_quantiles: Tuple[float, float],
         multi_cat_vars: Dict[str, Tuple],
         indication_var_name: str,
@@ -654,18 +658,19 @@ class LactateAlbuminImputer(Imputer):
         self.multi_cat_vars = multi_cat_vars
         self.ind_var_name = indication_var_name
         self.random_seed = random_seed
+        self.imputed = None  # Override base class. This var shouldn't be used
         self._check_df(df)
-        self._winsor_thresholds: Dict[
+        self.winsor_thresholds: Dict[
             int,  # train-test split index
             Tuple[float, float]
         ] = {}
-        self._transformers: Dict[
+        self.transformers: Dict[
             int,  # train-test split index
             QuantileTransformer
         ] = {}
-        self._imputers: Dict[
+        self.imputers: Dict[
             int,  # train-test split index
-            GAM
+            LinearGAM
         ] = {}
 
     def _check_df(self, df: pd.DataFrame):
@@ -711,40 +716,40 @@ class LactateAlbuminImputer(Imputer):
     def _winsorize(
         self,
         split_i: int,
-        obs_lacalb: pd.DataFrame
+        lacalb: pd.DataFrame
     ) -> pd.DataFrame:
         """Winsorizes the only column in X. Also fits winsor_thresholds for this
             train-test split if not already fit (this fitting should happen on
             the train fold)."""
         try:
-            obs_lacalb, _ = winsorize_novel(
-                df=obs_lacalb,
+            lacalb, _ = winsorize_novel(
+                df=lacalb,
                 thresholds={
-                    self.lacalb_variable_name: self._winsor_thresholds[split_i]
+                    self.lacalb_variable_name: self.winsor_thresholds[split_i]
                 }
             )
         except KeyError:
-            obs_lacalb, winsor_thresholds = winsorize_novel(
-                df=obs_lacalb,
+            lacalb, winsor_thresholds = winsorize_novel(
+                df=lacalb,
                 cont_vars=[self.lacalb_variable_name],
                 quantiles=self.winsor_quantiles
             )
-            self._winsor_thresholds[split_i] = winsor_thresholds[
+            self.winsor_thresholds[split_i] = winsor_thresholds[
                 self.lacalb_variable_name
             ]
-        return obs_lacalb
+        return lacalb
 
     def _fit_transform(
         self,
         split_i: int,
         obs_lacalb_train: pd.DataFrame
     ) -> pd.DataFrame:
-        self._transformers[split_i] = QuantileTransformer(
+        self.transformers[split_i] = QuantileTransformer(
             n_quantiles=10000,
             output_distribution='normal',
             random_state=self.random_seed
         )
-        obs_lacalb_train[self.lacalb_variable_name] = self._transformers[
+        obs_lacalb_train[self.lacalb_variable_name] = self.transformers[
             split_i
         ].fit_transform(obs_lacalb_train.values)
         return obs_lacalb_train
@@ -770,20 +775,53 @@ class LactateAlbuminImputer(Imputer):
             )
             gam.fit(obs_features_train.values, obs_lacalb_train.values)
             gams.append(gam)
-        self._imputers[split_i] = combine_mi_gams(gams)
+        self.imputers[split_i] = combine_mi_gams(gams)
 
-    def impute(
+    def get_imputed_variable_and_missingness_indicator(
         self,
         fold_name: str,
         split_i: int,
         mice_imp_i: int,
         lac_alb_imp_i: int,
-    ) -> pd.Series:
-        # TODO: Use lac_alb_imp_i as random seed for GAM
-        # TODO: Remember to inverse transform imputer's predictions
+        missingness_indicator: bool = True
+    ) -> pd.DataFrame:
+        """Override base class method as we don't store the imputed lactate / 
+            albumin values, but rather store the imputation models and use them
+            to impute as and when needed."""
+        features = self.cat_imputer.get_imputed_df(
+            fold_name, split_i, mice_imp_i
+        )
+        features.drop(self.target_variable_name, axis=1)
+        features_where_lacalb_missing = features.loc[
+            self.missing_i[fold_name][split_i][self.lacalb_variable_name]
+        ]
+        lacalb_imputed_trans = quick_sample(
+            gam=self.imputers[split_i],
+            sample_at_X=features_where_lacalb_missing.values,
+            quantity='y',
+            n_draws=1,
+            random_seed=lac_alb_imp_i
+        )
+        # TODO: Check shape of lacalb_imputed_trans - is .flatten() necessary?
+        lacalb_imputed = self.transformers[
+            split_i
+        ].inverse_transform(lacalb_imputed_trans.flatten())
+        
+        if fold_name == 'train':
+            lacalb, _, _, _ = self._split(split_i)
+        elif fold_name == 'test':
+            _, _, lacalb, _ = self._split(split_i)
+        assert isinstance(lacalb, pd.DataFrame)  # TODO: Remove this test
+        lacalb.loc[
+            self.missing_i[fold_name][split_i][self.lacalb_variable_name]
+        ] = lacalb_imputed
+        lacalb = self._winsorize(split_i, lacalb)
+        if missingness_indicator:
+            lacalb = add_missingness_indicators(
+                df=lacalb, variables=[self.lacalb_variable_name]
+            )
+        return lacalb
+
+    def get_imputed_variables(self, fold_name, split_i, imp_i):
+        """Override base class method which shouldn't be used."""
         raise NotImplementedError
-
-
-# TODO: Class which takes CategoricalImputer and LactateImputer / AlbuminImputer
-#   for and constructs complete X DataFrames plus mortality labels. This class
-#   should winsorize lactate and albumin during dataframe construction

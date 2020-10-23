@@ -1,12 +1,14 @@
 import copy
-from typing import List
+from typing import List, Union
 
 import numpy as np
 from numpy.random import RandomState
-from pygam import GAM
+from pygam import LinearGAM, LogisticGAM
 
 
-def combine_mi_gams(gams: List[GAM]) -> GAM:
+def combine_mi_gams(
+    gams: List[Union[LinearGAM, LogisticGAM]]
+) -> Union[LinearGAM, LogisticGAM]:
     """Given a list of GAMs fitted to different datasets outputted from some
         multiple imputation procedure, combines these using Rubin's rules.
 
