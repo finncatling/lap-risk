@@ -703,10 +703,6 @@ class LactateAlbuminImputer(Imputer):
         to random seed GAM model fitting so imputation models will be different
         on each training iteration."""
 
-    # TODO: should we be inheriting from Imputer if we store models rather than
-    #  imputed values? Make sure that Imputer's parent methods work or are
-    #  overridden
-
     def __init__(
         self,
         df: pd.DataFrame,
