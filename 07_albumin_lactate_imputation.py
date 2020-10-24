@@ -152,11 +152,11 @@ for pretty_name, variable_name, model_factory in (
         f"07_draft_{pretty_name}_imputer.pkl"
     ))
 
+    reporter.report(f"Plotting {pretty_name} imputer partial dependence plots")
     for space, kwargs in (
         ('gaussian', {}),
         ('inv_trans', {'transformer': imputer.transformers[0]})
     ):
-        reporter.report(f"Plotting {pretty_name} partial dependence plot")
         pdp_generator = PDPFigure(
             gam=imputer.imputers[0],
             pdp_terms=pdp_terms,
