@@ -270,4 +270,4 @@ class PDPFigure:
             if self.pdp_terms[i].view_3d is None:
                 ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
             else:
-                ax.set_ylim3d(self.y_min['3d'], self.y_max['3d'])
+                ax.set_zlim3d(self.y_min['3d'], self.y_max['3d'])
