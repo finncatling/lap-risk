@@ -905,16 +905,15 @@ class LactateAlbuminImputer(Imputer):
         split_i: int,
         lac_alb_imp_i: int
     ) -> np.ndarray:
-        # TODO: Check shape of returned value - is .flatten() necessary?
         lacalb_imputed_trans = quick_sample(
             gam=self.imputers[split_i],
             sample_at_X=missing_features.values,
             quantity='y',
             n_draws=1,
-            random_seed=lac_alb_imp_i)
-        print('lacalb_imputed_trans.shape =', lacalb_imputed_trans.shape)
+            random_seed=lac_alb_imp_i
+        ).flatten()
         return self.transformers[split_i].inverse_transform(
-            lacalb_imputed_trans.flatten().reshape(-1, 1)).flatten()
+            lacalb_imputed_trans.reshape(-1, 1))
 
     def _get_complete_lacalb(
         self,
@@ -926,7 +925,6 @@ class LactateAlbuminImputer(Imputer):
             lacalb, _, _, _ = self._split(split_i)
         elif fold_name == 'test':
             _, _, lacalb, _ = self._split(split_i)
-        assert isinstance(lacalb, pd.DataFrame)  # TODO: Remove this test
         lacalb.loc[
             self.missing_i[fold_name][split_i][self.lacalb_variable_name]
         ] = lacalb_imputed
