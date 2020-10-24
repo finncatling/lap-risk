@@ -159,7 +159,7 @@ class PDPFigure:
                 xx[:, term["feature"]],
                 confi[:, 0],
                 confi[:, -1],
-                alpha=0.33,
+                alpha=0.5,
                 color="tab:blue",
                 lw=2.0)
         self._set_non_tensor_x_labels(i, ax, xx, term["feature"], x_length)
@@ -214,7 +214,7 @@ class PDPFigure:
                     confi[:, sli, 0],
                     confi[:, sli, -1],
                     lw=2.0,
-                    alpha=0.33,
+                    alpha=0.5,
                     color=self.strata_colours[slice_i])
             lines.append(Line2D([0], [0], color=self.strata_colours[slice_i]))
         ax.legend(lines, self.pdp_terms[i].strata,
