@@ -201,8 +201,7 @@ class PDPFigure:
                 ax.set_xticklabels(
                     self.pdp_terms[i].labels,
                     rotation=45,
-                    rotation_mode="anchor",
-                    horizontalalignment="right",
+                    horizontalalignment="centre",
                     verticalalignment="top",
                 )
 
