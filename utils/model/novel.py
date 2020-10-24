@@ -912,12 +912,13 @@ class LactateAlbuminImputer(Imputer):
             quantity='y',
             n_draws=1,
             random_seed=lac_alb_imp_i)
+        print('lacalb_imputed_trans.shape =', lacalb_imputed_trans.shape)
         return self.transformers[split_i].inverse_transform(
-            lacalb_imputed_trans.flatten())
+            lacalb_imputed_trans.flatten().reshape(-1, 1)).flatten()
 
     def _get_complete_lacalb(
         self,
-        lacalb_imputed: pd.DataFrame,
+        lacalb_imputed: np.ndarray,
         fold_name: str,
         split_i: int
     ) -> pd.DataFrame:
