@@ -852,7 +852,7 @@ class LactateAlbuminImputer(Imputer):
             gams.append(gam)
         self.imputers[split_i] = combine_mi_gams(gams)
 
-    def get_imputed_variable_and_missingness_indicator(
+    def get_complete_variable_and_missingness_indicator(
         self,
         fold_name: str,
         split_i: int,
@@ -866,7 +866,7 @@ class LactateAlbuminImputer(Imputer):
             which is 1 where values were originally missing, otherwise 0."""
         missing_features = self._get_features_where_lacalb_missing(
             fold_name, split_i, mice_imp_i)
-        lacalb_imputed = self._get_imputed_lacalb(
+        lacalb_imputed = self.impute(
             missing_features, split_i, lac_alb_imp_i)
         lacalb = self._get_complete_lacalb(
             lacalb_imputed, fold_name, split_i)
@@ -887,15 +887,16 @@ class LactateAlbuminImputer(Imputer):
         return features.loc[
             self.missing_i[fold_name][split_i][self.lacalb_variable_name]]
 
-    def _get_imputed_lacalb(
+    def impute(
         self,
-        missing_features: pd.DataFrame,
+        features: pd.DataFrame,
         split_i: int,
         lac_alb_imp_i: int
     ) -> np.ndarray:
+        """Impute lactate / albumin values given the provided features."""
         lacalb_imputed_trans = quick_sample(
             gam=self.imputers[split_i],
-            sample_at_X=missing_features.values,
+            sample_at_X=features.values,
             quantity='y',
             n_draws=1,
             random_seed=lac_alb_imp_i
@@ -991,7 +992,7 @@ class NovelModel:
         features = df.drop(self.target_variable_name, axis=1)
         for imputer in (self.alb_imputer, self.lac_imputer):
             lacalb_and_indicator = (
-                imputer.get_imputed_variable_and_missingness_indicator(
+                imputer.get_complete_variable_and_missingness_indicator(
                     fold_name,
                     split_i,
                     mice_imp_i,
