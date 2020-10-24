@@ -47,7 +47,7 @@ class PDPFigure:
         self.gam = gam
         self.pdp_terms = pdp_terms
         self.transformer = transformer
-        self.standard_y = standardise_y_scale
+        self.standardise_y_scale = standardise_y_scale
         self.fig_width = fig_width
         self.n_cols = n_cols
         self.row_height = row_height
@@ -105,7 +105,8 @@ class PDPFigure:
         self._init_figure()
         for i, term in enumerate(self.terms):
             self._plot_single_pdp(i, term)
-        print(self.y_min, self.y_max)  # TODO: Remove this testing line
+        if self.standardise_y_scale:
+            self._scale_y_axes()
         self.fig.tight_layout()
         return self.fig, None
 
@@ -232,7 +233,7 @@ class PDPFigure:
             ax.set_xticks(xx[0][:, 0][
                 range(self.mid_cat_i, x_length, self.ticks_per_cat)])
             ax.set_xticklabels(self.pdp_terms[i].labels)
-            ax.set_xlim([xx[0][0, 0], xx[0][-1, 0]])
+            ax.set_xlim(xx[0][0, 0], xx[0][-1, 0])
             if self.pdp_terms[i].name == "Indication":
                 ax.set_xticklabels(
                     self.pdp_terms[i].labels,
@@ -260,3 +261,7 @@ class PDPFigure:
         return self.transformer.inverse_transform(
             x.reshape(np.prod(x.shape), 1)
         ).reshape(x.shape) - self.trans_centre
+
+    def _scale_y_axes(self):
+        for ax in self.fig.axes:
+            ax.set_ylim(self.y_min, self.y_max)
