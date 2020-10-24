@@ -9,14 +9,6 @@ def lactate_model_factory(
     multi_cat_levels: Dict[str, Tuple],
     indication_var_name: str
 ) -> LinearGAM:
-    # TODO: White et al recommends using all analysis model variables in the
-    #  imputation model
-    # TODO: Check creatinine features in DataFrame - why is it causing
-    #  divergence? Should it interact with urea?
-    # TODO: Should GCS splines have lower order?
-    # TODO: Consider edge knots
-    # TODO: Consider reducing n_splines for most continuous variables
-    # TODO: Indications should be more regularised?
     return LinearGAM(
         s(columns.get_loc("S01AgeOnArrival"), lam=600)
         + s(columns.get_loc("S03SystolicBloodPressure"), lam=700)
@@ -29,7 +21,7 @@ def lactate_model_factory(
             dtype=("numerical", "categorical"),
         )
         + s(columns.get_loc("S03WhiteCellCount"), lam=600)
-        + s(columns.get_loc("S03Sodium"), lam=1200)
+        + s(columns.get_loc("S03Sodium"), lam=600)
         + s(columns.get_loc("S03Potassium"), lam=600)
         + s(
             columns.get_loc("S03GlasgowComaScore"),
