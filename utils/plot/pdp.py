@@ -57,7 +57,7 @@ class PDPFigure:
         self.trans_centre = self._calculate_transformation_centre()
         self.cis = generate_ci_quantiles(confidence_intervals)
         self.fig, self.gs = None, None
-        self.y_min, self.y_max = 0., 0.
+        self.y_min, self.y_max = {'2d':0., '3d': 0.}, {'2d':0., '3d': 0.}
 
     @property
     def terms(self) -> List[Dict]:
@@ -93,12 +93,13 @@ class PDPFigure:
     def _update_y_min_max(
         self,
         min_candidate: np.ndarray,
-        max_candidate: np.ndarray
+        max_candidate: np.ndarray,
+        plot_type: str
     ):
-        if min_candidate.min() < self.y_min:
-            self.y_min = min_candidate.min()
-        if max_candidate.max() > self.y_max:
-            self.y_max = max_candidate.max()
+        if min_candidate.min() < self.y_min[plot_type]:
+            self.y_min[plot_type] = min_candidate.min()
+        if max_candidate.max() > self.y_max[plot_type]:
+            self.y_max[plot_type] = max_candidate.max()
 
     def plot(self) -> Tuple[Figure, None]:
         """Generate figure of partial dependence plots."""
@@ -144,7 +145,7 @@ class PDPFigure:
         _, confi = self.gam.partial_dependence(
             term=i, X=xx, quantiles=self.cis)
         if self.transformer is None:
-            self._update_y_min_max(confi[:, 0], confi[:, -1])
+            self._update_y_min_max(confi[:, 0], confi[:, -1], plot_type='2d')
             for k in range(self.n_cis):
                 ax.fill_between(
                     xx[:, term["feature"]],
@@ -155,7 +156,7 @@ class PDPFigure:
                     lw=0.0)
         else:
             confi = self._inverse_transform(confi)
-            self._update_y_min_max(confi[:, 0], confi[:, -1])
+            self._update_y_min_max(confi[:, 0], confi[:, -1], plot_type='2d')
             ax.fill_between(
                 xx[:, term["feature"]],
                 confi[:, 0],
@@ -198,7 +199,8 @@ class PDPFigure:
         lines = []
         for slice_i, sli in enumerate([0, -1]):
             if self.transformer is None:
-                self._update_y_min_max(confi[:, sli, 0], confi[:, sli, -1])
+                self._update_y_min_max(
+                    confi[:, sli, 0], confi[:, sli, -1], plot_type='2d')
                 for k in range(self.n_cis):
                     ax.fill_between(
                         xx[0][:, 0],
@@ -209,7 +211,8 @@ class PDPFigure:
                         color=self.strata_colours[slice_i])
             else:
                 confi[:, sli, :] = self._inverse_transform(confi[:, sli, :])
-                self._update_y_min_max(confi[:, sli, 0], confi[:, sli, -1])
+                self._update_y_min_max(
+                    confi[:, sli, 0], confi[:, sli, -1], plot_type='2d')
                 ax.fill_between(
                     xx[0][:, 0],
                     confi[:, sli, 0],
@@ -251,7 +254,7 @@ class PDPFigure:
     ):
         if self.transformer is not None:
             z = self._inverse_transform(z)
-        # self._update_y_min_max(z, z)
+        self._update_y_min_max(z, z, plot_type='3d')
         ax.plot_surface(xx[0], xx[1], z, cmap="Blues")
         ax.view_init(*self.pdp_terms[i].view_3d)
         ax.set_xlabel(self.pdp_terms[i].pretty_name[0])
@@ -265,4 +268,6 @@ class PDPFigure:
     def _scale_y_axes(self):
         for i, ax in enumerate(self.fig.axes):
             if self.pdp_terms[i].view_3d is None:
-                ax.set_ylim(self.y_min, self.y_max)
+                ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
+            else:
+                ax.set_ylim3d(self.y_min['3d'], self.y_max['3d'])
