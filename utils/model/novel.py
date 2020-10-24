@@ -864,7 +864,8 @@ class LactateAlbuminImputer(Imputer):
             probabilitic is True, the imputed value for each patient is a
             single sample from the patient-specific distribution over lactate
             or albumin. If probabilitic is False, the imputed value is the
-            mean of that distribution."""
+            mean of that distribution (note that lac_alb_imp_i is ignored in
+            this case)."""
         if probabilistic:
             lacalb_imputed_trans = quick_sample(
                 gam=self.imputers[split_i],
@@ -933,6 +934,30 @@ class LactateAlbuminImputer(Imputer):
             probabilistic=probabilistic
         ).flatten()
         return obs_lacalb[self.lacalb_variable_name].values, pred_lacalb
+
+    def get_all_observed_and_predicted(
+        self,
+        fold_name: str,
+        lac_alb_imp_i: int,
+        probabilistic: bool
+    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        """Convenience function which fetches the observed lactate / albumin
+            values from a given fold in EVERY given train-test split, and the
+            corresponding lactate / albumin values predicted by the imputation
+            model."""
+        y_obs, y_preds = [], []
+        for split_i in pb(range(self.tts.n_splits), prefix="Split iteration"):
+            for mice_imp_i in range(self.cat_imputer.swm.n_mice_imputations):
+                y_ob, y_pred = self.get_observed_and_predicted(
+                    fold_name=fold_name,
+                    split_i=split_i,
+                    mice_imp_i=mice_imp_i,
+                    lac_alb_imp_i=lac_alb_imp_i,
+                    probabilistic=probabilistic
+                )
+                y_obs.append(y_ob)
+                y_preds.append(y_pred)
+        return y_obs, y_preds
 
     def _get_features_where_lacalb_missing(
         self,

@@ -124,7 +124,7 @@ print("")
 scorer.print_scores(dec_places=3)
 
 
-reporter.first("Saving ModelScorer for later use")
+reporter.first("Saving model scorer for later use")
 save_object(
     scorer,
     os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model_scorer.pkl")

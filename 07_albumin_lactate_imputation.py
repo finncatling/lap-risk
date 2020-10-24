@@ -23,6 +23,7 @@ from utils.model.novel import (
 )
 from utils.plot.helpers import sanitize_indication, plot_saver
 from utils.plot.pdp import PDPTerm, PDPFigure
+from utils.evaluate import Scorer, score_linear_predictions
 from utils.report import Reporter
 
 
@@ -134,8 +135,9 @@ for pretty_name, variable_name, model_factory in (
         indication_var_name=INDICATION_VAR_NAME,
         random_seed=RANDOM_SEED
     )
-    imputer.tts.n_splits = 1  # TODO: Remove this testing line
+    imputer.tts.n_splits = 10  # TODO: Remove this testing line
     imputer.fit()
+
 
     reporter.report(f"Saving draft {pretty_name} imputer for later use")
     save_object(
@@ -147,11 +149,33 @@ for pretty_name, variable_name, model_factory in (
     )
 
 
-    # TODO: Evalutate performance of each lactate / albumin imputer acoss all
-    #   train-test splits
+    reporter.report(f"Scoring {pretty_name} imputation model performance.")
+    y_obs, y_preds = imputer.get_all_observed_and_predicted(
+        fold_name='test',
+        lac_alb_imp_i=0,  # Disregarded as probabilistic is False
+        probabilistic=False
+    )
+    scorer = Scorer(
+        y_true=y_obs,
+        y_pred=y_preds,
+        scorer_function=score_linear_predictions
+    )
+    scorer.calculate_scores()
+    print("")
+    scorer.print_scores(dec_places=3)
 
 
-    reporter.report(f"Plotting {pretty_name} imputer partial dependence plots")
+    reporter.first("Saving model scorer for later use")
+    save_object(
+        scorer,
+        os.path.join(
+            NOVEL_MODEL_OUTPUT_DIR,
+            f"07_{pretty_name}_imputer_scorer.pkl"
+        )
+    )
+
+
+    reporter.first(f"Plotting {pretty_name} imputer partial dependence plots")
     for space, kwargs in (
         ('gaussian', {}),
         ('inv_trans', {'transformer': imputer.transformers[0]})
