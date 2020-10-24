@@ -36,6 +36,7 @@ class PDPFigure:
         gam: GAM,
         pdp_terms: List[PDPTerm],
         transformer: Union[None, QuantileTransformer] = None,
+        standardise_y_scale: bool = True,
         fig_width: float = 12.0,
         n_cols: int = 3,
         row_height: float = 3.0,
@@ -46,6 +47,7 @@ class PDPFigure:
         self.gam = gam
         self.pdp_terms = pdp_terms
         self.transformer = transformer
+        self.standard_y = standardise_y_scale
         self.fig_width = fig_width
         self.n_cols = n_cols
         self.row_height = row_height
@@ -55,6 +57,7 @@ class PDPFigure:
         self.trans_centre = self._calculate_transformation_centre()
         self.cis = generate_ci_quantiles(confidence_intervals)
         self.fig, self.gs = None, None
+        self.y_min, self.y_max = 0., 0.
 
     @property
     def terms(self) -> List[Dict]:
@@ -87,11 +90,22 @@ class PDPFigure:
             return self.transformer.inverse_transform(
                 np.zeros((1, 1))).flatten()[0]
 
+    def _update_y_min_max(
+        self,
+        min_candidate: np.ndarray,
+        max_candidate: np.ndarray
+    ):
+        if min_candidate.min() < self.y_min:
+            self.y_min = min_candidate.min()
+        if max_candidate.max() > self.y_max:
+            self.y_max = max_candidate.max()
+
     def plot(self) -> Tuple[Figure, None]:
         """Generate figure of partial dependence plots."""
         self._init_figure()
         for i, term in enumerate(self.terms):
             self._plot_single_pdp(i, term)
+        print(self.y_min, self.y_max)  # TODO: Remove this testing line
         self.fig.tight_layout()
         return self.fig, None
 
@@ -129,6 +143,7 @@ class PDPFigure:
         _, confi = self.gam.partial_dependence(
             term=i, X=xx, quantiles=self.cis)
         if self.transformer is None:
+            self._update_y_min_max(confi[:, 0], confi[:, -1])
             for k in range(self.n_cis):
                 ax.fill_between(
                     xx[:, term["feature"]],
@@ -139,6 +154,7 @@ class PDPFigure:
                     lw=0.0)
         else:
             confi = self._inverse_transform(confi)
+            self._update_y_min_max(confi[:, 0], confi[:, -1])
             ax.fill_between(
                 xx[:, term["feature"]],
                 confi[:, 0],
@@ -181,6 +197,7 @@ class PDPFigure:
         lines = []
         for slice_i, sli in enumerate([0, -1]):
             if self.transformer is None:
+                self._update_y_min_max(confi[:, sli, 0], confi[:, sli, -1])
                 for k in range(self.n_cis):
                     ax.fill_between(
                         xx[0][:, 0],
@@ -191,6 +208,7 @@ class PDPFigure:
                         color=self.strata_colours[slice_i])
             else:
                 confi[:, sli, :] = self._inverse_transform(confi[:, sli, :])
+                self._update_y_min_max(confi[:, sli, 0], confi[:, sli, -1])
                 ax.fill_between(
                     xx[0][:, 0],
                     confi[:, sli, 0],
@@ -232,6 +250,7 @@ class PDPFigure:
     ):
         if self.transformer is not None:
             z = self._inverse_transform(z)
+        self._update_y_min_max(z, z)
         ax.plot_surface(xx[0], xx[1], z, cmap="Blues")
         ax.view_init(*self.pdp_terms[i].view_3d)
         ax.set_xlabel(self.pdp_terms[i].pretty_name[0])
