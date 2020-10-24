@@ -856,17 +856,26 @@ class LactateAlbuminImputer(Imputer):
         self,
         features: pd.DataFrame,
         split_i: int,
-        lac_alb_imp_i: int
+        lac_alb_imp_i: int,
+        probabilistic: bool
     ) -> np.ndarray:
         """Impute lactate / albumin values given the provided features. Don't
-            need to winsorize here as transformer is fit to winsorized data."""
-        lacalb_imputed_trans = quick_sample(
-            gam=self.imputers[split_i],
-            sample_at_X=features.values,
-            quantity='y',
-            n_draws=1,
-            random_seed=lac_alb_imp_i
-        ).flatten()
+            need to winsorize here as transformer is fit to winsorized data. If
+            probabilitic is True, the imputed value for each patient is a
+            single sample from the patient-specific distribution over lactate
+            or albumin. If probabilitic is False, the imputed value is the
+            mean of that distribution."""
+        if probabilistic:
+            lacalb_imputed_trans = quick_sample(
+                gam=self.imputers[split_i],
+                sample_at_X=features.values,
+                quantity='y',
+                n_draws=1,
+                random_seed=lac_alb_imp_i
+            ).flatten()
+        else:
+            lacalb_imputed_trans = self.imputers[split_i].predict_mu(
+                X=features.values)
         return self.transformers[split_i].inverse_transform(
             lacalb_imputed_trans.reshape(-1, 1))
 
@@ -885,7 +894,7 @@ class LactateAlbuminImputer(Imputer):
         missing_features = self._get_features_where_lacalb_missing(
             fold_name, split_i, mice_imp_i)
         lacalb_imputed = self.impute(
-            missing_features, split_i, lac_alb_imp_i)
+            missing_features, split_i, lac_alb_imp_i, probabilistic=True)
         lacalb = self._get_complete_lacalb(
             lacalb_imputed, fold_name, split_i)
         lacalb = self._winsorize(split_i, lacalb)
@@ -898,8 +907,13 @@ class LactateAlbuminImputer(Imputer):
         fold_name: str,
         split_i: int,
         mice_imp_i: int,
-        lac_alb_imp_i: int
+        lac_alb_imp_i: int,
+        probabilistic: bool
     ) -> Tuple[np.ndarray, np.ndarray]:
+        """Convenience function which fetches the observed lactate / albumin
+            values from a given fold in a given train-test split, and the
+            corresponding lactate / albumin values predicted by the imputation
+            model."""
         if fold_name == 'train':
             lacalb, _, _, _ = self._split(split_i)
         elif fold_name == 'test':
@@ -912,7 +926,12 @@ class LactateAlbuminImputer(Imputer):
         obs_lacalb = self._winsorize(split_i, obs_lacalb)
         features = self._get_features_where_lacalb_observed(
             fold_name, split_i, mice_imp_i)
-        pred_lacalb = self.impute(features, split_i, lac_alb_imp_i).flatten()
+        pred_lacalb = self.impute(
+            features,
+            split_i,
+            lac_alb_imp_i,
+            probabilistic=probabilistic
+        ).flatten()
         return obs_lacalb[self.lacalb_variable_name].values, pred_lacalb
 
     def _get_features_where_lacalb_missing(
