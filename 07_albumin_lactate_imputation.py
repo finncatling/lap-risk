@@ -22,7 +22,7 @@ from utils.model.novel import (
     LactateAlbuminImputer
 )
 from utils.plot.helpers import sanitize_indication, plot_saver
-from utils.plot.pdp import PDPTerm, plot_partial_dependence
+from utils.plot.pdp import PDPTerm, PDPFigure
 from utils.report import Reporter
 
 
@@ -121,7 +121,7 @@ save_object(
 
 
 for pretty_name, variable_name, model_factory in (
-    ('albumin', ALBUMIN_VAR_NAME, albumin_model_factory),
+    # ('albumin', ALBUMIN_VAR_NAME, albumin_model_factory),  # TODO: uncomment
     ('lactate', LACTATE_VAR_NAME, lactate_model_factory)
 ): 
     reporter.report(f"Fitting imputers for {pretty_name}")
@@ -148,10 +148,9 @@ for pretty_name, variable_name, model_factory in (
     )
 
     reporter.report(f"Plotting {pretty_name} imputer partial dependence plot")
+    pdp_generator = PDPFigure(gam=imputer.imputers[0], pdp_terms=pdp_terms)
     plot_saver(
-        plot_partial_dependence,
-        gam=imputer.imputers[0],
-        pdp_terms=pdp_terms,
+        pdp_generator.plot,
         output_dir=FIGURES_OUTPUT_DIR,
         output_filename=f"07_{pretty_name}_imputer_pd_plot",
     )
