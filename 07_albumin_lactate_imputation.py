@@ -17,7 +17,9 @@ from utils.model.novel import (
     ALBUMIN_VAR_NAME,
     LACTATE_VAR_NAME,
     NOVEL_MODEL_VARS,
-    WINSOR_QUANTILES, CategoricalImputer, LactateAlbuminImputer,
+    WINSOR_QUANTILES,
+    CategoricalImputer,
+    LactateAlbuminImputer
 )
 from utils.plot.helpers import sanitize_indication, plot_saver
 from utils.plot.pdp import PDPTerm, plot_partial_dependence
@@ -87,7 +89,7 @@ pdp_terms = [
         (None, None),
         None,
         None,
-        (45, 205)
+        (45, 25)
     ),
     PDPTerm(
         ("S03SerumCreatinine", "S03Urea"),
