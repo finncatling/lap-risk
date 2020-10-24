@@ -251,7 +251,7 @@ class PDPFigure:
     ):
         if self.transformer is not None:
             z = self._inverse_transform(z)
-        self._update_y_min_max(z, z)
+        # self._update_y_min_max(z, z)
         ax.plot_surface(xx[0], xx[1], z, cmap="Blues")
         ax.view_init(*self.pdp_terms[i].view_3d)
         ax.set_xlabel(self.pdp_terms[i].pretty_name[0])
@@ -263,5 +263,6 @@ class PDPFigure:
         ).reshape(x.shape) - self.trans_centre
 
     def _scale_y_axes(self):
-        for ax in self.fig.axes:
-            ax.set_ylim(self.y_min, self.y_max)
+        for i, ax in enumerate(self.fig.axes):
+            if self.pdp_terms[i].view_3d is None:
+                ax.set_ylim(self.y_min, self.y_max)
