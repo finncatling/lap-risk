@@ -25,6 +25,7 @@ class TestModelScorer:
         ms = evaluate.ModelScorer(
             y_true=y_true,
             y_pred=y_pred,
+            scorer_function=evaluate.score_logistic_predictions,
             calibration_n_splines=5,
             calibration_lam_candidates=np.logspace(-3, -1, 5)
         )
