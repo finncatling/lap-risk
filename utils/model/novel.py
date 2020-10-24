@@ -852,6 +852,24 @@ class LactateAlbuminImputer(Imputer):
             gams.append(gam)
         self.imputers[split_i] = combine_mi_gams(gams)
 
+    def impute(
+        self,
+        features: pd.DataFrame,
+        split_i: int,
+        lac_alb_imp_i: int
+    ) -> np.ndarray:
+        """Impute lactate / albumin values given the provided features. Don't
+            need to winsorize here as transformer is fit to winsorized data."""
+        lacalb_imputed_trans = quick_sample(
+            gam=self.imputers[split_i],
+            sample_at_X=features.values,
+            quantity='y',
+            n_draws=1,
+            random_seed=lac_alb_imp_i
+        ).flatten()
+        return self.transformers[split_i].inverse_transform(
+            lacalb_imputed_trans.reshape(-1, 1))
+
     def get_complete_variable_and_missingness_indicator(
         self,
         fold_name: str,
@@ -875,6 +893,28 @@ class LactateAlbuminImputer(Imputer):
             lacalb = self._add_missingness_indicator(lacalb, fold_name, split_i)
         return lacalb
 
+    def get_observed_and_predicted(
+        self,
+        fold_name: str,
+        split_i: int,
+        mice_imp_i: int,
+        lac_alb_imp_i: int
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        if fold_name == 'train':
+            lacalb, _, _, _ = self._split(split_i)
+        elif fold_name == 'test':
+            _, _, lacalb, _ = self._split(split_i)
+        obs_lacalb = self._get_observed_values(
+            fold=fold_name,
+            split_i=split_i,
+            X=lacalb
+        )
+        obs_lacalb = self._winsorize(split_i, obs_lacalb)
+        features = self._get_features_where_lacalb_observed(
+            fold_name, split_i, mice_imp_i)
+        pred_lacalb = self.impute(features, split_i, lac_alb_imp_i)
+        return obs_lacalb[self.lacalb_variable_name].values, pred_lacalb
+
     def _get_features_where_lacalb_missing(
         self,
         fold_name: str,
@@ -887,22 +927,17 @@ class LactateAlbuminImputer(Imputer):
         return features.loc[
             self.missing_i[fold_name][split_i][self.lacalb_variable_name]]
 
-    def impute(
+    def _get_features_where_lacalb_observed(
         self,
-        features: pd.DataFrame,
+        fold_name: str,
         split_i: int,
-        lac_alb_imp_i: int
-    ) -> np.ndarray:
-        """Impute lactate / albumin values given the provided features."""
-        lacalb_imputed_trans = quick_sample(
-            gam=self.imputers[split_i],
-            sample_at_X=features.values,
-            quantity='y',
-            n_draws=1,
-            random_seed=lac_alb_imp_i
-        ).flatten()
-        return self.transformers[split_i].inverse_transform(
-            lacalb_imputed_trans.reshape(-1, 1))
+        mice_imp_i: int
+    ) -> pd.DataFrame:
+        features = self.cat_imputer.get_imputed_df(
+            fold_name, split_i, mice_imp_i)
+        features.drop(self.target_variable_name, axis=1)
+        return features.loc[features.index.difference(
+            self.missing_i[fold_name][split_i][self.lacalb_variable_name])]
 
     def _get_complete_lacalb(
         self,
