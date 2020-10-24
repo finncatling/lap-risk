@@ -123,34 +123,28 @@ for pretty_name, variable_name, model_factory in (
     # ('albumin', ALBUMIN_VAR_NAME, albumin_model_factory),  # TODO: uncomment
     ('lactate', LACTATE_VAR_NAME, lactate_model_factory),
 ): 
-    # reporter.report(f"Fitting imputers for {pretty_name}")
-    # imputer = LactateAlbuminImputer(
-    #     df=df.loc[:, [variable_name, NOVEL_MODEL_VARS["target"]]],
-    #     categorical_imputer=cat_imputer,
-    #     lacalb_variable_name=variable_name,
-    #     imputation_model_factory=model_factory,
-    #     winsor_quantiles=WINSOR_QUANTILES,
-    #     multi_cat_vars=multi_category_levels,
-    #     indication_var_name=INDICATION_VAR_NAME,
-    #     random_seed=RANDOM_SEED
-    # )
-    # imputer.tts.n_splits = 1  # TODO: Remove this testing line
-    # imputer.fit()
-    #
-    # reporter.report(f"Saving draft {pretty_name} imputer for later use")
-    # save_object(
-    #     imputer,
-    #     os.path.join(
-    #         NOVEL_MODEL_OUTPUT_DIR,
-    #         f"07_draft_{pretty_name}_imputer.pkl"
-    #     )
-    # )
+    reporter.report(f"Fitting imputers for {pretty_name}")
+    imputer = LactateAlbuminImputer(
+        df=df.loc[:, [variable_name, NOVEL_MODEL_VARS["target"]]],
+        categorical_imputer=cat_imputer,
+        lacalb_variable_name=variable_name,
+        imputation_model_factory=model_factory,
+        winsor_quantiles=WINSOR_QUANTILES,
+        multi_cat_vars=multi_category_levels,
+        indication_var_name=INDICATION_VAR_NAME,
+        random_seed=RANDOM_SEED
+    )
+    imputer.tts.n_splits = 1  # TODO: Remove this testing line
+    imputer.fit()
 
-    # TODO: Remove this testing code
-    imputer: LactateAlbuminImputer = load_object(os.path.join(
-        NOVEL_MODEL_OUTPUT_DIR,
-        f"07_draft_{pretty_name}_imputer.pkl"
-    ))
+    reporter.report(f"Saving draft {pretty_name} imputer for later use")
+    save_object(
+        imputer,
+        os.path.join(
+            NOVEL_MODEL_OUTPUT_DIR,
+            f"07_draft_{pretty_name}_imputer.pkl"
+        )
+    )
 
     reporter.report(f"Plotting {pretty_name} imputer partial dependence plots")
     for space, kwargs in (
