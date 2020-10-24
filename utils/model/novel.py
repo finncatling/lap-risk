@@ -163,17 +163,6 @@ def combine_categories(
     return df.drop(drop, axis=1)
 
 
-def add_missingness_indicators(df: pd.DataFrame,
-                               variables: List[str]) -> pd.DataFrame:
-    """Adds a missingness indicator column for each of the specified
-        variables."""
-    for v in variables:
-        c_missing = f"{v}_missing"
-        df[c_missing] = np.zeros(df.shape[0])
-        df.loc[df[v].isnull(), c_missing] = 1.0
-    return df
-
-
 def label_encode(
     df: pd.DataFrame,
     multi_cat_levels: Dict[str, Tuple],
@@ -883,8 +872,7 @@ class LactateAlbuminImputer(Imputer):
             lacalb_imputed, fold_name, split_i)
         lacalb = self._winsorize(split_i, lacalb)
         if missingness_indicator:
-            lacalb = add_missingness_indicators(
-                df=lacalb, variables=[self.lacalb_variable_name])
+            lacalb = self._add_missingness_indicator(lacalb, fold_name, split_i)
         return lacalb
 
     def _get_features_where_lacalb_missing(
@@ -929,6 +917,21 @@ class LactateAlbuminImputer(Imputer):
             self.missing_i[fold_name][split_i][self.lacalb_variable_name]
         ] = lacalb_imputed
         return lacalb
+
+    def _add_missingness_indicator(
+        self,
+        df: pd.DataFrame,
+        fold_name: str,
+        split_i: int
+    ) -> pd.DataFrame:
+        """Adds a missingness indicator column for imputed variable."""
+        missing_i_name = f"{self.lacalb_variable_name}_missing"
+        df[missing_i_name] = np.zeros(df.shape[0])
+        df.loc[
+            self.missing_i[fold_name][split_i][self.lacalb_variable_name],
+            missing_i_name
+        ] = 1.0
+        return df
 
     def get_imputed_variables(self, fold_name, split_i, imp_i):
         """Override base class method which shouldn't be used, as we don't
