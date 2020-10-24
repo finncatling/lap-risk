@@ -143,32 +143,25 @@ def score_linear_predictions(
     return scores
 
 
-class ModelScorer:
+class Scorer:
     """Calculate confidence intervals for model evaluation scores using their
-        predictions on the different test folds from 01_train_test_split.py"""
+        predictions on different test folds."""
 
     def __init__(
         self,
         y_true: List[np.ndarray],
         y_pred: List[np.ndarray],
-        scorer_function: Callable[[np.ndarray, np.ndarray], Dict[str, float]],
-        calibration_n_splines: int,
-        calibration_lam_candidates: np.ndarray,
+        scorer_function: Callable[[np.ndarray, np.ndarray], Dict[str, float]]
     ):
         self.y_true = y_true
         self.y_pred = y_pred
         self.scorer_function = scorer_function
-        self.calib_n_splines = calibration_n_splines
-        self.calib_lam_candidates = calibration_lam_candidates
         self.scores = {
             "per_split": {},
             "per_score": {},
             "per_score_diff": {},
             "95ci": {}
         }
-        self.p: Union[None, np.ndarray] = None
-        self.calib_lams: List[float] = []
-        self.calib_curves: List[np.ndarray] = []
         self._sanity_check()
 
     @property
@@ -183,14 +176,6 @@ class ModelScorer:
         for i in pb(range(self.n_splits), prefix="Scorer iteration"):
             self.scores["per_split"][i] = self.scorer_function(
                 self.y_true[i], self.y_pred[i])
-            self.p, calib_curve, calib_mae, best_lam = score_calibration(
-                self.y_true[i],
-                self.y_pred[i],
-                self.calib_n_splines,
-                self.calib_lam_candidates)
-            self.scores["per_split"][i]["Calibration MAE"] = calib_mae
-            self.calib_curves.append(calib_curve)
-            self.calib_lams.append(best_lam)
         self.scores["point_estimates"] = self.scores["per_split"][0]
         self._calculate_95ci()
 
@@ -224,8 +209,44 @@ class ModelScorer:
                 score]
 
 
+class LogisticScorer(Scorer):
+    """Calculate confidence intervals for logistic model evaluation scores
+        using their predictions on different test folds."""
+
+    def __init__(
+        self,
+        y_true: List[np.ndarray],
+        y_pred: List[np.ndarray],
+        scorer_function: Callable[[np.ndarray, np.ndarray], Dict[str, float]],
+        calibration_n_splines: int,
+        calibration_lam_candidates: np.ndarray,
+    ):
+        super().__init__(y_true, y_pred, scorer_function)
+        self.calib_n_splines = calibration_n_splines
+        self.calib_lam_candidates = calibration_lam_candidates
+        self.p: Union[None, np.ndarray] = None
+        self.calib_lams: List[float] = []
+        self.calib_curves: List[np.ndarray] = []
+
+    def calculate_scores(self):
+        for i in pb(range(self.n_splits), prefix="Scorer iteration"):
+            self.scores["per_split"][i] = self.scorer_function(
+                self.y_true[i], self.y_pred[i])
+            self.p, calib_curve, calib_mae, best_lam = score_calibration(
+                self.y_true[i],
+                self.y_pred[i],
+                self.calib_n_splines,
+                self.calib_lam_candidates)
+            self.scores["per_split"][i]["Calibration MAE"] = calib_mae
+            self.calib_curves.append(calib_curve)
+            self.calib_lams.append(best_lam)
+        self.scores["point_estimates"] = self.scores["per_split"][0]
+        self._calculate_95ci()
+
+
 def evaluate_samples(
-    y: np.ndarray, y_samples: np.ndarray,
+    y: np.ndarray,
+    y_samples: np.ndarray,
     cis: np.ndarray = np.linspace(0.95, 0.05, 20)
 ) -> None:
     """Generate some plots to evaluate the quality of imputed samples of

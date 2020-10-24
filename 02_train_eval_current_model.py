@@ -10,7 +10,7 @@ from utils.constants import (
     CALIB_GAM_LAM_CANDIDATES,
 )
 from utils.data_check import load_nela_data_and_sanity_check
-from utils.evaluate import ModelScorer, score_logistic_predictions
+from utils.evaluate import LogisticScorer, score_logistic_predictions
 from utils.io import load_object, save_object
 from utils.model.current import (
     preprocess_current,
@@ -112,7 +112,7 @@ save_object(
 
 
 reporter.report("Scoring model performance")
-scorer = ModelScorer(
+scorer = LogisticScorer(
     y_true=current_model.y_test,
     y_pred=current_model.y_pred,
     scorer_function=score_logistic_predictions,

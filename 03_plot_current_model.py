@@ -8,7 +8,7 @@ from utils.plot.helpers import plot_saver
 from utils.report import Reporter
 from utils.constants import FIGURES_OUTPUT_DIR, CURRENT_MODEL_OUTPUT_DIR
 from utils.io import load_object
-from utils.evaluate import ModelScorer
+from utils.evaluate import LogisticScorer
 
 
 reporter = Reporter()
@@ -19,7 +19,7 @@ reporter.title(
 
 
 reporter.report("Loading results of model scoring")
-scorer: ModelScorer = load_object(
+scorer: LogisticScorer = load_object(
     os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model_scorer.pkl")
 )
 

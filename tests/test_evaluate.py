@@ -13,7 +13,7 @@ class TestModelScorer:
     """End-to-end test which just checks that"""
 
     @pytest.fixture(scope='class')
-    def ms_fixture(self) -> evaluate.ModelScorer:
+    def ms_fixture(self) -> evaluate.LogisticScorer:
         y_true, y_pred = [], []
         for i in range(4):
             true, pred = simulate_labels_and_well_calibrated_pred_probs(
@@ -22,7 +22,7 @@ class TestModelScorer:
             )
             y_true.append(true)
             y_pred.append(pred)
-        ms = evaluate.ModelScorer(
+        ms = evaluate.LogisticScorer(
             y_true=y_true,
             y_pred=y_pred,
             scorer_function=evaluate.score_logistic_predictions,
