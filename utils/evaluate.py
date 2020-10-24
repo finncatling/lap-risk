@@ -268,7 +268,7 @@ def evaluate_samples(
         pop_ci = np.quantile(y, q=quantiles)
         pop_iqrs.append(pop_ci[1] - pop_ci[0])
 
-        sam_ci = np.quantile(y_samples, axis=0, q=quantiles).T
+        sam_ci = np.quantile(y_samples, axis=1, q=quantiles).T
         sam_iqrs[i, :] = sam_ci[:, 1] - sam_ci[:, 0]
         sam_mean_iqrs.append(sam_iqrs[i, :].mean())
 
