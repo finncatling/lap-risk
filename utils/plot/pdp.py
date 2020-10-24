@@ -126,17 +126,26 @@ class PDPFigure:
 
     def _non_tensor_pdp(self, i: int, term: Dict, ax: Axes, x_length: int):
         xx = self.gam.generate_X_grid(term=i, n=x_length)
-        pdep, confi = self.gam.partial_dependence(
+        _, confi = self.gam.partial_dependence(
             term=i, X=xx, quantiles=self.cis)
-        for k in range(self.n_cis):
+        if self.transformer is None:
+            for k in range(self.n_cis):
+                ax.fill_between(
+                    xx[:, term["feature"]],
+                    confi[:, k],
+                    confi[:, -(k + 1)],
+                    alpha=1 / self.n_cis,
+                    color="tab:blue",
+                    lw=0.0)
+        else:
+            confi = self._inverse_transform(confi)
             ax.fill_between(
                 xx[:, term["feature"]],
-                confi[:, k],
-                confi[:, -(k + 1)],
-                alpha=1 / self.n_cis,
+                confi[:, 0],
+                confi[:, -1],
+                alpha=0.5,
                 color="tab:blue",
-                lw=0.0,
-            )
+                lw=2.0)
         self._set_non_tensor_x_labels(i, ax, xx, term["feature"], x_length)
 
     def _set_non_tensor_x_labels(
@@ -171,15 +180,24 @@ class PDPFigure:
     ):
         lines = []
         for slice_i, sli in enumerate([0, -1]):
-            for k in range(self.n_cis):
+            if self.transformer is None:
+                for k in range(self.n_cis):
+                    ax.fill_between(
+                        xx[0][:, 0],
+                        confi[:, sli, k],
+                        confi[:, sli, -(k + 1)],
+                        lw=0.0,
+                        alpha=1 / self.n_cis,
+                        color=self.strata_colours[slice_i])
+            else:
+                confi[:, sli, :] = self._inverse_transform(confi[:, sli, :])
                 ax.fill_between(
                     xx[0][:, 0],
-                    confi[:, sli, k],
-                    confi[:, sli, -(k + 1)],
-                    lw=0.0,
-                    alpha=1 / self.n_cis,
-                    color=self.strata_colours[slice_i],
-                )
+                    confi[:, sli, 0],
+                    confi[:, sli, -1],
+                    lw=2.0,
+                    alpha=0.5,
+                    color=self.strata_colours[slice_i])
             lines.append(Line2D([0], [0], color=self.strata_colours[slice_i]))
         ax.legend(lines, self.pdp_terms[i].strata,
                   loc=self.pdp_terms[i].legend_loc)
@@ -212,13 +230,14 @@ class PDPFigure:
         xx: Tuple[np.ndarray, np.ndarray],
         z: np.ndarray
     ):
+        if self.transformer is not None:
+            z = self._inverse_transform(z)
         ax.plot_surface(xx[0], xx[1], z, cmap="Blues")
         ax.view_init(*self.pdp_terms[i].view_3d)
         ax.set_xlabel(self.pdp_terms[i].pretty_name[0])
         ax.set_ylabel(self.pdp_terms[i].pretty_name[1])
 
-    def _inverse_transform_pdp(self, pdp: np.ndarray) -> np.ndarray:
-        if self.transformer is None:
-            return pdp
-        else:
-            raise NotImplementedError
+    def _inverse_transform(self, x: np.ndarray) -> np.ndarray:
+        return self.transformer.inverse_transform(
+            x.reshape(np.prod(x.shape), 1)
+        ).reshape(x.shape) - self.trans_centre
