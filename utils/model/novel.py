@@ -912,7 +912,7 @@ class LactateAlbuminImputer(Imputer):
         obs_lacalb = self._winsorize(split_i, obs_lacalb)
         features = self._get_features_where_lacalb_observed(
             fold_name, split_i, mice_imp_i)
-        pred_lacalb = self.impute(features, split_i, lac_alb_imp_i)
+        pred_lacalb = self.impute(features, split_i, lac_alb_imp_i).flatten()
         return obs_lacalb[self.lacalb_variable_name].values, pred_lacalb
 
     def _get_features_where_lacalb_missing(
