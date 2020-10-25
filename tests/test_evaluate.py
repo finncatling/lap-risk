@@ -10,7 +10,7 @@ from utils.simulate import simulate_labels_and_well_calibrated_pred_probs
 
 
 class TestModelScorer:
-    """End-to-end test which just checks that"""
+    """End-to-end test."""
 
     @pytest.fixture(scope='class')
     def ms_fixture(self) -> evaluate.LogisticScorer:
@@ -44,7 +44,7 @@ class TestModelScorer:
         assert all([isinstance(name, str) for name in score_names])
 
     def test_scores_dict_format(self, ms_fixture, score_names):
-        for subdict_name in ['per_score', 'per_score_diff', '95ci']:
+        for subdict_name in ['per_score', 'per_score_diff', '95ci', 'medians']:
             assert score_names == list(ms_fixture.scores[subdict_name])
         for score_name in score_names:
             assert len(ms_fixture.scores['95ci'][score_name]) == 2
@@ -64,6 +64,18 @@ class TestModelScorer:
                 ms_fixture.scores['95ci'][score_name][0] >
                 ms_fixture.scores['per_score'][score_name].min()
             )
+
+    def test_medians(self, ms_fixture, score_names):
+        for score_name in score_names:
+            assert (
+                ms_fixture.scores['95ci'][score_name][1] >
+                ms_fixture.scores['medians'][score_name]
+            )
+            assert (
+                ms_fixture.scores['95ci'][score_name][0] <
+                ms_fixture.scores['medians'][score_name]
+            )
+
 
 
 def test_score_calibration():

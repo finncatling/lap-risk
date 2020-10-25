@@ -120,8 +120,10 @@ scorer = LogisticScorer(
     calibration_lam_candidates=CALIB_GAM_LAM_CANDIDATES,
 )
 scorer.calculate_scores()
-print("")
-scorer.print_scores(dec_places=3)
+reporter.first("Scores with median as point estimate:")
+scorer.print_scores(dec_places=3, point_estimate='median')
+reporter.first("Scores with fold 0 as point estimate:")
+scorer.print_scores(dec_places=3, point_estimate='fold0')
 
 
 reporter.first("Saving model scorer for later use")

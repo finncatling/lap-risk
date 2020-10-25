@@ -176,31 +176,32 @@ class Scorer:
         for i in pb(range(self.n_splits), prefix="Scorer iteration"):
             self.scores["per_split"][i] = self.scorer_function(
                 self.y_true[i], self.y_pred[i])
-        self.scores["point_estimates"] = self.scores["per_split"][0]
-        self._calculate_95ci()
+        self._calculate_median_and_95ci()
 
-    def print_scores(self, dec_places):
-        for score, pe in self.scores["point_estimates"].items():
+    def print_scores(self, point_estimate: str, dec_places: int):
+        if point_estimate == 'median':
+            pe_dict = self.scores["medians"]
+        elif point_estimate == 'fold0':
+            pe_dict = self.scores["per_split"][0]
+        else:
+            raise ValueError
+        for score, pe in pe_dict.items():
             print(
                 f"{score} = {np.round(pe, dec_places)}",
                 f"({np.round(self.scores['95ci'][score][0], dec_places)} -",
-                f"{np.round(self.scores['95ci'][score][1], dec_places)})",
-            )
+                f"{np.round(self.scores['95ci'][score][1], dec_places)})")
 
-    def _calculate_95ci(self):
-        for score in self.scores["point_estimates"].keys():
+    def _calculate_median_and_95ci(self):
+        self.scores["medians"] = {}
+        for score in self.scores["per_split"][0].keys():
             self._extract_iter_per_score(score)
+            self.scores["medians"][score] = np.median(
+                self.scores["per_score"][score])
             self.scores["per_score_diff"][score] = (
-                self.scores["per_score"][score] -
-                self.scores["point_estimates"][score]
-            )
+                self.scores["per_score"][score] - self.scores["medians"][score])
             self.scores["95ci"][score] = list(
-                self.scores["point_estimates"][score] +
-                np.percentile(
-                    self.scores["per_score_diff"][score],
-                    (2.5, 97.5)
-                )
-            )
+                self.scores["medians"][score] + np.percentile(
+                    self.scores["per_score_diff"][score], (2.5, 97.5)))
 
     def _extract_iter_per_score(self, score):
         self.scores["per_score"][score] = np.zeros(self.n_splits)
@@ -240,8 +241,7 @@ class LogisticScorer(Scorer):
             self.scores["per_split"][i]["Calibration MAE"] = calib_mae
             self.calib_curves.append(calib_curve)
             self.calib_lams.append(best_lam)
-        self.scores["point_estimates"] = self.scores["per_split"][0]
-        self._calculate_95ci()
+        self._calculate_median_and_95ci()
 
 
 def evaluate_samples(
