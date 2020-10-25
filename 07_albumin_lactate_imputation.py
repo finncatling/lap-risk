@@ -149,10 +149,11 @@ for pretty_name, variable_name, model_factory in (
     )
 
 
+    # TODO: Switch to median as point estimate
     reporter.report(f"Scoring {pretty_name} imputation model performance.")
     y_obs, y_preds = imputer.get_all_observed_and_predicted(
         fold_name='test',
-        lac_alb_imp_i=0,  # Disregarded as probabilistic is False
+        lac_alb_imp_i=None,
         probabilistic=False
     )
     scorer = Scorer(

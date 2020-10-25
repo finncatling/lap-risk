@@ -856,7 +856,7 @@ class LactateAlbuminImputer(Imputer):
         self,
         features: pd.DataFrame,
         split_i: int,
-        lac_alb_imp_i: int,
+        lac_alb_imp_i: Union[int, None],
         probabilistic: bool
     ) -> np.ndarray:
         """Impute lactate / albumin values given the provided features. Don't
@@ -864,9 +864,10 @@ class LactateAlbuminImputer(Imputer):
             probabilitic is True, the imputed value for each patient is a
             single sample from the patient-specific distribution over lactate
             or albumin. If probabilitic is False, the imputed value is the
-            mean of that distribution (note that lac_alb_imp_i is ignored in
-            this case)."""
+            mean of that distribution (note that lac_alb_imp_i is ignored and
+            must be None in this case)."""
         if probabilistic:
+            assert isinstance(lac_alb_imp_i, int)
             lacalb_imputed_trans = quick_sample(
                 gam=self.imputers[split_i],
                 sample_at_X=features.values,
@@ -875,6 +876,7 @@ class LactateAlbuminImputer(Imputer):
                 random_seed=lac_alb_imp_i
             ).flatten()
         else:
+            assert lac_alb_imp_i is None
             lacalb_imputed_trans = self.imputers[split_i].predict_mu(
                 X=features.values)
         return self.transformers[split_i].inverse_transform(
@@ -908,7 +910,7 @@ class LactateAlbuminImputer(Imputer):
         fold_name: str,
         split_i: int,
         mice_imp_i: int,
-        lac_alb_imp_i: int,
+        lac_alb_imp_i: Union[int, None],
         probabilistic: bool
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Convenience function which fetches the observed lactate / albumin
@@ -938,7 +940,7 @@ class LactateAlbuminImputer(Imputer):
     def get_all_observed_and_predicted(
         self,
         fold_name: str,
-        lac_alb_imp_i: int,
+        lac_alb_imp_i: Union[int, None],
         probabilistic: bool
     ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         """Convenience function which fetches the observed lactate / albumin
