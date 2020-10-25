@@ -135,7 +135,7 @@ for pretty_name, variable_name, model_factory in (
         indication_var_name=INDICATION_VAR_NAME,
         random_seed=RANDOM_SEED
     )
-    imputer.tts.n_splits = 10  # TODO: Remove this testing line
+    imputer.tts.n_splits = 5  # TODO: Remove this testing line
     imputer.fit()
 
 
@@ -149,7 +149,6 @@ for pretty_name, variable_name, model_factory in (
     )
 
 
-    # TODO: Switch to median as point estimate
     reporter.report(f"Scoring {pretty_name} imputation model performance.")
     y_obs, y_preds = imputer.get_all_observed_and_predicted(
         fold_name='test',
@@ -162,8 +161,10 @@ for pretty_name, variable_name, model_factory in (
         scorer_function=score_linear_predictions
     )
     scorer.calculate_scores()
-    print("")
-    scorer.print_scores(dec_places=3)
+    reporter.first("Scores with median as point estimate:")
+    scorer.print_scores(dec_places=3, point_estimate='median')
+    reporter.first("Scores with fold 0 as point estimate:")
+    scorer.print_scores(dec_places=3, point_estimate='fold0')
 
 
     reporter.first("Saving model scorer for later use")
