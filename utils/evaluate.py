@@ -1,4 +1,4 @@
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Callable, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,6 +11,9 @@ from sklearn.metrics import (
     log_loss,
     brier_score_loss,
     mean_absolute_error,
+    r2_score,
+    mean_squared_error,
+    median_absolute_error
 )
 
 
@@ -101,12 +104,12 @@ def tjurs_coef(y_true, y_pred):
     return y_pred_1.mean() - y_pred_0.mean()
 
 
-def score_predictions(
+def score_logistic_predictions(
     y_true: np.ndarray,
     y_pred: np.ndarray
 ) -> Dict[str, float]:
-    """Calculate several scores for model performance using predicted risks
-        and true labels.
+    """Calculate several scores for logistic model performance using predicted
+        risks and true labels.
 
         NB. We probably shouldn't report average precision - it is predicated
         on binarizing our model output but we care about risks. It is a more
@@ -123,30 +126,42 @@ def score_predictions(
     return scores
 
 
-class ModelScorer:
+def score_linear_predictions(
+    y_true: np.ndarray,
+    y_pred: np.ndarray
+) -> Dict[str, float]:
+    """Calculate several scores for linear model performance using predicted
+        and true values."""
+    scores = {}
+    for score_name, score_f in (
+        ("R2 score", r2_score),
+        ("Mean squared error", mean_squared_error),
+        ("Mean absolute error", mean_absolute_error),
+        ("Median absolute error", median_absolute_error)
+    ):
+        scores[score_name] = score_f(y_true, y_pred)
+    return scores
+
+
+class Scorer:
     """Calculate confidence intervals for model evaluation scores using their
-        predictions on the different test folds from 01_train_test_split.py"""
+        predictions on different test folds."""
 
     def __init__(
         self,
         y_true: List[np.ndarray],
         y_pred: List[np.ndarray],
-        calibration_n_splines: int,
-        calibration_lam_candidates: np.ndarray,
+        scorer_function: Callable[[np.ndarray, np.ndarray], Dict[str, float]]
     ):
         self.y_true = y_true
         self.y_pred = y_pred
-        self.calib_n_splines = calibration_n_splines
-        self.calib_lam_candidates = calibration_lam_candidates
+        self.scorer_function = scorer_function
         self.scores = {
             "per_split": {},
             "per_score": {},
             "per_score_diff": {},
             "95ci": {}
         }
-        self.p: Union[None, np.ndarray] = None
-        self.calib_lams: List[float] = []
-        self.calib_curves: List[np.ndarray] = []
         self._sanity_check()
 
     @property
@@ -159,18 +174,8 @@ class ModelScorer:
 
     def calculate_scores(self):
         for i in pb(range(self.n_splits), prefix="Scorer iteration"):
-            self.scores["per_split"][i] = score_predictions(
-                self.y_true[i], self.y_pred[i]
-            )
-            self.p, calib_curve, calib_mae, best_lam = score_calibration(
-                self.y_true[i],
-                self.y_pred[i],
-                self.calib_n_splines,
-                self.calib_lam_candidates,
-            )
-            self.scores["per_split"][i]["Calibration MAE"] = calib_mae
-            self.calib_curves.append(calib_curve)
-            self.calib_lams.append(best_lam)
+            self.scores["per_split"][i] = self.scorer_function(
+                self.y_true[i], self.y_pred[i])
         self.scores["point_estimates"] = self.scores["per_split"][0]
         self._calculate_95ci()
 
@@ -204,8 +209,44 @@ class ModelScorer:
                 score]
 
 
+class LogisticScorer(Scorer):
+    """Calculate confidence intervals for logistic model evaluation scores
+        using their predictions on different test folds."""
+
+    def __init__(
+        self,
+        y_true: List[np.ndarray],
+        y_pred: List[np.ndarray],
+        scorer_function: Callable[[np.ndarray, np.ndarray], Dict[str, float]],
+        calibration_n_splines: int,
+        calibration_lam_candidates: np.ndarray,
+    ):
+        super().__init__(y_true, y_pred, scorer_function)
+        self.calib_n_splines = calibration_n_splines
+        self.calib_lam_candidates = calibration_lam_candidates
+        self.p: Union[None, np.ndarray] = None
+        self.calib_lams: List[float] = []
+        self.calib_curves: List[np.ndarray] = []
+
+    def calculate_scores(self):
+        for i in pb(range(self.n_splits), prefix="Scorer iteration"):
+            self.scores["per_split"][i] = self.scorer_function(
+                self.y_true[i], self.y_pred[i])
+            self.p, calib_curve, calib_mae, best_lam = score_calibration(
+                self.y_true[i],
+                self.y_pred[i],
+                self.calib_n_splines,
+                self.calib_lam_candidates)
+            self.scores["per_split"][i]["Calibration MAE"] = calib_mae
+            self.calib_curves.append(calib_curve)
+            self.calib_lams.append(best_lam)
+        self.scores["point_estimates"] = self.scores["per_split"][0]
+        self._calculate_95ci()
+
+
 def evaluate_samples(
-    y: np.ndarray, y_samples: np.ndarray,
+    y: np.ndarray,
+    y_samples: np.ndarray,
     cis: np.ndarray = np.linspace(0.95, 0.05, 20)
 ) -> None:
     """Generate some plots to evaluate the quality of imputed samples of
@@ -227,7 +268,7 @@ def evaluate_samples(
         pop_ci = np.quantile(y, q=quantiles)
         pop_iqrs.append(pop_ci[1] - pop_ci[0])
 
-        sam_ci = np.quantile(y_samples, axis=0, q=quantiles).T
+        sam_ci = np.quantile(y_samples, axis=1, q=quantiles).T
         sam_iqrs[i, :] = sam_ci[:, 1] - sam_ci[:, 0]
         sam_mean_iqrs.append(sam_iqrs[i, :].mean())
 

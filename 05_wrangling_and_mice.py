@@ -17,16 +17,15 @@ from utils.model.novel import (
     MULTI_CATEGORY_LEVELS,
     LACTATE_VAR_NAME,
     ALBUMIN_VAR_NAME,
-    LACTATE_ALBUMIN_VARS,
     preprocess_novel_pre_split,
-    WINSOR_QUANTILES,
+    WINSOR_QUANTILES, SplitterWinsorMICE,
 )
 from utils.indications import (
     INDICATION_VAR_NAME,
     MISSING_IND_CATEGORY,
     get_indication_variable_names
 )
-from utils.impute import ImputationInfo, SplitterWinsorMICE
+from utils.impute import ImputationInfo
 from utils.split import TrainTestSplitter
 from utils.report import Reporter
 
@@ -68,7 +67,6 @@ reporter.report("Doing pre-train-test-split data preprocessing")
 df = preprocess_novel_pre_split(
     df,
     category_mapping={"S03ECG": {1.0: 0.0, 4.0: 1.0, 8.0: 1.0}},
-    add_missingness_indicators_for=[LACTATE_VAR_NAME, ALBUMIN_VAR_NAME],
     indication_variable_name=INDICATION_VAR_NAME,
     indications=indications,
     missing_indication_value=MISSING_IND_CATEGORY,
@@ -92,7 +90,8 @@ imputation_stages.add_stage(
         "variables"
     ),
     df=df.drop(
-        list(LACTATE_ALBUMIN_VARS) + [NOVEL_MODEL_VARS["target"]], axis=1
+        [LACTATE_VAR_NAME, ALBUMIN_VAR_NAME] + [NOVEL_MODEL_VARS["target"]],
+        axis=1
     )
 )
 imputation_stages.add_stage(
@@ -110,7 +109,8 @@ save_object(
 
 reporter.report("Making DataFrame for use in MICE")
 mice_df = df.drop(
-    list(multi_category_levels.keys()) + list(LACTATE_ALBUMIN_VARS), axis=1
+    list(multi_category_levels.keys()) + [LACTATE_VAR_NAME, ALBUMIN_VAR_NAME],
+    axis=1
 ).copy()
 
 

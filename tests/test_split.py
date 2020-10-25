@@ -136,9 +136,9 @@ def test_split_into_folds(splitter_current_model_df_fixture):
         },
         target_var_name='target'
     )
-    assert all(pd.DataFrame({'a': [0., 4.]}) == X_train)
+    assert pd.DataFrame({'a': [0., 4.]}).equals(X_train)
     assert (np.array([0, 1]) == y_train).all()
-    assert all(pd.DataFrame({'a': [0., 2.]}) == X_test)
+    assert pd.DataFrame({'a': [0., 2.]}).equals(X_test)
     assert (np.array([0, 0]) == y_test).all()
     assert n_total_train_cases == 4
     assert n_intersection_train_cases == 2

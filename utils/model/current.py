@@ -279,7 +279,7 @@ def preprocess_current(
     return df, label_binarizers
 
 
-class SplitterTrainerPredictor(Splitter):
+class CurrentModel(Splitter):
     """Handles the process of repeated of train-test splitting, re-fitting the
         current NELA model using the training fold, and predicting mortality
         risk for each case in the test fold. Keeps track of relevant

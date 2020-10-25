@@ -10,11 +10,11 @@ from utils.constants import (
     CALIB_GAM_LAM_CANDIDATES,
 )
 from utils.data_check import load_nela_data_and_sanity_check
-from utils.evaluate import ModelScorer
+from utils.evaluate import LogisticScorer, score_logistic_predictions
 from utils.io import load_object, save_object
 from utils.model.current import (
     preprocess_current,
-    SplitterTrainerPredictor,
+    CurrentModel,
     WINSOR_THRESHOLDS,
     CURRENT_MODEL_VARS,
     CENTRES,
@@ -95,26 +95,27 @@ tt_splitter: TrainTestSplitter = load_object(
 
 
 reporter.report("Beginning train-test splitting and model fitting")
-stp = SplitterTrainerPredictor(
+current_model = CurrentModel(
     df,
     train_test_splitter=tt_splitter,
     target_variable_name=CURRENT_MODEL_VARS["target"],
     random_seed=RANDOM_SEED,
 )
-stp.split_train_predict()
+current_model.split_train_predict()
 
 
-reporter.report("Saving SplitterTrainerPredictor for later use")
+reporter.report("Saving CurrentModel for later use")
 save_object(
-    stp,
-    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_splitter_trainer_predictor.pkl")
+    current_model,
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model.pkl")
 )
 
 
 reporter.report("Scoring model performance")
-scorer = ModelScorer(
-    y_true=stp.y_test,
-    y_pred=stp.y_pred,
+scorer = LogisticScorer(
+    y_true=current_model.y_test,
+    y_pred=current_model.y_pred,
+    scorer_function=score_logistic_predictions,
     calibration_n_splines=CALIB_GAM_N_SPLINES,
     calibration_lam_candidates=CALIB_GAM_LAM_CANDIDATES,
 )
@@ -123,16 +124,19 @@ print("")
 scorer.print_scores(dec_places=3)
 
 
-reporter.first("Saving ModelScorer for later use")
-save_object(scorer, os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_scorer.pkl"))
+reporter.first("Saving model scorer for later use")
+save_object(
+    scorer,
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model_scorer.pkl")
+)
 
 
 reporter.report("Saving summary statistics for external use")
 current_model_stats = {
     "start_datetime": datetime.fromtimestamp(reporter.timer.start_time),
-    "train_fold_stats": stp.split_stats,
-    "model_features": stp.features,
-    "model_coefficients": stp.coefficients,
+    "train_fold_stats": current_model.split_stats,
+    "model_features": current_model.features,
+    "model_coefficients": current_model.coefficients,
     "scores": scorer.scores,
     "calib_p": scorer.p,
     "calib_curves": scorer.calib_curves,
