@@ -121,9 +121,9 @@ save_object(
 
 
 for pretty_name, variable_name, model_factory in (
-    # ('albumin', ALBUMIN_VAR_NAME, albumin_model_factory),  # TODO: uncomment
+    ('albumin', ALBUMIN_VAR_NAME, albumin_model_factory),
     ('lactate', LACTATE_VAR_NAME, lactate_model_factory),
-): 
+):
     reporter.report(f"Fitting imputers for {pretty_name}")
     imputer = LactateAlbuminImputer(
         df=df.loc[:, [variable_name, NOVEL_MODEL_VARS["target"]]],
@@ -133,33 +133,25 @@ for pretty_name, variable_name, model_factory in (
         winsor_quantiles=WINSOR_QUANTILES,
         multi_cat_vars=multi_category_levels,
         indication_var_name=INDICATION_VAR_NAME,
-        random_seed=RANDOM_SEED
-    )
-    imputer.tts.n_splits = 5  # TODO: Remove this testing line
+        random_seed=RANDOM_SEED)
     imputer.fit()
 
 
-    reporter.report(f"Saving draft {pretty_name} imputer for later use")
+    reporter.report(f"Saving {pretty_name} imputer for later use")
     save_object(
         imputer,
-        os.path.join(
-            NOVEL_MODEL_OUTPUT_DIR,
-            f"07_draft_{pretty_name}_imputer.pkl"
-        )
-    )
+        os.path.join(NOVEL_MODEL_OUTPUT_DIR, f"07_{pretty_name}_imputer.pkl"))
 
 
     reporter.report(f"Scoring {pretty_name} imputation model performance.")
     y_obs, y_preds = imputer.get_all_observed_and_predicted(
         fold_name='test',
         probabilistic=False,
-        lac_alb_imp_i=None
-    )
+        lac_alb_imp_i=None)
     scorer = Scorer(
         y_true=y_obs,
         y_pred=y_preds,
-        scorer_function=score_linear_predictions
-    )
+        scorer_function=score_linear_predictions)
     scorer.calculate_scores()
     reporter.first("Scores with median as point estimate:")
     scorer.print_scores(dec_places=3, point_estimate='median')
@@ -171,10 +163,7 @@ for pretty_name, variable_name, model_factory in (
     save_object(
         scorer,
         os.path.join(
-            NOVEL_MODEL_OUTPUT_DIR,
-            f"07_{pretty_name}_imputer_scorer.pkl"
-        )
-    )
+            NOVEL_MODEL_OUTPUT_DIR, f"07_{pretty_name}_imputer_scorer.pkl"))
 
 
     reporter.first(f"Plotting {pretty_name} imputer partial dependence plots")
@@ -185,13 +174,11 @@ for pretty_name, variable_name, model_factory in (
         pdp_generator = PDPFigure(
             gam=imputer.imputers[0],
             pdp_terms=pdp_terms,
-            **kwargs
-        )
+            **kwargs)
         plot_saver(
             pdp_generator.plot,
             output_dir=FIGURES_OUTPUT_DIR,
-            output_filename=f"07_{pretty_name}_imputer_{space}_pd_plot",
-        )
+            output_filename=f"07_{pretty_name}_imputer_{space}_pd_plot")
 
 
 reporter.last("Done.")
