@@ -10,19 +10,19 @@ def albumin_model_factory(
     indication_var_name: str
 ) -> LinearGAM:
     return LinearGAM(
-        s(columns.get_loc("S01AgeOnArrival"), lam=300)
-        + s(columns.get_loc("S03SystolicBloodPressure"), lam=300)
+        s(columns.get_loc("S01AgeOnArrival"), lam=400)
+        + s(columns.get_loc("S03SystolicBloodPressure"), lam=400)
         + te(
             columns.get_loc("S03Pulse"),
             columns.get_loc("S03ECG"),
-            lam=(200, 5),
+            lam=(400, 10),
             n_splines=(20, 2),
             spline_order=(3, 0),
             dtype=("numerical", "categorical"),
         )
         + s(columns.get_loc("S03WhiteCellCount"), lam=300)
-        + s(columns.get_loc("S03Sodium"), lam=300)
-        + s(columns.get_loc("S03Potassium"), lam=300)
+        + s(columns.get_loc("S03Sodium"), lam=400)
+        + s(columns.get_loc("S03Potassium"), lam=400)
         + s(
             columns.get_loc("S03GlasgowComaScore"),
             n_splines=13,
@@ -49,7 +49,7 @@ def albumin_model_factory(
         + te(
             columns.get_loc("S03CardiacSigns"),
             columns.get_loc("S03RespiratorySigns"),
-            lam=30,
+            lam=50,
             n_splines=(
                 len(multi_cat_levels["S03CardiacSigns"]),
                 len(multi_cat_levels["S03RespiratorySigns"])
