@@ -10,8 +10,8 @@ def albumin_model_factory(
     indication_var_name: str
 ) -> LinearGAM:
     return LinearGAM(
-        s(columns.get_loc("S01AgeOnArrival"), lam=600)
-        + s(columns.get_loc("S03SystolicBloodPressure"), lam=700)
+        s(columns.get_loc("S01AgeOnArrival"), lam=300)
+        + s(columns.get_loc("S03SystolicBloodPressure"), lam=300)
         + te(
             columns.get_loc("S03Pulse"),
             columns.get_loc("S03ECG"),
@@ -20,9 +20,9 @@ def albumin_model_factory(
             spline_order=(3, 0),
             dtype=("numerical", "categorical"),
         )
-        + s(columns.get_loc("S03WhiteCellCount"), lam=600)
-        + s(columns.get_loc("S03Sodium"), lam=600)
-        + s(columns.get_loc("S03Potassium"), lam=600)
+        + s(columns.get_loc("S03WhiteCellCount"), lam=300)
+        + s(columns.get_loc("S03Sodium"), lam=300)
+        + s(columns.get_loc("S03Potassium"), lam=300)
         + s(
             columns.get_loc("S03GlasgowComaScore"),
             n_splines=13,
@@ -41,7 +41,7 @@ def albumin_model_factory(
         + te(
             columns.get_loc("S03Pred_Peritsoil"),
             columns.get_loc("S02PreOpCTPerformed"),
-            lam=(100, 5),
+            lam=(50, 10),
             n_splines=(len(multi_cat_levels["S03Pred_Peritsoil"]), 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
@@ -49,7 +49,7 @@ def albumin_model_factory(
         + te(
             columns.get_loc("S03CardiacSigns"),
             columns.get_loc("S03RespiratorySigns"),
-            lam=80,
+            lam=30,
             n_splines=(
                 len(multi_cat_levels["S03CardiacSigns"]),
                 len(multi_cat_levels["S03RespiratorySigns"])
@@ -60,13 +60,13 @@ def albumin_model_factory(
         + te(
             columns.get_loc("S03SerumCreatinine"),
             columns.get_loc("S03Urea"),
-            lam=20,
+            lam=40,
             dtype=("numerical", "numerical"),
         )
         + te(
             columns.get_loc(indication_var_name),
             columns.get_loc("S02PreOpCTPerformed"),
-            lam=(30, 5),
+            lam=(60, 2),
             n_splines=(len(multi_cat_levels[indication_var_name]), 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
