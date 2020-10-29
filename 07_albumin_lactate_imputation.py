@@ -134,8 +134,8 @@ for pretty_name, variable_name, model_factory in (
         multi_cat_vars=multi_category_levels,
         indication_var_name=INDICATION_VAR_NAME,
         random_seed=RANDOM_SEED)
-    imputer.fit()
     imputer.tts.n_splits = 1  # TODO: Remove this testing line
+    imputer.fit()
 
 
     reporter.report(f"Saving {pretty_name} imputer for later use")
