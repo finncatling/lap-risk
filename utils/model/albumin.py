@@ -14,7 +14,7 @@ def albumin_model_factory(
             columns.get_loc("S01AgeOnArrival"),
             spline_order=2,
             n_splines=10,
-            lam=25
+            lam=50
         )
         + s(
             columns.get_loc("S03SystolicBloodPressure"),
@@ -25,7 +25,7 @@ def albumin_model_factory(
         + te(
             columns.get_loc("S03Pulse"),
             columns.get_loc("S03ECG"),
-            lam=(100, 20),
+            lam=(150, 20),
             n_splines=(20, 2),
             spline_order=(3, 0),
             dtype=("numerical", "categorical"),
@@ -86,7 +86,7 @@ def albumin_model_factory(
             columns.get_loc("S03SerumCreatinine"),
             columns.get_loc("S03Urea"),
             spline_order=2,
-            lam=50,
+            lam=75,
             dtype=("numerical", "numerical"),
         )
         + te(
