@@ -1096,6 +1096,7 @@ class NovelModel:
     def _single_train_test_split(self, split_i: int):
         """Fit combined mortality risk model for a single train-test split."""
         gams = []
+        # TODO: After testing, remove this progressbar wrapper
         for mice_imp_i in pb(range(self.cat_imputer.swm.n_mice_imputations)):
             for lac_alb_imp_i in range(self.n_lacalb_imp):
                 features, target = self.get_features_and_labels(
