@@ -111,7 +111,7 @@ pdp_terms = [
         (None, None),
         None,
         None,
-        (30, 205)
+        (40, 205)
     ),
     PDPTerm(
         ("S03SerumCreatinine", "S03Urea"),
@@ -120,7 +120,7 @@ pdp_terms = [
         (None, None),
         None,
         None,
-        (30, 205)
+        (40, 205)
     ),
     PDPTerm(
         INDICATION_VAR_NAME,
