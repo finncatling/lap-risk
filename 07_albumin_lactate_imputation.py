@@ -121,8 +121,8 @@ save_object(
 
 
 for pretty_name, variable_name, model_factory in (
-    # ('albumin', ALBUMIN_VAR_NAME, albumin_model_factory),
-    ('lactate', LACTATE_VAR_NAME, lactate_model_factory),
+    ('albumin', ALBUMIN_VAR_NAME, albumin_model_factory),
+    # ('lactate', LACTATE_VAR_NAME, lactate_model_factory),
 ):
     reporter.report(f"Fitting imputers for {pretty_name}")
     imputer = LactateAlbuminImputer(

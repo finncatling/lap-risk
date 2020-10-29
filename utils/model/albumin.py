@@ -10,19 +10,44 @@ def albumin_model_factory(
     indication_var_name: str
 ) -> LinearGAM:
     return LinearGAM(
-        s(columns.get_loc("S01AgeOnArrival"), lam=400)
-        + s(columns.get_loc("S03SystolicBloodPressure"), lam=600)
+        s(
+            columns.get_loc("S01AgeOnArrival"),
+            spline_order=2,
+            n_splines=10,
+            lam=25
+        )
+        + s(
+            columns.get_loc("S03SystolicBloodPressure"),
+            spline_order=2,
+            n_splines=10,
+            lam=25
+        )
         + te(
             columns.get_loc("S03Pulse"),
             columns.get_loc("S03ECG"),
-            lam=(500, 20),
+            lam=(25, 20),
             n_splines=(20, 2),
             spline_order=(3, 0),
             dtype=("numerical", "categorical"),
         )
-        + s(columns.get_loc("S03WhiteCellCount"), lam=300)
-        + s(columns.get_loc("S03Sodium"), lam=600)
-        + s(columns.get_loc("S03Potassium"), lam=400)
+        + s(
+            columns.get_loc("S03WhiteCellCount"),
+            spline_order=2,
+            n_splines=10,
+            lam=25
+        )
+        + s(
+            columns.get_loc("S03Sodium"),
+            spline_order=2,
+            n_splines=10,
+            lam=25
+        )
+        + s(
+            columns.get_loc("S03Potassium"),
+            spline_order=2,
+            n_splines=10,
+            lam=25
+        )
         + s(
             columns.get_loc("S03GlasgowComaScore"),
             n_splines=13,
@@ -60,7 +85,8 @@ def albumin_model_factory(
         + te(
             columns.get_loc("S03SerumCreatinine"),
             columns.get_loc("S03Urea"),
-            lam=40,
+            spline_order=2,
+            lam=20,
             dtype=("numerical", "numerical"),
         )
         + te(
