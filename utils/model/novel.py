@@ -65,24 +65,57 @@ def novel_model_factory(
     multi_cat_levels: Dict[str, Tuple],
     indication_var_name: str
 ) -> LogisticGAM:
-    # TODO: Consider reducing n_splines for most continuous variables
-    # TODO: Indications should be more regularised?
     return LogisticGAM(
-        s(columns.get_loc("S01AgeOnArrival"), lam=200)
-        + s(columns.get_loc("S03SystolicBloodPressure"), lam=300)
+        s(
+            columns.get_loc("S01AgeOnArrival"),
+            n_splines=10,
+            spline_order=2,
+            lam=25
+        )
+        + s(
+            columns.get_loc("S03SystolicBloodPressure"),
+            n_splines=10,
+            spline_order=2,
+            lam=25
+        )
         + te(
             columns.get_loc("S03Pulse"),
             columns.get_loc("S03ECG"),
-            lam=(250, 2),
-            n_splines=(20, 2),
-            spline_order=(3, 0),
+            lam=(25, 2),
+            n_splines=(10, 2),
+            spline_order=(2, 0),
             dtype=("numerical", "categorical"),
         )
-        + s(columns.get_loc("S03WhiteCellCount"), lam=50)
-        + s(columns.get_loc("S03Sodium"), lam=220)
-        + s(columns.get_loc("S03Potassium"), lam=300)
-        + s(columns.get_loc(LACTATE_VAR_NAME), lam=150)
-        + s(columns.get_loc(ALBUMIN_VAR_NAME), lam=150)
+        + s(
+            columns.get_loc("S03WhiteCellCount"),
+            n_splines=10,
+            spline_order=2,
+            lam=25
+        )
+        + s(
+            columns.get_loc("S03Sodium"),
+            n_splines=10,
+            spline_order=2,
+            lam=25
+        )
+        + s(
+            columns.get_loc("S03Potassium"),
+            n_splines=10,
+            spline_order=2,
+            lam=25
+        )
+        + s(
+            columns.get_loc(LACTATE_VAR_NAME),
+            n_splines=10,
+            spline_order=2,
+            lam=25
+        )
+        + s(
+            columns.get_loc(ALBUMIN_VAR_NAME),
+            n_splines=10,
+            spline_order=2,
+            lam=25
+        )
         + s(
             columns.get_loc("S03GlasgowComaScore"),
             spline_order=0,
@@ -130,6 +163,7 @@ def novel_model_factory(
         + te(
             columns.get_loc("S03SerumCreatinine"),
             columns.get_loc("S03Urea"),
+            spline_order=(2, 2),
             lam=18.0,
             dtype=("numerical", "numerical"),
         )
