@@ -65,8 +65,6 @@ def novel_model_factory(
     multi_cat_levels: Dict[str, Tuple],
     indication_var_name: str
 ) -> LogisticGAM:
-    # TODO: Should GCS splines have lower order?
-    # TODO: Consider edge knots
     # TODO: Consider reducing n_splines for most continuous variables
     # TODO: Indications should be more regularised?
     return LogisticGAM(
