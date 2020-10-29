@@ -10,19 +10,44 @@ def lactate_model_factory(
     indication_var_name: str
 ) -> LinearGAM:
     return LinearGAM(
-        s(columns.get_loc("S01AgeOnArrival"), lam=600)
-        + s(columns.get_loc("S03SystolicBloodPressure"), lam=700)
+        s(
+            columns.get_loc("S01AgeOnArrival"),
+            spline_order=2,
+            n_splines=10,
+            lam=25
+        )
+        + s(
+            columns.get_loc("S03SystolicBloodPressure"),
+            spline_order=2,
+            n_splines=10,
+            lam=25
+        )
         + te(
             columns.get_loc("S03Pulse"),
             columns.get_loc("S03ECG"),
-            lam=(200, 5),
-            n_splines=(20, 2),
-            spline_order=(3, 0),
+            lam=(25, 5),
+            n_splines=(10, 2),
+            spline_order=(2, 0),
             dtype=("numerical", "categorical"),
         )
-        + s(columns.get_loc("S03WhiteCellCount"), lam=600)
-        + s(columns.get_loc("S03Sodium"), lam=600)
-        + s(columns.get_loc("S03Potassium"), lam=600)
+        + s(
+            columns.get_loc("S03WhiteCellCount"),
+            spline_order=2,
+            n_splines=10,
+            lam=25
+        )
+        + s(
+            columns.get_loc("S03Sodium"),
+            spline_order=2,
+            n_splines=10,
+            lam=25
+        )
+        + s(
+            columns.get_loc("S03Potassium"),
+            spline_order=2,
+            n_splines=10,
+            lam=25
+        )
         + s(
             columns.get_loc("S03GlasgowComaScore"),
             n_splines=13,
@@ -60,6 +85,7 @@ def lactate_model_factory(
         + te(
             columns.get_loc("S03SerumCreatinine"),
             columns.get_loc("S03Urea"),
+            spline_order=2,
             lam=20,
             dtype=("numerical", "numerical"),
         )
