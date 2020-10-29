@@ -38,7 +38,7 @@ imputation_stages: ImputationInfo = load_object(
 
 
 reporter.report("Beginning train-test splitting and model fitting")
-current_model = NovelModel(
+novel_model = NovelModel(
     categorical_imputer=cat_imputer,
     albumin_imputer=albumin_imputer,
     lactate_imputer=lactate_imputer,
@@ -47,11 +47,14 @@ current_model = NovelModel(
         imputation_stages.multiple_of_previous_n_imputations[1]),
     random_seed=RANDOM_SEED
 )
+novel_model.cat_imputer.tts.n_splits = 1  # TODO: Remove this testing line
+novel_model.fit()
 
-# TODO: Remove this testing line
-current_model.cat_imputer.tts.n_splits = 1
 
-current_model.fit()
+reporter.report(f"Saving draft novel model for later use")
+save_object(
+    novel_model,
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, f"08_draft_novel_model.pkl"))
 
 
 # TODO: Finish this script
