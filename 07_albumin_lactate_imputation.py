@@ -56,7 +56,7 @@ pdp_terms = [
         (0, 2),
         None,
         ["Sinus", "Arrhythmia"],
-        "lower right",
+        "best",
     ),
     PDPTerm(
         "S03WhiteCellCount",
@@ -73,7 +73,7 @@ pdp_terms = [
         (2, 2),
         ["None", "Primary\nonly", "Nodal\nmets.", "Distant\nmets."],
         ["No CT", "CT"],
-        "upper left",
+        "best",
     ),
     PDPTerm(
         "S03Pred_Peritsoil",
@@ -81,7 +81,7 @@ pdp_terms = [
         (3, 0),
         ["None", "Serous", "Local\npus", "Free pus /\nblood / faeces"],
         ["No CT", "CT"],
-        "upper left",
+        "best",
     ),
     PDPTerm(
         ("S03CardiacSigns", "S03RespiratorySigns"),
@@ -108,7 +108,7 @@ pdp_terms = [
         [sanitize_indication(s) for s in
          multi_category_levels[INDICATION_VAR_NAME]],
         ["No CT", "CT"],
-        "upper left",
+        "best",
     ),
 ]
 
