@@ -1085,16 +1085,18 @@ class NovelModel:
 
     def fit(self):
         """Fit mortality risk models for every train-test split."""
-        for split_i in pb(
-            range(self.cat_imputer.tts.n_splits),
-            prefix="Split iteration"
-        ):
+        # for split_i in pb(
+        #     range(self.cat_imputer.tts.n_splits),
+        #     prefix="Split iteration"
+        # ):
+        # TODO: After testing, revert to progressbar on outer loop
+        for split_i in range(self.cat_imputer.tts.n_splits):
             self._single_train_test_split(split_i)
 
     def _single_train_test_split(self, split_i: int):
         """Fit combined mortality risk model for a single train-test split."""
         gams = []
-        for mice_imp_i in range(self.cat_imputer.swm.n_mice_imputations):
+        for mice_imp_i in pb(range(self.cat_imputer.swm.n_mice_imputations)):
             for lac_alb_imp_i in range(self.n_lacalb_imp):
                 features, target = self.get_features_and_labels(
                     fold_name='train',

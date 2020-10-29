@@ -47,6 +47,10 @@ current_model = NovelModel(
         imputation_stages.multiple_of_previous_n_imputations[1]),
     random_seed=RANDOM_SEED
 )
+
+# TODO: Remove this testing line
+current_model.cat_imputer.tts.n_splits = 1
+
 current_model.fit()
 
 
