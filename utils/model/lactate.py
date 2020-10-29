@@ -20,7 +20,7 @@ def lactate_model_factory(
             columns.get_loc("S03SystolicBloodPressure"),
             spline_order=2,
             n_splines=10,
-            lam=50
+            lam=100
         )
         + te(
             columns.get_loc("S03Pulse"),
@@ -34,13 +34,13 @@ def lactate_model_factory(
             columns.get_loc("S03WhiteCellCount"),
             spline_order=2,
             n_splines=10,
-            lam=60
+            lam=80
         )
         + s(
             columns.get_loc("S03Sodium"),
             spline_order=2,
             n_splines=10,
-            lam=75
+            lam=150
         )
         + s(
             columns.get_loc("S03Potassium"),
