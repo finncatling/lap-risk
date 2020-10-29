@@ -141,30 +141,31 @@ save_object(
 )
 
 
-# reporter.report("Beginning train-test splitting and model fitting")
-# novel_model = NovelModel(
-#     categorical_imputer=cat_imputer,
-#     albumin_imputer=albumin_imputer,
-#     lactate_imputer=lactate_imputer,
-#     model_factory=novel_model_factory,
-#     n_lacalb_imputations_per_mice_imp=(
-#         imputation_stages.multiple_of_previous_n_imputations[1]),
-#     random_seed=RANDOM_SEED
-# )
-# novel_model.cat_imputer.tts.n_splits = 1  # TODO: Remove this testing line
-# novel_model.fit()
-#
-#
-# reporter.report(f"Saving draft novel model for later use")
-# save_object(
-#     novel_model,
-#     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_draft_novel_model.pkl"))
+reporter.report("Beginning train-test splitting and model fitting")
+novel_model = NovelModel(
+    categorical_imputer=cat_imputer,
+    albumin_imputer=albumin_imputer,
+    lactate_imputer=lactate_imputer,
+    model_factory=novel_model_factory,
+    # n_lacalb_imputations_per_mice_imp=(
+    #     imputation_stages.multiple_of_previous_n_imputations[1]),
+    n_lacalb_imputations_per_mice_imp=1,  # TODO: Remove this testing line
+    random_seed=RANDOM_SEED
+)
+novel_model.cat_imputer.tts.n_splits = 1  # TODO: Remove this testing line
+novel_model.fit()
 
 
-# TODO: Remove this development code
-reporter.report(f"Loading draft novel model for later use")
-novel_model: NovelModel = load_object(
+reporter.report(f"Saving draft novel model for later use")
+save_object(
+    novel_model,
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_draft_novel_model.pkl"))
+
+
+# # TODO: Remove this development code
+# reporter.report(f"Loading draft novel model for later use")
+# novel_model: NovelModel = load_object(
+#     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_draft_novel_model.pkl"))
 
 reporter.first(f"Plotting novel model partial dependence plot")
 pdp_generator = PDPFigure(gam=novel_model.models[0], pdp_terms=pdp_terms)
