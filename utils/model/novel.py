@@ -85,7 +85,12 @@ def novel_model_factory(
         + s(columns.get_loc("S03Potassium"), lam=300)
         + s(columns.get_loc(LACTATE_VAR_NAME), lam=150)
         + s(columns.get_loc(ALBUMIN_VAR_NAME), lam=150)
-        + s(columns.get_loc("S03GlasgowComaScore"), n_splines=13, lam=150)
+        + s(
+            columns.get_loc("S03GlasgowComaScore"),
+            spline_order=0,
+            n_splines=13,
+            lam=150
+        )
         + f(columns.get_loc("S03ASAScore"), coding="dummy", lam=50)
         + f(
             columns.get_loc(f"{LACTATE_VAR_NAME}{MISSINGNESS_SUFFIX}"),
