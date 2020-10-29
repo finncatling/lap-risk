@@ -14,7 +14,7 @@ def albumin_model_factory(
             columns.get_loc("S01AgeOnArrival"),
             spline_order=2,
             n_splines=10,
-            lam=50
+            lam=75
         )
         + s(
             columns.get_loc("S03SystolicBloodPressure"),
