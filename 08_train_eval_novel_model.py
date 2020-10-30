@@ -179,15 +179,16 @@ pdp_hist_data = pd.concat(
 
 
 reporter.first("Plotting novel model partial dependence plot")
-pdp_generator = PDPFigure(
-    gam=novel_model.models[0],
-    pdp_terms=pdp_terms,
-    plot_hists=True,
-    hist_data=pdp_hist_data)
-plot_saver(
-    pdp_generator.plot,
-    output_dir=FIGURES_OUTPUT_DIR,
-    output_filename=f"08_draft_novel_model_pd_plot")
+for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
+    pdp_generator = PDPFigure(
+        gam=novel_model.models[0],
+        pdp_terms=pdp_terms,
+        plot_hists=hist_switch,
+        hist_data=pdp_hist_data)
+    plot_saver(
+        pdp_generator.plot,
+        output_dir=FIGURES_OUTPUT_DIR,
+        output_filename=f"08_draft_novel_model_pd_plot{hist_text}")
 
 
 # TODO: Score predictions
