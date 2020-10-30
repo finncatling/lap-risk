@@ -33,6 +33,7 @@ jobs:
         pipenv run pytest --cov=utils
         
     - name: Upload Coverage
+      if: ${{ always() }}
       run: coveralls
       env:
         GITHUB_TOKEN: ${{ secrets.TEST_TOKEN }}
