@@ -20,7 +20,7 @@ from utils.model.novel import (
 )
 from utils.impute import ImputationInfo
 from utils.indications import INDICATION_VAR_NAME
-from utils.plot.pdp import PDPTerm, PDPFigure, get_pdp_rug_plot_data
+from utils.plot.pdp import PDPTerm, PDPFigure
 from utils.plot.helpers import sanitize_indication, plot_saver
 
 
@@ -168,22 +168,22 @@ novel_model: NovelModel = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_draft_novel_model.pkl"))
 
 
-reporter.report('Preparing data for rug plots')
-rug_plot_data = get_pdp_rug_plot_data(
-    train_features=novel_model.get_features_and_labels('train', 0, 0, 0)[0],
-    test_features=novel_model.get_features_and_labels('test', 0, 0, 0)[0],
-    age_var_name="S01AgeOnArrival",
-    age_offset_sd=0,  # TODO: Increase this
-    winsor_thresholds=novel_model.cat_imputer.swm.winsor_thresholds[0],
-    random_seed=RANDOM_SEED)
+reporter.report('Preparing data for PDP histograms')
+pdp_hist_data = pd.concat(
+    objs=(
+        novel_model.get_features_and_labels('train', 0, 0, 0)[0],
+        novel_model.get_features_and_labels('test', 0, 0, 0)[0]
+    ),
+    axis=0,
+    ignore_index=True)
 
 
 reporter.first("Plotting novel model partial dependence plot")
 pdp_generator = PDPFigure(
     gam=novel_model.models[0],
     pdp_terms=pdp_terms,
-    plot_rugs=True,
-    rug_data=rug_plot_data)
+    plot_hists=True,
+    hist_data=pdp_hist_data)
 plot_saver(
     pdp_generator.plot,
     output_dir=FIGURES_OUTPUT_DIR,

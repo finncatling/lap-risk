@@ -39,9 +39,10 @@ class PDPFigure:
         gam: GAM,
         pdp_terms: List[PDPTerm],
         transformer: Union[None, QuantileTransformer] = None,
-        plot_rugs: bool = False,
-        rug_data: Union[None, pd.DataFrame] = None,
-        rug_alpha: float = 0.1,
+        plot_hists: bool = False,
+        hist_data: Union[None, pd.DataFrame] = None,
+        max_hist_bins: int = 30,
+        hist_height_scaler: float = 0.5,
         standardise_y_scale: bool = True,
         fig_width: float = 12.0,
         n_cols: int = 3,
@@ -53,9 +54,10 @@ class PDPFigure:
         self.gam = gam
         self.pdp_terms = pdp_terms
         self.transformer = transformer
-        self.plot_rugs = plot_rugs
-        self.rug_data = rug_data
-        self.rug_alpha = rug_alpha
+        self.plot_hists = plot_hists
+        self.hist_data = hist_data
+        self.max_hist_bins = max_hist_bins
+        self.hist_height_scaler = hist_height_scaler
         self.standardise_y_scale = standardise_y_scale
         self.fig_width = fig_width
         self.n_cols = n_cols
@@ -284,48 +286,32 @@ class PDPFigure:
             if self.pdp_terms[i].view_3d is None:
                 if self.standardise_y_scale:
                     ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
-                if self.plot_rugs:
-                    self._plot_rug(i, ax)
+                if self.plot_hists:
+                    self._plot_hist(i, ax)
             else:
                 if self.standardise_y_scale:
                     # TODO: Implement rug plots for 3D figures?
                     ax.set_zlim3d(self.y_min['3d'], self.y_max['3d'])
 
-    def _plot_rug(self, i: int, ax: Axes):
+    def _plot_hist(self, i: int, ax: Axes):
         if self.terms[i]["term_type"] != "tensor_term":
-            ylim = ax.get_ylim()
-            ax.set_ylim(ylim)  # so that rug plotting doesn't change ylim
-            rug = self.rug_data[self.pdp_terms[i].name]
-            ax.plot(
-                rug,
-                np.repeat(ylim[0], rug.shape[0]),
-                marker='|',
-                ms=30,
-                c='black',
-                alpha=self.rug_alpha)
+            hist, bins = np.histogram(
+                self.hist_data[self.pdp_terms[i].name].values,
+                bins=self._determine_n_hist_bins(i),
+                density=True)
+            ax.bar(
+                x=(bins[:-1] + bins[1:]) / 2,
+                height=hist * self.hist_height_scaler,
+                align='center',
+                width=bins[1] - bins[0],
+                bottom=ax.get_ylim()[0],
+                color='black',
+                alpha=0.3)
 
-
-def get_pdp_rug_plot_data(
-    train_features: pd.DataFrame,
-    test_features: pd.DataFrame,
-    age_var_name: str,
-    age_offset_sd: float,
-    winsor_thresholds: Dict[str, Tuple[float, float]],
-    random_seed: int
-) -> pd.DataFrame:
-    """Convenience function to prepare data for rug plots on PDPs. Combines
-        train and test fold features (from single imputation iteration),
-        applies random offset to age data and re-winsorises it."""
-    rnd = np.random.RandomState(random_seed)
-    features = pd.concat(
-        (train_features, test_features),
-        axis=0,
-        ignore_index=True)
-    features.loc[:, age_var_name] += rnd.normal(
-        loc=0,
-        scale=age_offset_sd,
-        size=features.shape[0])
-    features, _ = winsorize_novel(
-        df=features,
-        thresholds={age_var_name: winsor_thresholds[age_var_name]})
-    return features
+    def _determine_n_hist_bins(self, i: int):
+        if self.pdp_terms[i].name == "S03GlasgowComaScore":
+            return 13
+        elif self.pdp_terms[i].labels is not None:
+            return len(self.pdp_terms[i].labels)
+        else:
+            return self.max_hist_bins
