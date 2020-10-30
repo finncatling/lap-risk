@@ -285,7 +285,6 @@ class PDPFigure:
             rug at the bottom of each plot. Also autoscales x limits."""
         for i, ax in enumerate(self.fig.axes):
             if self.pdp_terms[i].view_3d is None:
-                # TODO: Fit x axis limits to plotted spline
                 if self.standardise_y_scale:
                     ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
                 if self.plot_hists:
@@ -307,7 +306,7 @@ class PDPFigure:
             width = bins[1] - bins[0]
         ax.bar(
             x=x_ticks,
-            height=hist / hist.sum() * self.hist_height_scaler,
+            height=hist / hist.max() * self.hist_height_scaler,
             align='center',
             width=width,
             bottom=ax.get_ylim()[0],
