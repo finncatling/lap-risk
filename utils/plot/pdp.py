@@ -233,6 +233,7 @@ class PDPFigure:
             lines.append(Line2D([0], [0], color=self.strata_colours[slice_i]))
         ax.legend(lines, self.pdp_terms[i].strata,
                   loc=self.pdp_terms[i].legend_loc)
+        ax.set_xlim(xx[0][0, 0], xx[0][-1, 0])
         self._set_tensor_x_labels(i, ax, xx, x_length)
 
     def _set_tensor_x_labels(
@@ -247,7 +248,6 @@ class PDPFigure:
                               range(self.mid_cat_i, x_length,
                                     self.ticks_per_cat)])
             ax.set_xticklabels(self.pdp_terms[i].labels)
-            ax.set_xlim(xx[0][0, 0], xx[0][-1, 0])
             if self.pdp_terms[i].name == "Indication":
                 ax.set_xticklabels(
                     self.pdp_terms[i].labels,
