@@ -2,6 +2,8 @@
 
 Modelling mortality risk in emergency laparotomy, using data from the NELA.
 
+![Tests](https://github.com/finncatling/lap-risk/workflows/Python%20application/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/finncatling/lap-risk/badge.svg?branch=master&t=H4at4E)](https://coveralls.io/github/finncatling/lap-risk?branch=master)
 ## Install
 
 This codebase is written in Python 3.8.6. We manage dependencies with pipenv. You'll need to [install Python and pip](https://pipenv-fork.readthedocs.io/en/latest/install.html#make-sure-you-ve-got-python-pip), then [install pipenv](https://pipenv-fork.readthedocs.io/en/latest/install.html#installing-pipenv) in order to get started.
