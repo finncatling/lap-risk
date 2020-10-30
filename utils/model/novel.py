@@ -126,17 +126,17 @@ def novel_model_factory(
         + f(
             columns.get_loc(f"{LACTATE_VAR_NAME}{MISSINGNESS_SUFFIX}"),
             coding="dummy",
-            lam=25
+            lam=15
         )
         + f(
             columns.get_loc(f"{ALBUMIN_VAR_NAME}{MISSINGNESS_SUFFIX}"),
             coding="dummy",
-            lam=25
+            lam=15
         )
         + te(
             columns.get_loc("S03DiagnosedMalignancy"),
             columns.get_loc("S02PreOpCTPerformed"),
-            lam=(20, 20),
+            lam=(10, 5),
             n_splines=(len(multi_cat_levels["S03DiagnosedMalignancy"]), 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
@@ -144,7 +144,7 @@ def novel_model_factory(
         + te(
             columns.get_loc("S03Pred_Peritsoil"),
             columns.get_loc("S02PreOpCTPerformed"),
-            lam=(40, 20),
+            lam=(10, 5),
             n_splines=(len(multi_cat_levels["S03Pred_Peritsoil"]), 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
@@ -152,7 +152,7 @@ def novel_model_factory(
         + te(
             columns.get_loc("S03CardiacSigns"),
             columns.get_loc("S03RespiratorySigns"),
-            lam=100,
+            lam=10,
             n_splines=(
                 len(multi_cat_levels["S03CardiacSigns"]),
                 len(multi_cat_levels["S03RespiratorySigns"])
@@ -170,7 +170,7 @@ def novel_model_factory(
         + te(
             columns.get_loc(indication_var_name),
             columns.get_loc("S02PreOpCTPerformed"),
-            lam=(20, 20),
+            lam=(10, 5),
             n_splines=(len(multi_cat_levels[indication_var_name]), 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
