@@ -41,7 +41,7 @@ class PDPFigure:
         plot_just_outer_ci: bool = False,
         plot_hists: bool = False,
         hist_data: Union[None, pd.DataFrame] = None,
-        max_hist_bins: int = 30,
+        max_hist_bins: int = 20,
         standardise_y_scale: bool = True,
         fig_width: float = 12.0,
         n_cols: int = 3,
