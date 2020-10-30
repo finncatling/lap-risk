@@ -27,7 +27,7 @@ jobs:
         pipenv install --dev
     - name: Test with pytest
       run: pipenv run pytest --cov=. 
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
+    - name: Coveralls GitHub Action
+      uses: coverallsapp/github-action@v1.1.2
       with:
         github-token: ${{ secrets.TEST_TOKEN }}
