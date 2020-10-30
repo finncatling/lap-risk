@@ -70,7 +70,7 @@ def novel_model_factory(
             columns.get_loc("S01AgeOnArrival"),
             n_splines=10,
             spline_order=2,
-            lam=25
+            lam=15
         )
         + s(
             columns.get_loc("S03SystolicBloodPressure"),
@@ -108,35 +108,35 @@ def novel_model_factory(
             columns.get_loc(LACTATE_VAR_NAME),
             n_splines=10,
             spline_order=2,
-            lam=25
+            lam=15
         )
         + s(
             columns.get_loc(ALBUMIN_VAR_NAME),
             n_splines=10,
             spline_order=2,
-            lam=15
+            lam=25
         )
         + s(
             columns.get_loc("S03GlasgowComaScore"),
             spline_order=0,
             n_splines=13,
-            lam=150
+            lam=85
         )
-        + f(columns.get_loc("S03ASAScore"), coding="dummy", lam=75)
+        + f(columns.get_loc("S03ASAScore"), coding="dummy", lam=5)
         + f(
             columns.get_loc(f"{LACTATE_VAR_NAME}{MISSINGNESS_SUFFIX}"),
             coding="dummy",
-            lam=15
+            lam=5
         )
         + f(
             columns.get_loc(f"{ALBUMIN_VAR_NAME}{MISSINGNESS_SUFFIX}"),
             coding="dummy",
-            lam=15
+            lam=5
         )
         + te(
             columns.get_loc("S03DiagnosedMalignancy"),
             columns.get_loc("S02PreOpCTPerformed"),
-            lam=(10, 5),
+            lam=(5, 2),
             n_splines=(len(multi_cat_levels["S03DiagnosedMalignancy"]), 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
@@ -144,7 +144,7 @@ def novel_model_factory(
         + te(
             columns.get_loc("S03Pred_Peritsoil"),
             columns.get_loc("S02PreOpCTPerformed"),
-            lam=(10, 5),
+            lam=(5, 2),
             n_splines=(len(multi_cat_levels["S03Pred_Peritsoil"]), 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
@@ -152,7 +152,7 @@ def novel_model_factory(
         + te(
             columns.get_loc("S03CardiacSigns"),
             columns.get_loc("S03RespiratorySigns"),
-            lam=10,
+            lam=8,
             n_splines=(
                 len(multi_cat_levels["S03CardiacSigns"]),
                 len(multi_cat_levels["S03RespiratorySigns"])
@@ -164,13 +164,13 @@ def novel_model_factory(
             columns.get_loc("S03SerumCreatinine"),
             columns.get_loc("S03Urea"),
             spline_order=(2, 2),
-            lam=25.0,
+            lam=40.0,
             dtype=("numerical", "numerical"),
         )
         + te(
             columns.get_loc(indication_var_name),
             columns.get_loc("S02PreOpCTPerformed"),
-            lam=(10, 5),
+            lam=(5, 2),
             n_splines=(len(multi_cat_levels[indication_var_name]), 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
