@@ -39,6 +39,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.TEST_TOKEN }}
       
     - name: Coveralls GitHub Action
+      if: ${{ always() }}
       uses: coverallsapp/github-action@v1.1.2
       with:
         github-token: ${{ secrets.TEST_TOKEN }}
