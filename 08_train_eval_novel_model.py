@@ -9,7 +9,7 @@ from utils.constants import (
     FIGURES_OUTPUT_DIR
 )
 from utils.impute import ImputationInfo
-from utils.indications import INDICATION_VAR_NAME
+from utils.indications import INDICATION_VAR_NAME, IndicationNameProcessor
 from utils.io import load_object, save_object
 from utils.model.novel import (
     CategoricalImputer,
@@ -18,7 +18,7 @@ from utils.model.novel import (
     novel_model_factory,
     LogOddsTransformer
 )
-from utils.plot.helpers import sanitize_indication, plot_saver
+from utils.plot.helpers import plot_saver
 from utils.plot.pdp import PDPTerm, PDPFigure
 from utils.report import Reporter
 
@@ -53,6 +53,10 @@ imputation_stages: ImputationInfo = load_object(
 
 
 reporter.report("Specifying properties of GAM partial dependence plot")
+indication_names = IndicationNameProcessor(
+    multi_category_levels=multi_category_levels,
+    remove_missing_category=True
+)
 pdp_terms = [
     PDPTerm("S01AgeOnArrival", "Age (years)", (0, 0)),
     PDPTerm("S03SystolicBloodPressure", "Systolic pressure (mmHg)", (0, 1)),
@@ -125,8 +129,7 @@ pdp_terms = [
         INDICATION_VAR_NAME,
         "Indication",
         (slice(5, 7), slice(0, 2)),
-        [sanitize_indication(s) for s in
-         multi_category_levels[INDICATION_VAR_NAME]],
+        indication_names.sanitized,
         ["No CT", "CT"],
         "best",
     ),

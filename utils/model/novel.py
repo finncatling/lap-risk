@@ -171,7 +171,8 @@ def novel_model_factory(
             columns.get_loc(indication_var_name),
             columns.get_loc("S02PreOpCTPerformed"),
             lam=(5, 2),
-            n_splines=(len(multi_cat_levels[indication_var_name]), 2),
+            # subtract 1 to account for missing indication category
+            n_splines=(len(multi_cat_levels[indication_var_name]) - 1, 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
         )
@@ -737,7 +738,6 @@ class LactateAlbuminImputer(Imputer):
         imputation_model_factory: Callable[
             [pd.Index, Dict[str, Tuple], str], LinearGAM],
         winsor_quantiles: Tuple[float, float],
-        multi_cat_vars: Dict[str, Tuple],
         indication_var_name: str,
         random_seed
     ):
@@ -752,8 +752,6 @@ class LactateAlbuminImputer(Imputer):
                 yet fitted) models of the transformed imputation target
             winsor_quantiles: Lower and upper quantiles to winsorize
                 continuous variables at by default
-            multi_cat_vars: Keys are non-binary discrete variables, values are
-                the categories (excluding null values) prior to integer encoding
             indication_var_name: Name of the indication column
             random_seed: Used for QuantileTransformer
         """
@@ -767,7 +765,6 @@ class LactateAlbuminImputer(Imputer):
         self.lacalb_variable_name = lacalb_variable_name
         self.model_factory = imputation_model_factory
         self.winsor_quantiles = winsor_quantiles
-        self.multi_cat_vars = multi_cat_vars
         self.ind_var_name = indication_var_name
         self.random_seed = random_seed
         self.imputed = None  # Override base class. This var shouldn't be used

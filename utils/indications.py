@@ -1,4 +1,5 @@
-from typing import Iterable, List
+import re
+from typing import Iterable, List, Dict, Tuple
 
 import numpy as np
 import pandas as pd
@@ -96,3 +97,50 @@ def report_ohe_category_assignment(
         f"{100 * np.round(n_cases_assigned / n_cases_total, 3)}%) now have "
         f"an assigned {category_name}"
     )
+
+
+class IndicationNameProcessor:
+    """Helper class to process indication names."""
+    def __init__(
+        self,
+        multi_category_levels: Dict[str, Tuple],
+        max_line_length: int = 12,
+        indication_var_name: str = INDICATION_VAR_NAME,
+        indication_prefix: str = INDICATION_PREFIX,
+        missing_indication_category: str = MISSING_IND_CATEGORY,
+        remove_missing_category: bool = True,
+    ):
+        self.multi_category_levels = multi_category_levels
+        self.max_line_length = max_line_length
+        self.ind_var_name = indication_var_name
+        self.ind_prefix = indication_prefix
+        self.missing_ind_category = missing_indication_category
+        self.remove_missing_category = remove_missing_category
+
+    @property
+    def names(self) -> List[str]:
+        names = list(self.multi_category_levels[self.ind_var_name])
+        if self.remove_missing_category:
+            names.remove(self.missing_ind_category)
+        return names
+
+    @property
+    def sanitized(self) -> List[str]:
+        return [self._sanitize_indication(ind_name) for ind_name in self.names]
+
+    def _sanitize_indication(self, ind: str) -> str:
+        """Hacky function to make individual indication names ready for use in
+            plotting."""
+        ind = ind[len(self.ind_prefix):]
+        ind_word_list = re.findall("[A-Z][^A-Z]*", ind)
+        sanitized_list = [ind_word_list[0]]
+        for word in ind_word_list[1:]:
+            last_2_words_joined = f'{sanitized_list[-1]} {word}'
+            if len(last_2_words_joined) > self.max_line_length:
+                sanitized_list.append(word)
+            else:
+                sanitized_list[-1] = last_2_words_joined
+        sanitized = "\n".join(sanitized_list)
+        sanitized = sanitized.lower()
+        return sanitized[0].upper() + sanitized[1:]
+

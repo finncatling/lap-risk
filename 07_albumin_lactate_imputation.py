@@ -9,7 +9,7 @@ from utils.constants import (
     FIGURES_OUTPUT_DIR,
     RANDOM_SEED
 )
-from utils.indications import INDICATION_VAR_NAME
+from utils.indications import INDICATION_VAR_NAME, IndicationNameProcessor
 from utils.io import save_object, load_object
 from utils.model.albumin import albumin_model_factory
 from utils.model.lactate import lactate_model_factory
@@ -21,7 +21,7 @@ from utils.model.novel import (
     CategoricalImputer,
     LactateAlbuminImputer
 )
-from utils.plot.helpers import sanitize_indication, plot_saver
+from utils.plot.helpers import plot_saver
 from utils.plot.pdp import PDPTerm, PDPFigure
 from utils.evaluate import Scorer, score_linear_predictions
 from utils.report import Reporter
@@ -47,6 +47,10 @@ multi_category_levels: Dict[str, Tuple] = load_object(
 
 
 reporter.report("Specifying properties of GAM partial dependence plot")
+indication_names = IndicationNameProcessor(
+    multi_category_levels=multi_category_levels,
+    remove_missing_category=True
+)
 pdp_terms = [
     PDPTerm("S01AgeOnArrival", "Age (years)", (0, 0)),
     PDPTerm("S03SystolicBloodPressure", "Systolic pressure (mmHg)", (0, 1)),
@@ -105,8 +109,7 @@ pdp_terms = [
         INDICATION_VAR_NAME,
         "Indication",
         (slice(4, 6), slice(0, 3)),
-        [sanitize_indication(s) for s in
-         multi_category_levels[INDICATION_VAR_NAME]],
+        indication_names.sanitized,
         ["No CT", "CT"],
         "best",
     ),
@@ -131,7 +134,6 @@ for pretty_name, variable_name, model_factory in (
         lacalb_variable_name=variable_name,
         imputation_model_factory=model_factory,
         winsor_quantiles=WINSOR_QUANTILES,
-        multi_cat_vars=multi_category_levels,
         indication_var_name=INDICATION_VAR_NAME,
         random_seed=RANDOM_SEED)
     imputer.fit()

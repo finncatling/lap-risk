@@ -1,11 +1,7 @@
 import os
-import re
 from typing import Tuple, Callable
 
 import numpy as np
-from matplotlib.axes import Axes
-
-from utils.indications import INDICATION_PREFIX
 
 
 def generate_ci_quantiles(cis: Tuple[float]) -> np.ndarray:
@@ -35,10 +31,3 @@ def plot_saver(
             format=ext,
             bbox_inches="tight",
         )
-
-
-def sanitize_indication(ind: str, ind_prefix: str = INDICATION_PREFIX) -> str:
-    ind = ind[len(ind_prefix):]
-    ind = "\n".join(re.findall("[A-Z][^A-Z]*", ind))
-    ind = ind.lower()
-    return ind[0].upper() + ind[1:]

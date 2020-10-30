@@ -93,7 +93,8 @@ def lactate_model_factory(
             columns.get_loc(indication_var_name),
             columns.get_loc("S02PreOpCTPerformed"),
             lam=(30, 5),
-            n_splines=(len(multi_cat_levels[indication_var_name]), 2),
+            # subtract 1 to account for missing indication category
+            n_splines=(len(multi_cat_levels[indication_var_name]) - 1, 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
         )
