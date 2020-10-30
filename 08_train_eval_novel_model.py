@@ -1,28 +1,26 @@
-from typing import Tuple, Dict
 import os
+from typing import Tuple, Dict
+
 import pandas as pd
 
-from utils.report import Reporter
 from utils.constants import (
     NOVEL_MODEL_OUTPUT_DIR,
     RANDOM_SEED,
     FIGURES_OUTPUT_DIR
 )
+from utils.impute import ImputationInfo
+from utils.indications import INDICATION_VAR_NAME
 from utils.io import load_object, save_object
 from utils.model.novel import (
     CategoricalImputer,
     LactateAlbuminImputer,
-    ALBUMIN_VAR_NAME,
-    LACTATE_VAR_NAME,
-    MISSINGNESS_SUFFIX,
     NovelModel,
     novel_model_factory,
     LogOddsTransformer
 )
-from utils.impute import ImputationInfo
-from utils.indications import INDICATION_VAR_NAME
-from utils.plot.pdp import PDPTerm, PDPFigure
 from utils.plot.helpers import sanitize_indication, plot_saver
+from utils.plot.pdp import PDPTerm, PDPFigure
+from utils.report import Reporter
 
 
 reporter = Reporter()
@@ -142,31 +140,30 @@ save_object(
 )
 
 
-# reporter.report("Beginning train-test splitting and model fitting")
-# novel_model = NovelModel(
-#     categorical_imputer=cat_imputer,
-#     albumin_imputer=albumin_imputer,
-#     lactate_imputer=lactate_imputer,
-#     model_factory=novel_model_factory,
-#     # n_lacalb_imputations_per_mice_imp=(
-#     #     imputation_stages.multiple_of_previous_n_imputations[1]),
-#     n_lacalb_imputations_per_mice_imp=1,  # TODO: Remove this testing line
-#     random_seed=RANDOM_SEED
-# )
-# novel_model.cat_imputer.tts.n_splits = 1  # TODO: Remove this testing line
-# novel_model.fit()
-#
-#
-# reporter.report(f"Saving draft novel model for later use")
-# save_object(
-#     novel_model,
-#     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_draft_novel_model.pkl"))
+reporter.report("Beginning train-test splitting and model fitting")
+novel_model = NovelModel(
+    categorical_imputer=cat_imputer,
+    albumin_imputer=albumin_imputer,
+    lactate_imputer=lactate_imputer,
+    model_factory=novel_model_factory,
+    n_lacalb_imputations_per_mice_imp=(
+        imputation_stages.multiple_of_previous_n_imputations[1]),
+    random_seed=RANDOM_SEED
+)
+novel_model.cat_imputer.tts.n_splits = 1  # TODO: Remove this testing line
+novel_model.fit()
 
 
-# TODO: Remove this development code
-reporter.report(f"Loading draft novel model for later use")
-novel_model: NovelModel = load_object(
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_draft_novel_model.pkl"))
+reporter.report(f"Saving novel model for later use")
+save_object(
+    novel_model,
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
+
+
+# # TODO: Remove this development code
+# reporter.report(f"Loading pretrained novel model")
+# novel_model: NovelModel = load_object(
+#     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
 
 
 reporter.report('Preparing data for PDP histograms')
@@ -177,7 +174,6 @@ pdp_hist_data = pd.concat(
     ),
     axis=0,
     ignore_index=True)
-
 
 reporter.first("Plotting novel model partial dependence plots")
 for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
@@ -194,7 +190,7 @@ for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
         plot_saver(
             pdp_generator.plot,
             output_dir=FIGURES_OUTPUT_DIR,
-            output_filename=f"08_draft_novel_model_{space}_pd_plot{hist_text}")
+            output_filename=f"08_novel_model_{space}_pd_plot{hist_text}")
 
 
 # TODO: Score predictions
