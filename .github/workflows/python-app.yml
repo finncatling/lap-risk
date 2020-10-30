@@ -34,7 +34,7 @@ jobs:
         
     - name: Upload Coverage
       if: ${{ always() }}
-      run: coveralls
+      run: pipenv run coveralls
       env:
         GITHUB_TOKEN: ${{ secrets.TEST_TOKEN }}
       
