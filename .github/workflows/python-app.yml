@@ -27,5 +27,4 @@ jobs:
         pipenv install
     - name: Test with pytest
       run: |
-        pipenv shell
-        pytest --cov=lap-risk
+        pipenv run pytest --cov=lap-risk
