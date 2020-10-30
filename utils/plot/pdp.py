@@ -298,13 +298,16 @@ class PDPFigure:
             bins=self._determine_n_hist_bins(i))
         if self.pdp_terms[i].labels is not None:
             x_ticks = ax.get_xticks()
+            xlim = ax.get_xlim()
+            width = (xlim[1] - xlim[0]) / len(x_ticks)
         else:
             x_ticks = (bins[:-1] + bins[1:]) / 2
+            width = bins[1] - bins[0]
         ax.bar(
             x=x_ticks,
             height=hist / hist.sum() * self.hist_height_scaler,
             align='center',
-            width=bins[1] - bins[0],
+            width=width,
             bottom=ax.get_ylim()[0],
             color='black',
             alpha=0.3)
