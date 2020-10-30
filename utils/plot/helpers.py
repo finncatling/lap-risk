@@ -44,26 +44,11 @@ def sanitize_indication(ind: str, ind_prefix: str = INDICATION_PREFIX) -> str:
     return ind[0].upper() + ind[1:]
 
 
-def autoscale_x(ax: Axes):
-    """Hack for rescaling ax's x axis based on the data visible within the
-        current xlim. Adapted from https://tinyurl.com/y6mz3eub """
-    def get_low_high(line):
-        xd = line.get_xdata()
-        yd = line.get_ydata()
-        bottom, top = ax.get_ylim()
-        x_displayed = xd[((yd > bottom) & (yd < top))]
-        low = np.min(x_displayed)
-        high = np.max(x_displayed)
-        return low, high
-
-    lines = ax.get_lines()
-    low, high = np.inf, -np.inf
-
-    for line in lines:
-        new_low, new_high = get_low_high(line)
-        if new_low < low:
-            low = new_low
-        if new_high > high:
-            high = new_high
-
-    ax.set_xlim(low, high)
+def fit_xlim_to_plotted_data(ax: Axes):
+    """Changes ax's x axis limits to fit visible data, but leaves y axis
+        limits unchanged"""
+    ylim_original = ax.get_ylim()
+    ax.relim()
+    ax.autoscale_view()
+    ax.set_ylim(*ylim_original)
+    return ax
