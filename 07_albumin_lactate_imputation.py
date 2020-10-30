@@ -172,6 +172,18 @@ for pretty_name, variable_name, model_factory in (
         os.path.join(NOVEL_MODEL_OUTPUT_DIR, f"07_{pretty_name}_imputer.pkl"))
 
 
+    reporter.report('Preparing data for PDP histograms')
+    pdp_hist_data = pd.concat(
+        objs=(
+            cat_imputer.get_imputed_df('train', 0, 0).drop(
+                cat_imputer.target_variable_name, axis=1),
+            cat_imputer.get_imputed_df('test', 0, 0).drop(
+                cat_imputer.target_variable_name, axis=1),
+        ),
+        axis=0,
+        ignore_index=True)
+
+
     reporter.first(f"Plotting {pretty_name} imputer partial dependence plots")
     for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
         for space, kwargs in (
@@ -184,6 +196,8 @@ for pretty_name, variable_name, model_factory in (
             pdp_generator = PDPFigure(
                 gam=imputer.imputers[0],
                 pdp_terms=pdp_terms,
+                plot_hists=hist_switch,
+                hist_data=pdp_hist_data,
                 **kwargs)
             plot_saver(
                 pdp_generator.plot,
