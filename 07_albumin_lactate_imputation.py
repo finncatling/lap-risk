@@ -173,21 +173,23 @@ for pretty_name, variable_name, model_factory in (
 
 
     reporter.first(f"Plotting {pretty_name} imputer partial dependence plots")
-    for space, kwargs in (
-        ('gaussian', {}),
-        ('inv_trans', {
-            'transformer': imputer.transformers[0],
-            'plot_just_outer_ci': True
-        })
-    ):
-        pdp_generator = PDPFigure(
-            gam=imputer.imputers[0],
-            pdp_terms=pdp_terms,
-            **kwargs)
-        plot_saver(
-            pdp_generator.plot,
-            output_dir=FIGURES_OUTPUT_DIR,
-            output_filename=f"07_{pretty_name}_imputer_{space}_pd_plot")
+    for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
+        for space, kwargs in (
+            ('gaussian', {}),
+            ('inv_trans', {
+                'transformer': imputer.transformers[0],
+                'plot_just_outer_ci': True
+            })
+        ):
+            pdp_generator = PDPFigure(
+                gam=imputer.imputers[0],
+                pdp_terms=pdp_terms,
+                **kwargs)
+            plot_saver(
+                pdp_generator.plot,
+                output_dir=FIGURES_OUTPUT_DIR,
+                output_filename=(
+                    f"07_{pretty_name}_imputer_{space}_pd_plot{hist_text}"))
 
 
 reporter.last("Done.")
