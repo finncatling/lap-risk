@@ -293,12 +293,8 @@ class PDPFigure:
                     ax.set_zlim3d(self.y_min['3d'], self.y_max['3d'])
 
     def _plot_hist(self, i: int, ax: Axes):
-        if self.terms[i]["term_type"] != "tensor_term":
-            var_name = self.pdp_terms[i].name
-        else:
-            var_name = self.pdp_terms[i].name[0]
         hist, bins = np.histogram(
-            self.hist_data[var_name].values,
+            self.hist_data[self.pdp_terms[i].name].values,
             bins=self._determine_n_hist_bins(i))
         ax.bar(
             x=(bins[:-1] + bins[1:]) / 2,
