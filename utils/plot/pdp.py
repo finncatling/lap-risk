@@ -41,7 +41,6 @@ class PDPFigure:
         plot_hists: bool = False,
         hist_data: Union[None, pd.DataFrame] = None,
         max_hist_bins: int = 15,
-        hist_height_scaler: float = 2.0,
         standardise_y_scale: bool = True,
         fig_width: float = 12.0,
         n_cols: int = 3,
@@ -56,7 +55,6 @@ class PDPFigure:
         self.plot_hists = plot_hists
         self.hist_data = hist_data
         self.max_hist_bins = max_hist_bins
-        self.hist_height_scaler = hist_height_scaler
         self.standardise_y_scale = standardise_y_scale
         self.fig_width = fig_width
         self.n_cols = n_cols
@@ -304,14 +302,16 @@ class PDPFigure:
         else:
             x_ticks = (bins[:-1] + bins[1:]) / 2
             width = bins[1] - bins[0]
+        ylim = ax.get_ylim()
+        hist_height_frac = 0.9
         ax.bar(
             x=x_ticks,
-            height=hist / hist.max() * self.hist_height_scaler,
+            height=(hist / hist.max()) * (ylim[1] - ylim[0]) * hist_height_frac,
             align='center',
             width=width,
-            bottom=ax.get_ylim()[0],
+            bottom=ylim[0],
             color='black',
-            alpha=0.3)
+            alpha=0.15)
 
     def _determine_n_hist_bins(self, i: int):
         if self.pdp_terms[i].name == "S03GlasgowComaScore":
