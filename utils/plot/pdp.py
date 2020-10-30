@@ -298,10 +298,9 @@ class PDPFigure:
             hist, bins = np.histogram(
                 self.hist_data[self.pdp_terms[i].name].values,
                 bins=self._determine_n_hist_bins(i))
-            hist /= hist.sum()  # convert histograms to PMF
             ax.bar(
                 x=(bins[:-1] + bins[1:]) / 2,
-                height=hist * self.hist_height_scaler,
+                height=hist / hist.sum() * self.hist_height_scaler,
                 align='center',
                 width=bins[1] - bins[0],
                 bottom=ax.get_ylim()[0],
