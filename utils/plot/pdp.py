@@ -1,8 +1,9 @@
-from typing import Tuple, List, Union, Dict, Iterable
-
-import numpy as np
-import matplotlib.pyplot as plt
 from dataclasses import dataclass
+from typing import Tuple, List, Union, Dict
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
@@ -10,6 +11,7 @@ from pygam import GAM
 from sklearn.preprocessing import QuantileTransformer
 
 from utils.constants import GAM_CONFIDENCE_INTERVALS
+from utils.model.novel import winsorize_novel
 from utils.plot.helpers import generate_ci_quantiles
 
 
@@ -29,13 +31,17 @@ class PDPTerm:
 class PDPFigure:
     """Plot partial dependence for each GAM feature. If transformer is not
         None, transforms PDP back into their original space e.g. transforms
-        Gaussian back into lactate space."""
+        Gaussian back into lactate space. Optionally adds rug plots for
+        univariate continuous features."""
 
     def __init__(
         self,
         gam: GAM,
         pdp_terms: List[PDPTerm],
         transformer: Union[None, QuantileTransformer] = None,
+        plot_rugs: bool = False,
+        rug_data: Union[None, pd.DataFrame] = None,
+        rug_alpha: float = 0.1,
         standardise_y_scale: bool = True,
         fig_width: float = 12.0,
         n_cols: int = 3,
@@ -47,6 +53,9 @@ class PDPFigure:
         self.gam = gam
         self.pdp_terms = pdp_terms
         self.transformer = transformer
+        self.plot_rugs = plot_rugs
+        self.rug_data = rug_data
+        self.rug_alpha = rug_alpha
         self.standardise_y_scale = standardise_y_scale
         self.fig_width = fig_width
         self.n_cols = n_cols
@@ -106,8 +115,7 @@ class PDPFigure:
         self._init_figure()
         for i, term in enumerate(self.terms):
             self._plot_single_pdp(i, term)
-        if self.standardise_y_scale:
-            self._scale_y_axes()
+        self._modify_axes()
         self.fig.tight_layout()
         return self.fig, None
 
@@ -265,9 +273,59 @@ class PDPFigure:
             x.reshape(np.prod(x.shape), 1)
         ).reshape(x.shape) - self.trans_centre
 
-    def _scale_y_axes(self):
+    def _modify_axes(self):
+        """Loop back over axes, optionally standardising their y axis scale and
+            adding rug plots. We have to do these operations in a second loop
+            after the initial plotting as we only know the correct global y
+            axis scale at this point, and if we are standardising the y axis
+            then we need to know what its lower limit is in order to place the
+            rug at the bottom of each plot."""
         for i, ax in enumerate(self.fig.axes):
             if self.pdp_terms[i].view_3d is None:
-                ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
+                if self.standardise_y_scale:
+                    ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
+                if self.plot_rugs:
+                    self._plot_rug(i, ax)
             else:
-                ax.set_zlim3d(self.y_min['3d'], self.y_max['3d'])
+                if self.standardise_y_scale:
+                    # TODO: Implement rug plots for 3D figures?
+                    ax.set_zlim3d(self.y_min['3d'], self.y_max['3d'])
+
+    def _plot_rug(self, i: int, ax: Axes):
+        if self.terms[i]["term_type"] != "tensor_term":
+            ylim = ax.get_ylim()
+            ax.set_ylim(ylim)  # so that rug plotting doesn't change ylim
+            rug = self.rug_data[self.pdp_terms[i].name]
+            ax.plot(
+                rug,
+                np.repeat(ylim[0], rug.shape[0]),
+                marker='|',
+                ms=30,
+                c='black',
+                alpha=self.rug_alpha)
+
+
+def get_pdp_rug_plot_data(
+    train_features: pd.DataFrame,
+    test_features: pd.DataFrame,
+    age_var_name: str,
+    age_offset_sd: float,
+    winsor_thresholds: Dict[str, Tuple[float, float]],
+    random_seed: int
+) -> pd.DataFrame:
+    """Convenience function to prepare data for rug plots on PDPs. Combines
+        train and test fold features (from single imputation iteration),
+        applies random offset to age data and re-winsorises it."""
+    rnd = np.random.RandomState(random_seed)
+    features = pd.concat(
+        (train_features, test_features),
+        axis=0,
+        ignore_index=True)
+    features.loc[:, age_var_name] += rnd.normal(
+        loc=0,
+        scale=age_offset_sd,
+        size=features.shape[0])
+    features, _ = winsorize_novel(
+        df=features,
+        thresholds={age_var_name: winsor_thresholds[age_var_name]})
+    return features
