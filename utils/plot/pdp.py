@@ -68,7 +68,7 @@ class PDPFigure:
         self.trans_centre = self._calculate_transformation_centre()
         self.cis = generate_ci_quantiles(confidence_intervals)
         self.fig, self.gs = None, None
-        self.y_min, self.y_max = {'2d':0., '3d': 0.}, {'2d':0., '3d': 0.}
+        self.y_min, self.y_max = {'2d': 0., '3d': 0.}, {'2d': 0., '3d': 0.}
 
     @property
     def terms(self) -> List[Dict]:
@@ -297,8 +297,8 @@ class PDPFigure:
         if self.terms[i]["term_type"] != "tensor_term":
             hist, bins = np.histogram(
                 self.hist_data[self.pdp_terms[i].name].values,
-                bins=self._determine_n_hist_bins(i),
-                density=True)
+                bins=self._determine_n_hist_bins(i))
+            bins /= bins.sum()  # convert histograms to PMF
             ax.bar(
                 x=(bins[:-1] + bins[1:]) / 2,
                 height=hist * self.hist_height_scaler,
