@@ -11,7 +11,6 @@ from pygam import GAM
 from sklearn.preprocessing import QuantileTransformer
 
 from utils.constants import GAM_CONFIDENCE_INTERVALS
-from utils.model.novel import winsorize_novel
 from utils.plot.helpers import generate_ci_quantiles
 
 
@@ -244,7 +243,8 @@ class PDPFigure:
     ):
         if self.pdp_terms[i].labels is not None:
             ax.set_xticks(xx[0][:, 0][
-                range(self.mid_cat_i, x_length, self.ticks_per_cat)])
+                              range(self.mid_cat_i, x_length,
+                                    self.ticks_per_cat)])
             ax.set_xticklabels(self.pdp_terms[i].labels)
             ax.set_xlim(xx[0][0, 0], xx[0][-1, 0])
             if self.pdp_terms[i].name == "Indication":
@@ -296,8 +296,12 @@ class PDPFigure:
         hist, bins = np.histogram(
             self.hist_data[self.pdp_terms[i].name].values,
             bins=self._determine_n_hist_bins(i))
+        if self.pdp_terms[i].labels is not None:
+            x_ticks = ax.get_xticks()
+        else:
+            x_ticks = (bins[:-1] + bins[1:]) / 2
         ax.bar(
-            x=(bins[:-1] + bins[1:]) / 2,
+            x=x_ticks,
             height=hist / hist.sum() * self.hist_height_scaler,
             align='center',
             width=bins[1] - bins[0],
