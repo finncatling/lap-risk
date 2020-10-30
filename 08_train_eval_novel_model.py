@@ -6,7 +6,9 @@ import pandas as pd
 from utils.constants import (
     NOVEL_MODEL_OUTPUT_DIR,
     RANDOM_SEED,
-    FIGURES_OUTPUT_DIR
+    FIGURES_OUTPUT_DIR,
+    CALIB_GAM_N_SPLINES,
+    CALIB_GAM_LAM_CANDIDATES
 )
 from utils.impute import ImputationInfo
 from utils.indications import INDICATION_VAR_NAME, IndicationNameProcessor
@@ -20,6 +22,7 @@ from utils.model.novel import (
 )
 from utils.plot.helpers import plot_saver
 from utils.plot.pdp import PDPTerm, PDPFigure
+from utils.evaluate import LogisticScorer, score_logistic_predictions
 from utils.report import Reporter
 
 
@@ -153,7 +156,6 @@ novel_model = NovelModel(
         imputation_stages.multiple_of_previous_n_imputations[1]),
     random_seed=RANDOM_SEED
 )
-novel_model.cat_imputer.tts.n_splits = 1  # TODO: Remove this testing line
 novel_model.fit()
 
 
@@ -167,6 +169,28 @@ save_object(
 # reporter.report(f"Loading pretrained novel model")
 # novel_model: NovelModel = load_object(
 #     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
+
+
+reporter.report(f"Scoring novel model performance.")
+# TODO: Method to get observed and predicted values
+# y_obs, y_preds = novel_model.get_all_observed_and_predicted()
+# scorer = LogisticScorer(
+#     y_true=y_obs,
+#     y_pred=y_preds,
+#     scorer_function=score_logistic_predictions,
+#     calibration_n_splines=CALIB_GAM_N_SPLINES,
+#     calibration_lam_candidates=CALIB_GAM_LAM_CANDIDATES)
+# scorer.calculate_scores()
+# reporter.first("Scores with median as point estimate:")
+# scorer.print_scores(dec_places=3, point_estimate='median')
+# reporter.first("Scores with fold 0 as point estimate:")
+# scorer.print_scores(dec_places=3, point_estimate='fold0')
+#
+#
+# reporter.first("Saving model scorer for later use")
+# save_object(
+#     scorer,
+#     os.path.join(NOVEL_MODEL_OUTPUT_DIR, f"08_novel_model_scorer.pkl"))
 
 
 reporter.report('Preparing data for PDP histograms')
@@ -196,5 +220,4 @@ for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
             output_filename=f"08_novel_model_{space}_pd_plot{hist_text}")
 
 
-# TODO: Score predictions
-# TODO: Finish this script
+reporter.last("Done.")

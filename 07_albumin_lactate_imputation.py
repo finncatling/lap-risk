@@ -134,6 +134,7 @@ for pretty_name, variable_name, model_factory in (
         lacalb_variable_name=variable_name,
         imputation_model_factory=model_factory,
         winsor_quantiles=WINSOR_QUANTILES,
+        multi_cat_vars=multi_category_levels,
         indication_var_name=INDICATION_VAR_NAME,
         random_seed=RANDOM_SEED)
     imputer.fit()

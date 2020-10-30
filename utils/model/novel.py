@@ -738,6 +738,7 @@ class LactateAlbuminImputer(Imputer):
         imputation_model_factory: Callable[
             [pd.Index, Dict[str, Tuple], str], LinearGAM],
         winsor_quantiles: Tuple[float, float],
+        multi_cat_vars: Dict[str, Tuple],
         indication_var_name: str,
         random_seed
     ):
@@ -752,6 +753,8 @@ class LactateAlbuminImputer(Imputer):
                 yet fitted) models of the transformed imputation target
             winsor_quantiles: Lower and upper quantiles to winsorize
                 continuous variables at by default
+            multi_cat_vars: Keys are non-binary discrete variables, values are
+                the categories (excluding null values) prior to integer encoding
             indication_var_name: Name of the indication column
             random_seed: Used for QuantileTransformer
         """
@@ -765,6 +768,7 @@ class LactateAlbuminImputer(Imputer):
         self.lacalb_variable_name = lacalb_variable_name
         self.model_factory = imputation_model_factory
         self.winsor_quantiles = winsor_quantiles
+        self.multi_cat_vars = multi_cat_vars
         self.ind_var_name = indication_var_name
         self.random_seed = random_seed
         self.imputed = None  # Override base class. This var shouldn't be used
@@ -1119,19 +1123,16 @@ class NovelModel:
 
     def fit(self):
         """Fit mortality risk models for every train-test split."""
-        # for split_i in pb(
-        #     range(self.cat_imputer.tts.n_splits),
-        #     prefix="Split iteration"
-        # ):
-        # TODO: After testing, revert to progressbar on outer loop
-        for split_i in range(self.cat_imputer.tts.n_splits):
+        for split_i in pb(
+            range(self.cat_imputer.tts.n_splits),
+            prefix="Split iteration"
+        ):
             self._single_train_test_split(split_i)
 
     def _single_train_test_split(self, split_i: int):
         """Fit combined mortality risk model for a single train-test split."""
         gams = []
-        # TODO: After testing, remove this progressbar wrapper
-        for mice_imp_i in pb(range(self.cat_imputer.swm.n_mice_imputations)):
+        for mice_imp_i in range(self.cat_imputer.swm.n_mice_imputations):
             for lac_alb_imp_i in range(self.n_lacalb_imp):
                 features, target = self.get_features_and_labels(
                     fold_name='train',
@@ -1184,6 +1185,9 @@ class NovelModel:
                     )
                 )
         return np.vstack(mortality_risks)
+
+    def get_all_observed_and_predicted(self):
+        raise NotImplementedError
 
 
 class LogOddsTransformer:
