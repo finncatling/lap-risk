@@ -16,7 +16,8 @@ from utils.model.novel import (
     LACTATE_VAR_NAME,
     MISSINGNESS_SUFFIX,
     NovelModel,
-    novel_model_factory
+    novel_model_factory,
+    LogOddsTransformer
 )
 from utils.impute import ImputationInfo
 from utils.indications import INDICATION_VAR_NAME
@@ -178,17 +179,22 @@ pdp_hist_data = pd.concat(
     ignore_index=True)
 
 
-reporter.first("Plotting novel model partial dependence plot")
+reporter.first("Plotting novel model partial dependence plots")
 for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
-    pdp_generator = PDPFigure(
-        gam=novel_model.models[0],
-        pdp_terms=pdp_terms,
-        plot_hists=hist_switch,
-        hist_data=pdp_hist_data)
-    plot_saver(
-        pdp_generator.plot,
-        output_dir=FIGURES_OUTPUT_DIR,
-        output_filename=f"08_draft_novel_model_pd_plot{hist_text}")
+    for space, kwargs in (
+        ('log_odds', {}),
+        ('probability', {'transformer': LogOddsTransformer()})
+    ):
+        pdp_generator = PDPFigure(
+            gam=novel_model.models[0],
+            pdp_terms=pdp_terms,
+            plot_hists=hist_switch,
+            hist_data=pdp_hist_data,
+            **kwargs)
+        plot_saver(
+            pdp_generator.plot,
+            output_dir=FIGURES_OUTPUT_DIR,
+            output_filename=f"08_draft_novel_model_{space}_pd_plot{hist_text}")
 
 
 # TODO: Score predictions

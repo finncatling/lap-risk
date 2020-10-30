@@ -1187,3 +1187,17 @@ class NovelModel:
                     )
                 )
         return np.vstack(mortality_risks)
+
+
+class LogOddsTransformer:
+    """Used to inverse transform novel model PDPs from log odds space into
+        probability space. Implemented as a class just to match the relevant
+        parts of the sklearn QuantileTransformer API."""
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def inverse_transform(log_odds: np.ndarray) -> np.ndarray:
+        odds = np.exp(log_odds)
+        return odds / (1 + odds)
