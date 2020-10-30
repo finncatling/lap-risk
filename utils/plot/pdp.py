@@ -41,7 +41,7 @@ class PDPFigure:
         transformer: Union[None, QuantileTransformer] = None,
         plot_hists: bool = False,
         hist_data: Union[None, pd.DataFrame] = None,
-        max_hist_bins: int = 20,
+        max_hist_bins: int = 15,
         hist_height_scaler: float = 2.0,
         standardise_y_scale: bool = True,
         fig_width: float = 12.0,
@@ -290,22 +290,24 @@ class PDPFigure:
                     self._plot_hist(i, ax)
             else:
                 if self.standardise_y_scale:
-                    # TODO: Implement rug plots for 3D figures?
                     ax.set_zlim3d(self.y_min['3d'], self.y_max['3d'])
 
     def _plot_hist(self, i: int, ax: Axes):
         if self.terms[i]["term_type"] != "tensor_term":
-            hist, bins = np.histogram(
-                self.hist_data[self.pdp_terms[i].name].values,
-                bins=self._determine_n_hist_bins(i))
-            ax.bar(
-                x=(bins[:-1] + bins[1:]) / 2,
-                height=hist / hist.sum() * self.hist_height_scaler,
-                align='center',
-                width=bins[1] - bins[0],
-                bottom=ax.get_ylim()[0],
-                color='black',
-                alpha=0.3)
+            var_name = self.pdp_terms[i].name
+        else:
+            var_name = self.pdp_terms[i].name[0]
+        hist, bins = np.histogram(
+            self.hist_data[var_name].values,
+            bins=self._determine_n_hist_bins(i))
+        ax.bar(
+            x=(bins[:-1] + bins[1:]) / 2,
+            height=hist / hist.sum() * self.hist_height_scaler,
+            align='center',
+            width=bins[1] - bins[0],
+            bottom=ax.get_ylim()[0],
+            color='black',
+            alpha=0.3)
 
     def _determine_n_hist_bins(self, i: int):
         if self.pdp_terms[i].name == "S03GlasgowComaScore":
