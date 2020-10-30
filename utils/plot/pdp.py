@@ -38,6 +38,7 @@ class PDPFigure:
         gam: GAM,
         pdp_terms: List[PDPTerm],
         transformer: Union[None, QuantileTransformer] = None,
+        plot_just_outer_ci: bool = False,
         plot_hists: bool = False,
         hist_data: Union[None, pd.DataFrame] = None,
         max_hist_bins: int = 30,
@@ -52,6 +53,7 @@ class PDPFigure:
         self.gam = gam
         self.pdp_terms = pdp_terms
         self.transformer = transformer
+        self.plot_just_outer_ci = plot_just_outer_ci
         self.plot_hists = plot_hists
         self.hist_data = hist_data
         self.max_hist_bins = max_hist_bins
@@ -151,8 +153,18 @@ class PDPFigure:
         xx = self.gam.generate_X_grid(term=i, n=x_length)
         _, confi = self.gam.partial_dependence(
             term=i, X=xx, quantiles=self.cis)
-        if self.transformer is None:
-            self._update_y_min_max(confi[:, 0], confi[:, -1], plot_type='2d')
+        if self.transformer is not None:
+            confi = self._inverse_transform(confi)
+        self._update_y_min_max(confi[:, 0], confi[:, -1], plot_type='2d')
+        if self.plot_just_outer_ci:
+            ax.fill_between(
+                xx[:, term["feature"]],
+                confi[:, 0],
+                confi[:, -1],
+                alpha=0.5,
+                color="tab:blue",
+                lw=2.0)
+        else:
             for k in range(self.n_cis):
                 ax.fill_between(
                     xx[:, term["feature"]],
@@ -161,16 +173,6 @@ class PDPFigure:
                     alpha=1 / self.n_cis,
                     color="tab:blue",
                     lw=0.0)
-        else:
-            confi = self._inverse_transform(confi)
-            self._update_y_min_max(confi[:, 0], confi[:, -1], plot_type='2d')
-            ax.fill_between(
-                xx[:, term["feature"]],
-                confi[:, 0],
-                confi[:, -1],
-                alpha=0.5,
-                color="tab:blue",
-                lw=2.0)
         self._set_non_tensor_x_labels(i, ax, xx, term["feature"], x_length)
         ax.set_xlim(xx[:, term["feature"]].min(), xx[:, term["feature"]].max())
 
@@ -206,9 +208,19 @@ class PDPFigure:
     ):
         lines = []
         for slice_i, sli in enumerate([0, -1]):
-            if self.transformer is None:
-                self._update_y_min_max(
-                    confi[:, sli, 0], confi[:, sli, -1], plot_type='2d')
+            if self.transformer is not None:
+                confi[:, sli, :] = self._inverse_transform(confi[:, sli, :])
+            self._update_y_min_max(
+                confi[:, sli, 0], confi[:, sli, -1], plot_type='2d')
+            if self.plot_just_outer_ci:
+                ax.fill_between(
+                    xx[0][:, 0],
+                    confi[:, sli, 0],
+                    confi[:, sli, -1],
+                    lw=2.0,
+                    alpha=0.5,
+                    color=self.strata_colours[slice_i])
+            else:
                 for k in range(self.n_cis):
                     ax.fill_between(
                         xx[0][:, 0],
@@ -217,17 +229,6 @@ class PDPFigure:
                         lw=0.0,
                         alpha=1 / self.n_cis,
                         color=self.strata_colours[slice_i])
-            else:
-                confi[:, sli, :] = self._inverse_transform(confi[:, sli, :])
-                self._update_y_min_max(
-                    confi[:, sli, 0], confi[:, sli, -1], plot_type='2d')
-                ax.fill_between(
-                    xx[0][:, 0],
-                    confi[:, sli, 0],
-                    confi[:, sli, -1],
-                    lw=2.0,
-                    alpha=0.5,
-                    color=self.strata_colours[slice_i])
             lines.append(Line2D([0], [0], color=self.strata_colours[slice_i]))
         ax.legend(lines, self.pdp_terms[i].strata,
                   loc=self.pdp_terms[i].legend_loc)
