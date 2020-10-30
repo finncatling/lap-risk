@@ -26,4 +26,8 @@ jobs:
         pip install pipenv
         pipenv install --dev
     - name: Test with pytest
-      run: pipenv run pytest --cov=lap-risk
+      run: pipenv run pytest --cov=. 
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.TEST_TOKEN }}
