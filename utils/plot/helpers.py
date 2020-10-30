@@ -42,13 +42,3 @@ def sanitize_indication(ind: str, ind_prefix: str = INDICATION_PREFIX) -> str:
     ind = "\n".join(re.findall("[A-Z][^A-Z]*", ind))
     ind = ind.lower()
     return ind[0].upper() + ind[1:]
-
-
-def fit_xlim_to_plotted_data(ax: Axes):
-    """Changes ax's x axis limits to fit visible data, but leaves y axis
-        limits unchanged"""
-    ylim_original = ax.get_ylim()
-    ax.relim()
-    ax.autoscale_view()
-    ax.set_ylim(*ylim_original)
-    return ax

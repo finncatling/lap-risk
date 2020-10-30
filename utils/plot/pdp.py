@@ -11,7 +11,7 @@ from pygam import GAM
 from sklearn.preprocessing import QuantileTransformer
 
 from utils.constants import GAM_CONFIDENCE_INTERVALS
-from utils.plot.helpers import generate_ci_quantiles, fit_xlim_to_plotted_data
+from utils.plot.helpers import generate_ci_quantiles
 
 
 @dataclass
@@ -174,6 +174,7 @@ class PDPFigure:
                 color="tab:blue",
                 lw=2.0)
         self._set_non_tensor_x_labels(i, ax, xx, term["feature"], x_length)
+        ax.set_xlim(xx[:, term["feature"]].min(), xx[:, term["feature"]].max())
 
     def _set_non_tensor_x_labels(
         self,
@@ -284,7 +285,7 @@ class PDPFigure:
             rug at the bottom of each plot. Also autoscales x limits."""
         for i, ax in enumerate(self.fig.axes):
             if self.pdp_terms[i].view_3d is None:
-                ax = fit_xlim_to_plotted_data(ax)
+                # TODO: Fit x axis limits to plotted spline
                 if self.standardise_y_scale:
                     ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
                 if self.plot_hists:
