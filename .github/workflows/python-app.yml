@@ -26,12 +26,16 @@ jobs:
         python -m pip install --upgrade pip
         pip install pipenv
         pipenv install --dev
-        pipenv install coveralls
+        pipenv install coveralls --skip-lock
         
     - name: Test with pytest
       run: |
         pipenv run pytest --cov=utils
-        pipenv run coveralls
+        
+    - name: Upload Coverage
+      run: coveralls
+      env:
+        GITHUB_TOKEN: ${{ secrets.TEST_TOKEN }}
       
     - name: Coveralls GitHub Action
       uses: coverallsapp/github-action@v1.1.2
