@@ -2,7 +2,7 @@
 
 Modelling mortality risk in emergency laparotomy, using data from the NELA.
 
-![Tests](https://github.com/finncatling/lap-risk/workflows/Python%20application/badge.svg)
+![Tests](https://github.com/finncatling/lap-risk/workflows/Tests/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/finncatling/lap-risk/badge.svg?branch=master&t=H4at4E)](https://coveralls.io/github/finncatling/lap-risk?branch=master)
 ## Install
 
