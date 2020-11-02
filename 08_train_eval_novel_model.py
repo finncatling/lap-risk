@@ -156,6 +156,7 @@ novel_model = NovelModel(
         imputation_stages.multiple_of_previous_n_imputations[1]),
     random_seed=RANDOM_SEED
 )
+novel_model.cat_imputer.tts.n_splits = 1  # TODO: remove this testing line
 novel_model.fit()
 
 
@@ -174,7 +175,7 @@ save_object(
 reporter.report(f"Scoring novel model performance.")
 y_obs, y_preds = novel_model.get_all_observed_and_median_predicted(
     fold_name='test',
-    n_samples_per_imp_i=50
+    n_samples_per_imp_i=5
 )
 scorer = LogisticScorer(
     y_true=y_obs,
