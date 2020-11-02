@@ -54,18 +54,6 @@ def test_combine_categories(missing_categories_df_fixture):
     }).equals(combined_df)
 
 
-def test_add_missingness_indicators(missing_categories_df_fixture):
-    missing_indicator_df = novel.add_missingness_indicators(
-        df=missing_categories_df_fixture,
-        variables=['a']
-    )
-    assert pd.DataFrame({
-        'a': [1., 2., 3., np.nan],
-        'b': [4., 5., 4., 6.],
-        'a_missing': [0., 0., 0., 1.]
-    }).equals(missing_indicator_df)
-
-
 def test_label_encode():
     le_df = novel.label_encode(
         df=pd.DataFrame({
