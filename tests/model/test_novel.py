@@ -54,18 +54,6 @@ def test_combine_categories(missing_categories_df_fixture):
     }).equals(combined_df)
 
 
-def test_add_missingness_indicators(missing_categories_df_fixture):
-    missing_indicator_df = novel.add_missingness_indicators(
-        df=missing_categories_df_fixture,
-        variables=['a']
-    )
-    assert pd.DataFrame({
-        'a': [1., 2., 3., np.nan],
-        'b': [4., 5., 4., 6.],
-        'a_missing': [0., 0., 0., 1.]
-    }).equals(missing_indicator_df)
-
-
 def test_label_encode():
     le_df = novel.label_encode(
         df=pd.DataFrame({
@@ -200,7 +188,7 @@ def mock_train_test_split_fixture(df_fixture) -> TrainTestSplitter:
     tts = mock.create_autospec(TrainTestSplitter)
     tts.train_i = [even_i, odd_i]
     tts.test_i = [odd_i, even_i]
-    tts.n_iters = len(tts.train_i)
+    tts.n_splits = len(tts.train_i)
     return tts
 
 
@@ -463,8 +451,3 @@ class TestCategoricalImputer:
             ].values
             assert imputed.size == 1
             assert imputed[0] in possible_values
-
-
-class TestLactateAlbuminImputer:
-    def test_placeholder(self):
-        assert False
