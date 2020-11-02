@@ -33,7 +33,7 @@ class TestModelScorer:
         return ms
 
     def test_n_splits(self, ms_fixture):
-        assert ms_fixture.n_splits == 4
+        assert ms_fixture.n_iters == 4
 
     @pytest.fixture(scope='class')
     def score_names(self, ms_fixture) -> List[str]:
@@ -51,7 +51,7 @@ class TestModelScorer:
             for subdict_name in ['per_score', 'per_score_diff']:
                 assert (
                     len(ms_fixture.scores[subdict_name][score_name]) ==
-                    ms_fixture.n_splits
+                    ms_fixture.n_iters
                 )
 
     def test_95ci(self, ms_fixture, score_names):

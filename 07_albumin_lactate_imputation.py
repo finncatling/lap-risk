@@ -170,7 +170,7 @@ for pretty_name, variable_name, model_factory in (
 
 
     # # TODO: Remove this development code
-    # reporter.report(f"Loading pretraine imputation model")
+    # reporter.report(f"Loading pretrained imputation model")
     # imputer: LactateAlbuminImputer = load_object(
     #     os.path.join(NOVEL_MODEL_OUTPUT_DIR, f"07_{pretty_name}_imputer.pkl"))
 
@@ -187,7 +187,7 @@ for pretty_name, variable_name, model_factory in (
         ignore_index=True)
 
 
-    reporter.first(f"Plotting {pretty_name} imputer partial dependence plots")
+    reporter.report(f"Plotting {pretty_name} imputer partial dependence plots")
     for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
         for space, kwargs in (
             ('gaussian', {}),

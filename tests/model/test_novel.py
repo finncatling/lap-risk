@@ -200,7 +200,7 @@ def mock_train_test_split_fixture(df_fixture) -> TrainTestSplitter:
     tts = mock.create_autospec(TrainTestSplitter)
     tts.train_i = [even_i, odd_i]
     tts.test_i = [odd_i, even_i]
-    tts.n_splits = len(tts.train_i)
+    tts.n_iters = len(tts.train_i)
     return tts
 
 
