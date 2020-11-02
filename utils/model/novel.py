@@ -1152,18 +1152,20 @@ class NovelModel:
                 gams.append(gam)
         self.models[split_i] = combine_mi_gams(gams)
 
-    def predict(
+    def get_observed_and_predicted(
         self,
         fold_name: str,
         split_i: int,
         n_samples_per_imp_i: int
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Sample predicted mortality risks for the train or test fold of a
-            given train-test split."""
+            given train-test split. Also fetches the corresponding mortality
+            labels (these are the same regardless of mice_imp_i and
+            lac_alb_imp_i."""
         mortality_risks = []
         for mice_imp_i in range(self.cat_imputer.swm.n_mice_imputations):
             for lac_alb_imp_i in range(self.n_lacalb_imp):
-                features, _ = self.get_features_and_labels(
+                features, labels = self.get_features_and_labels(
                     fold_name=fold_name,
                     split_i=split_i,
                     mice_imp_i=mice_imp_i,
@@ -1184,10 +1186,31 @@ class NovelModel:
                         )
                     )
                 )
-        return np.vstack(mortality_risks)
+        return labels, np.vstack(mortality_risks)
 
-    def get_all_observed_and_predicted(self):
-        raise NotImplementedError
+    def get_all_observed_and_median_predicted(
+        self,
+        fold_name: str,
+        n_samples_per_imp_i: int
+    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        """Convenience function for preparing input to LogisticScorer. Fetches
+            the observed mortality labels from a given fold in every train-test
+            split, and the corresponding median mortality risks predicted by
+            novel model."""
+        y_obs, y_preds = [], []
+        for split_i in pb(
+            range(self.cat_imputer.tts.n_splits),
+            prefix="Split iteration"
+        ):
+            for mice_imp_i in range(self.cat_imputer.swm.n_mice_imputations):
+                y_ob, y_pred = self.get_observed_and_predicted(
+                    fold_name=fold_name,
+                    split_i=split_i,
+                    n_samples_per_imp_i=n_samples_per_imp_i
+                )
+                y_obs.append(y_ob)
+                y_preds.append(np.median(y_pred, axis=0))
+        return y_obs, y_preds
 
 
 class LogOddsTransformer:
