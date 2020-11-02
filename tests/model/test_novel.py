@@ -451,8 +451,3 @@ class TestCategoricalImputer:
             ].values
             assert imputed.size == 1
             assert imputed[0] in possible_values
-
-
-class TestLactateAlbuminImputer:
-    def test_placeholder(self):
-        assert False
