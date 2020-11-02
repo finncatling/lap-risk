@@ -65,42 +65,78 @@ def novel_model_factory(
     multi_cat_levels: Dict[str, Tuple],
     indication_var_name: str
 ) -> LogisticGAM:
-    # TODO: Should GCS splines have lower order?
-    # TODO: Consider edge knots
-    # TODO: Consider reducing n_splines for most continuous variables
-    # TODO: Indications should be more regularised?
     return LogisticGAM(
-        s(columns.get_loc("S01AgeOnArrival"), lam=200)
-        + s(columns.get_loc("S03SystolicBloodPressure"), lam=300)
+        s(
+            columns.get_loc("S01AgeOnArrival"),
+            n_splines=10,
+            spline_order=2,
+            lam=15
+        )
+        + s(
+            columns.get_loc("S03SystolicBloodPressure"),
+            n_splines=10,
+            spline_order=2,
+            lam=25
+        )
         + te(
             columns.get_loc("S03Pulse"),
             columns.get_loc("S03ECG"),
-            lam=(250, 2),
-            n_splines=(20, 2),
-            spline_order=(3, 0),
+            lam=(25, 2),
+            n_splines=(10, 2),
+            spline_order=(2, 0),
             dtype=("numerical", "categorical"),
         )
-        + s(columns.get_loc("S03WhiteCellCount"), lam=50)
-        + s(columns.get_loc("S03Sodium"), lam=220)
-        + s(columns.get_loc("S03Potassium"), lam=300)
-        + s(columns.get_loc(LACTATE_VAR_NAME), lam=150)
-        + s(columns.get_loc(ALBUMIN_VAR_NAME), lam=150)
-        + s(columns.get_loc("S03GlasgowComaScore"), n_splines=13, lam=150)
-        + f(columns.get_loc("S03ASAScore"), coding="dummy", lam=50)
+        + s(
+            columns.get_loc("S03WhiteCellCount"),
+            n_splines=10,
+            spline_order=2,
+            lam=15
+        )
+        + s(
+            columns.get_loc("S03Sodium"),
+            n_splines=10,
+            spline_order=2,
+            lam=25
+        )
+        + s(
+            columns.get_loc("S03Potassium"),
+            n_splines=10,
+            spline_order=2,
+            lam=25
+        )
+        + s(
+            columns.get_loc(LACTATE_VAR_NAME),
+            n_splines=10,
+            spline_order=2,
+            lam=15
+        )
+        + s(
+            columns.get_loc(ALBUMIN_VAR_NAME),
+            n_splines=10,
+            spline_order=2,
+            lam=25
+        )
+        + s(
+            columns.get_loc("S03GlasgowComaScore"),
+            spline_order=0,
+            n_splines=13,
+            lam=85
+        )
+        + f(columns.get_loc("S03ASAScore"), coding="dummy", lam=5)
         + f(
             columns.get_loc(f"{LACTATE_VAR_NAME}{MISSINGNESS_SUFFIX}"),
             coding="dummy",
-            lam=200
+            lam=5
         )
         + f(
             columns.get_loc(f"{ALBUMIN_VAR_NAME}{MISSINGNESS_SUFFIX}"),
             coding="dummy",
-            lam=200
+            lam=5
         )
         + te(
             columns.get_loc("S03DiagnosedMalignancy"),
             columns.get_loc("S02PreOpCTPerformed"),
-            lam=(200, 200),
+            lam=(5, 2),
             n_splines=(len(multi_cat_levels["S03DiagnosedMalignancy"]), 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
@@ -108,7 +144,7 @@ def novel_model_factory(
         + te(
             columns.get_loc("S03Pred_Peritsoil"),
             columns.get_loc("S02PreOpCTPerformed"),
-            lam=(400, 200),
+            lam=(5, 2),
             n_splines=(len(multi_cat_levels["S03Pred_Peritsoil"]), 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
@@ -116,7 +152,7 @@ def novel_model_factory(
         + te(
             columns.get_loc("S03CardiacSigns"),
             columns.get_loc("S03RespiratorySigns"),
-            lam=150,
+            lam=8,
             n_splines=(
                 len(multi_cat_levels["S03CardiacSigns"]),
                 len(multi_cat_levels["S03RespiratorySigns"])
@@ -127,14 +163,16 @@ def novel_model_factory(
         + te(
             columns.get_loc("S03SerumCreatinine"),
             columns.get_loc("S03Urea"),
-            lam=18.0,
+            spline_order=(2, 2),
+            lam=40.0,
             dtype=("numerical", "numerical"),
         )
         + te(
             columns.get_loc(indication_var_name),
             columns.get_loc("S02PreOpCTPerformed"),
-            lam=(30, 200),
-            n_splines=(len(multi_cat_levels[indication_var_name]), 2),
+            lam=(5, 2),
+            # subtract 1 to account for missing indication category
+            n_splines=(len(multi_cat_levels[indication_var_name]) - 1, 2),
             spline_order=(0, 0),
             dtype=("categorical", "categorical"),
         )
@@ -1114,18 +1152,20 @@ class NovelModel:
                 gams.append(gam)
         self.models[split_i] = combine_mi_gams(gams)
 
-    def predict(
+    def get_observed_and_predicted(
         self,
         fold_name: str,
         split_i: int,
         n_samples_per_imp_i: int
-    ) -> np.ndarray:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Sample predicted mortality risks for the train or test fold of a
-            given train-test split."""
+            given train-test split. Also fetches the corresponding mortality
+            labels (these are the same regardless of mice_imp_i and
+            lac_alb_imp_i."""
         mortality_risks = []
         for mice_imp_i in range(self.cat_imputer.swm.n_mice_imputations):
             for lac_alb_imp_i in range(self.n_lacalb_imp):
-                features, _ = self.get_features_and_labels(
+                features, labels = self.get_features_and_labels(
                     fold_name=fold_name,
                     split_i=split_i,
                     mice_imp_i=mice_imp_i,
@@ -1146,4 +1186,41 @@ class NovelModel:
                         )
                     )
                 )
-        return np.vstack(mortality_risks)
+        return labels, np.vstack(mortality_risks)
+
+    def get_all_observed_and_median_predicted(
+        self,
+        fold_name: str,
+        n_samples_per_imp_i: int
+    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+        """Convenience function for preparing input to LogisticScorer. Fetches
+            the observed mortality labels from a given fold in every train-test
+            split, and the corresponding median mortality risks predicted by
+            novel model."""
+        y_obs, y_preds = [], []
+        for split_i in pb(
+            range(self.cat_imputer.tts.n_splits),
+            prefix="Split iteration"
+        ):
+            y_ob, y_pred = self.get_observed_and_predicted(
+                fold_name=fold_name,
+                split_i=split_i,
+                n_samples_per_imp_i=n_samples_per_imp_i
+            )
+            y_obs.append(y_ob)
+            y_preds.append(np.median(y_pred, axis=0))
+        return y_obs, y_preds
+
+
+class LogOddsTransformer:
+    """Used to inverse transform novel model PDPs from log odds space into
+        probability space. Implemented as a class just to match the relevant
+        parts of the sklearn QuantileTransformer API."""
+
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def inverse_transform(log_odds: np.ndarray) -> np.ndarray:
+        odds = np.exp(log_odds)
+        return odds / (1 + odds)

@@ -43,7 +43,8 @@ df: pd.DataFrame = pd.read_pickle(
 )
 
 
-reporter.report("Finding names of indication variables")
+reporter.report("Finding names of indication variables, including derived "
+                "variable denoting a missing indication")
 indications = get_indication_variable_names(df.columns)
 
 

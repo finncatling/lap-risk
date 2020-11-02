@@ -26,18 +26,22 @@ class TestModelScorer:
             y_true=y_true,
             y_pred=y_pred,
             scorer_function=evaluate.score_logistic_predictions,
+            n_splits=2,
             calibration_n_splines=5,
             calibration_lam_candidates=np.logspace(-3, -1, 5)
         )
         ms.calculate_scores()
         return ms
 
-    def test_n_splits(self, ms_fixture):
-        assert ms_fixture.n_splits == 4
+    def test_n_iters(self, ms_fixture):
+        assert ms_fixture.n_iters == 4
+
+    def test_n_iters_per_split(self, ms_fixture):
+        assert ms_fixture.n_iters_per_split == 2
 
     @pytest.fixture(scope='class')
     def score_names(self, ms_fixture) -> List[str]:
-        return list(ms_fixture.scores['per_split'][0])
+        return list(ms_fixture.scores['per_iter'][0])
 
     def test_score_names(self, score_names):
         assert len(score_names) > 0
@@ -51,7 +55,7 @@ class TestModelScorer:
             for subdict_name in ['per_score', 'per_score_diff']:
                 assert (
                     len(ms_fixture.scores[subdict_name][score_name]) ==
-                    ms_fixture.n_splits
+                    ms_fixture.n_iters
                 )
 
     def test_95ci(self, ms_fixture, score_names):
