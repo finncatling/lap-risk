@@ -1,8 +1,9 @@
-from typing import Tuple, List, Union, Dict, Iterable
-
-import numpy as np
-import matplotlib.pyplot as plt
 from dataclasses import dataclass
+from typing import Tuple, List, Union, Dict
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
@@ -29,13 +30,18 @@ class PDPTerm:
 class PDPFigure:
     """Plot partial dependence for each GAM feature. If transformer is not
         None, transforms PDP back into their original space e.g. transforms
-        Gaussian back into lactate space."""
+        Gaussian back into lactate space. Optionally adds rug plots for
+        univariate continuous features."""
 
     def __init__(
         self,
         gam: GAM,
         pdp_terms: List[PDPTerm],
         transformer: Union[None, QuantileTransformer] = None,
+        plot_just_outer_ci: bool = False,
+        plot_hists: bool = False,
+        hist_data: Union[None, pd.DataFrame] = None,
+        max_hist_bins: int = 20,
         standardise_y_scale: bool = True,
         fig_width: float = 12.0,
         n_cols: int = 3,
@@ -47,6 +53,10 @@ class PDPFigure:
         self.gam = gam
         self.pdp_terms = pdp_terms
         self.transformer = transformer
+        self.plot_just_outer_ci = plot_just_outer_ci
+        self.plot_hists = plot_hists
+        self.hist_data = hist_data
+        self.max_hist_bins = max_hist_bins
         self.standardise_y_scale = standardise_y_scale
         self.fig_width = fig_width
         self.n_cols = n_cols
@@ -57,7 +67,7 @@ class PDPFigure:
         self.trans_centre = self._calculate_transformation_centre()
         self.cis = generate_ci_quantiles(confidence_intervals)
         self.fig, self.gs = None, None
-        self.y_min, self.y_max = {'2d':0., '3d': 0.}, {'2d':0., '3d': 0.}
+        self.y_min, self.y_max = {'2d': 0., '3d': 0.}, {'2d': 0., '3d': 0.}
 
     @property
     def terms(self) -> List[Dict]:
@@ -106,8 +116,7 @@ class PDPFigure:
         self._init_figure()
         for i, term in enumerate(self.terms):
             self._plot_single_pdp(i, term)
-        if self.standardise_y_scale:
-            self._scale_y_axes()
+        self._modify_axes()
         self.fig.tight_layout()
         return self.fig, None
 
@@ -144,8 +153,18 @@ class PDPFigure:
         xx = self.gam.generate_X_grid(term=i, n=x_length)
         _, confi = self.gam.partial_dependence(
             term=i, X=xx, quantiles=self.cis)
-        if self.transformer is None:
-            self._update_y_min_max(confi[:, 0], confi[:, -1], plot_type='2d')
+        if self.transformer is not None:
+            confi = self._inverse_transform(confi)
+        self._update_y_min_max(confi[:, 0], confi[:, -1], plot_type='2d')
+        if self.plot_just_outer_ci:
+            ax.fill_between(
+                xx[:, term["feature"]],
+                confi[:, 0],
+                confi[:, -1],
+                alpha=0.5,
+                color="tab:blue",
+                lw=2.0)
+        else:
             for k in range(self.n_cis):
                 ax.fill_between(
                     xx[:, term["feature"]],
@@ -154,17 +173,8 @@ class PDPFigure:
                     alpha=1 / self.n_cis,
                     color="tab:blue",
                     lw=0.0)
-        else:
-            confi = self._inverse_transform(confi)
-            self._update_y_min_max(confi[:, 0], confi[:, -1], plot_type='2d')
-            ax.fill_between(
-                xx[:, term["feature"]],
-                confi[:, 0],
-                confi[:, -1],
-                alpha=0.5,
-                color="tab:blue",
-                lw=2.0)
         self._set_non_tensor_x_labels(i, ax, xx, term["feature"], x_length)
+        ax.set_xlim(xx[:, term["feature"]].min(), xx[:, term["feature"]].max())
 
     def _set_non_tensor_x_labels(
         self,
@@ -198,9 +208,19 @@ class PDPFigure:
     ):
         lines = []
         for slice_i, sli in enumerate([0, -1]):
-            if self.transformer is None:
-                self._update_y_min_max(
-                    confi[:, sli, 0], confi[:, sli, -1], plot_type='2d')
+            if self.transformer is not None:
+                confi[:, sli, :] = self._inverse_transform(confi[:, sli, :])
+            self._update_y_min_max(
+                confi[:, sli, 0], confi[:, sli, -1], plot_type='2d')
+            if self.plot_just_outer_ci:
+                ax.fill_between(
+                    xx[0][:, 0],
+                    confi[:, sli, 0],
+                    confi[:, sli, -1],
+                    lw=2.0,
+                    alpha=0.5,
+                    color=self.strata_colours[slice_i])
+            else:
                 for k in range(self.n_cis):
                     ax.fill_between(
                         xx[0][:, 0],
@@ -209,20 +229,10 @@ class PDPFigure:
                         lw=0.0,
                         alpha=1 / self.n_cis,
                         color=self.strata_colours[slice_i])
-            else:
-                confi[:, sli, :] = self._inverse_transform(confi[:, sli, :])
-                self._update_y_min_max(
-                    confi[:, sli, 0], confi[:, sli, -1], plot_type='2d')
-                ax.fill_between(
-                    xx[0][:, 0],
-                    confi[:, sli, 0],
-                    confi[:, sli, -1],
-                    lw=2.0,
-                    alpha=0.5,
-                    color=self.strata_colours[slice_i])
             lines.append(Line2D([0], [0], color=self.strata_colours[slice_i]))
         ax.legend(lines, self.pdp_terms[i].strata,
                   loc=self.pdp_terms[i].legend_loc)
+        ax.set_xlim(xx[0][0, 0], xx[0][-1, 0])
         self._set_tensor_x_labels(i, ax, xx, x_length)
 
     def _set_tensor_x_labels(
@@ -234,9 +244,9 @@ class PDPFigure:
     ):
         if self.pdp_terms[i].labels is not None:
             ax.set_xticks(xx[0][:, 0][
-                range(self.mid_cat_i, x_length, self.ticks_per_cat)])
+                              range(self.mid_cat_i, x_length,
+                                    self.ticks_per_cat)])
             ax.set_xticklabels(self.pdp_terms[i].labels)
-            ax.set_xlim(xx[0][0, 0], xx[0][-1, 0])
             if self.pdp_terms[i].name == "Indication":
                 ax.set_xticklabels(
                     self.pdp_terms[i].labels,
@@ -265,9 +275,49 @@ class PDPFigure:
             x.reshape(np.prod(x.shape), 1)
         ).reshape(x.shape) - self.trans_centre
 
-    def _scale_y_axes(self):
+    def _modify_axes(self):
+        """Loop back over axes, optionally standardising their y axis scale and
+            adding rug plots. We have to do these operations in a second loop
+            after the initial plotting as we only know the correct global y
+            axis scale at this point, and if we are standardising the y axis
+            then we need to know what its lower limit is in order to place the
+            rug at the bottom of each plot. Also autoscales x limits."""
         for i, ax in enumerate(self.fig.axes):
             if self.pdp_terms[i].view_3d is None:
-                ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
+                if self.standardise_y_scale:
+                    ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
+                if self.plot_hists:
+                    self._plot_hist(i, ax)
             else:
-                ax.set_zlim3d(self.y_min['3d'], self.y_max['3d'])
+                if self.standardise_y_scale:
+                    ax.set_zlim3d(self.y_min['3d'], self.y_max['3d'])
+
+    def _plot_hist(self, i: int, ax: Axes):
+        hist, bins = np.histogram(
+            self.hist_data[self.pdp_terms[i].name].values,
+            bins=self._determine_n_hist_bins(i))
+        if self.pdp_terms[i].labels is not None:
+            x_ticks = ax.get_xticks()
+            xlim = ax.get_xlim()
+            width = (xlim[1] - xlim[0]) / len(x_ticks)
+        else:
+            x_ticks = (bins[:-1] + bins[1:]) / 2
+            width = bins[1] - bins[0]
+        ylim = ax.get_ylim()
+        hist_height_frac = 0.9
+        ax.bar(
+            x=x_ticks,
+            height=(hist / hist.max()) * (ylim[1] - ylim[0]) * hist_height_frac,
+            align='center',
+            width=width,
+            bottom=ylim[0],
+            color='black',
+            alpha=0.15)
+
+    def _determine_n_hist_bins(self, i: int):
+        if self.pdp_terms[i].name == "S03GlasgowComaScore":
+            return 13
+        elif self.pdp_terms[i].labels is not None:
+            return len(self.pdp_terms[i].labels)
+        else:
+            return self.max_hist_bins

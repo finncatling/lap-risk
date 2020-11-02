@@ -151,13 +151,22 @@ class Scorer:
         self,
         y_true: List[np.ndarray],
         y_pred: List[np.ndarray],
-        scorer_function: Callable[[np.ndarray, np.ndarray], Dict[str, float]]
+        scorer_function: Callable[[np.ndarray, np.ndarray], Dict[str, float]],
+        n_splits: int
     ):
+        """
+        Args:
+            y_true: Target values for each iteration
+            y_pred: Predicted values for each iteration
+            scorer_function: Calculates scores of the appropriate type
+            n_splits: Number of train-test splits
+        """
         self.y_true = y_true
         self.y_pred = y_pred
         self.scorer_function = scorer_function
+        self.n_splits = n_splits
         self.scores = {
-            "per_split": {},
+            "per_iter": {},
             "per_score": {},
             "per_score_diff": {},
             "95ci": {}
@@ -165,24 +174,28 @@ class Scorer:
         self._sanity_check()
 
     @property
-    def n_splits(self):
+    def n_iters(self) -> int:
         return len(self.y_true)
 
+    @property
+    def n_iters_per_split(self) -> int:
+        return int(self.n_iters / self.n_splits)
+
     def _sanity_check(self):
-        for i in range(self.n_splits):
+        for i in range(self.n_iters):
             assert self.y_true[i].shape[0] == self.y_pred[i].shape[0]
 
     def calculate_scores(self):
-        for i in pb(range(self.n_splits), prefix="Scorer iteration"):
-            self.scores["per_split"][i] = self.scorer_function(
+        for i in pb(range(self.n_iters), prefix="Scorer iteration"):
+            self.scores["per_iter"][i] = self.scorer_function(
                 self.y_true[i], self.y_pred[i])
-        self._calculate_median_and_95ci()
+        self._calculate_medians_and_95ci()
 
     def print_scores(self, point_estimate: str, dec_places: int):
         if point_estimate == 'median':
             pe_dict = self.scores["medians"]
-        elif point_estimate == 'fold0':
-            pe_dict = self.scores["per_split"][0]
+        elif point_estimate == 'split0':
+            pe_dict = self.scores["split0"]
         else:
             raise ValueError
         for score, pe in pe_dict.items():
@@ -191,9 +204,10 @@ class Scorer:
                 f"({np.round(self.scores['95ci'][score][0], dec_places)} -",
                 f"{np.round(self.scores['95ci'][score][1], dec_places)})")
 
-    def _calculate_median_and_95ci(self):
+    def _calculate_medians_and_95ci(self):
         self.scores["medians"] = {}
-        for score in self.scores["per_split"][0].keys():
+        self.scores["split0"] = {}
+        for score in self.scores["per_iter"][0].keys():
             self._extract_iter_per_score(score)
             self.scores["medians"][score] = np.median(
                 self.scores["per_score"][score])
@@ -202,11 +216,13 @@ class Scorer:
             self.scores["95ci"][score] = list(
                 self.scores["medians"][score] + np.percentile(
                     self.scores["per_score_diff"][score], (2.5, 97.5)))
+            self.scores["split0"][score] = np.median(
+                self.scores["per_score"][score][:self.n_iters_per_split])
 
     def _extract_iter_per_score(self, score):
-        self.scores["per_score"][score] = np.zeros(self.n_splits)
-        for i in range(self.n_splits):
-            self.scores["per_score"][score][i] = self.scores["per_split"][i][
+        self.scores["per_score"][score] = np.zeros(self.n_iters)
+        for i in range(self.n_iters):
+            self.scores["per_score"][score][i] = self.scores["per_iter"][i][
                 score]
 
 
@@ -219,10 +235,11 @@ class LogisticScorer(Scorer):
         y_true: List[np.ndarray],
         y_pred: List[np.ndarray],
         scorer_function: Callable[[np.ndarray, np.ndarray], Dict[str, float]],
+        n_splits: int,
         calibration_n_splines: int,
         calibration_lam_candidates: np.ndarray,
     ):
-        super().__init__(y_true, y_pred, scorer_function)
+        super().__init__(y_true, y_pred, scorer_function, n_splits)
         self.calib_n_splines = calibration_n_splines
         self.calib_lam_candidates = calibration_lam_candidates
         self.p: Union[None, np.ndarray] = None
@@ -230,18 +247,18 @@ class LogisticScorer(Scorer):
         self.calib_curves: List[np.ndarray] = []
 
     def calculate_scores(self):
-        for i in pb(range(self.n_splits), prefix="Scorer iteration"):
-            self.scores["per_split"][i] = self.scorer_function(
+        for i in pb(range(self.n_iters), prefix="Scorer iteration"):
+            self.scores["per_iter"][i] = self.scorer_function(
                 self.y_true[i], self.y_pred[i])
             self.p, calib_curve, calib_mae, best_lam = score_calibration(
                 self.y_true[i],
                 self.y_pred[i],
                 self.calib_n_splines,
                 self.calib_lam_candidates)
-            self.scores["per_split"][i]["Calibration MAE"] = calib_mae
+            self.scores["per_iter"][i]["Calibration MAE"] = calib_mae
             self.calib_curves.append(calib_curve)
             self.calib_lams.append(best_lam)
-        self._calculate_median_and_95ci()
+        self._calculate_medians_and_95ci()
 
 
 def evaluate_samples(
