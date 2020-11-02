@@ -154,12 +154,13 @@ for pretty_name, variable_name, model_factory in (
     scorer = Scorer(
         y_true=y_obs,
         y_pred=y_preds,
-        scorer_function=score_linear_predictions)
+        scorer_function=score_linear_predictions,
+        n_splits=imputer.tts.n_splits)
     scorer.calculate_scores()
     reporter.first("Scores with median as point estimate:")
     scorer.print_scores(dec_places=3, point_estimate='median')
-    reporter.first("Scores with fold 0 as point estimate:")
-    scorer.print_scores(dec_places=3, point_estimate='fold0')
+    reporter.first("Scores with split 0 as point estimate:")
+    scorer.print_scores(dec_places=3, point_estimate='split0')
 
 
     reporter.first("Saving model scorer for later use")
