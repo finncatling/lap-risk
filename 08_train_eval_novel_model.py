@@ -156,7 +156,6 @@ novel_model = NovelModel(
         imputation_stages.multiple_of_previous_n_imputations[1]),
     random_seed=RANDOM_SEED
 )
-novel_model.cat_imputer.tts.n_splits = 1  # TODO: remove this testing line
 novel_model.fit()
 
 

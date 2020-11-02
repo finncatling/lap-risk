@@ -1202,14 +1202,13 @@ class NovelModel:
             range(self.cat_imputer.tts.n_splits),
             prefix="Split iteration"
         ):
-            for mice_imp_i in range(self.cat_imputer.swm.n_mice_imputations):
-                y_ob, y_pred = self.get_observed_and_predicted(
-                    fold_name=fold_name,
-                    split_i=split_i,
-                    n_samples_per_imp_i=n_samples_per_imp_i
-                )
-                y_obs.append(y_ob)
-                y_preds.append(np.median(y_pred, axis=0))
+            y_ob, y_pred = self.get_observed_and_predicted(
+                fold_name=fold_name,
+                split_i=split_i,
+                n_samples_per_imp_i=n_samples_per_imp_i
+            )
+            y_obs.append(y_ob)
+            y_preds.append(np.median(y_pred, axis=0))
         return y_obs, y_preds
 
 
