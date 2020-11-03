@@ -3,7 +3,8 @@ from typing import List, Union
 
 import numpy as np
 from numpy.random import RandomState
-from pygam import LinearGAM, LogisticGAM
+from pygam import GAM, LinearGAM, LogisticGAM
+from pygam.distributions import NormalDist
 
 
 def combine_mi_gams(
@@ -45,15 +46,30 @@ def combine_mi_gams(
     return comb
 
 
-def quick_sample(gam, sample_at_X, random_seed, quantity="y", n_draws=100):
-    """Sample from the multivariate normal distribution
-        over the model coefficients, and use the samples to predict a
-        distribution over the target quantity.
+def quick_sample(
+    gam: GAM,
+    sample_at_X: np.ndarray,
+    random_seed: int,
+    quantity: str = "y",
+    n_draws: int = 100
+) -> np.ndaray:
+    """
+    Sample from the multivariate normal distribution over the model
+    coefficients, and use the samples to predict a distribution over the target
+    quantity.
 
     This is a simplified version of GAM.sample() as we prespecify the lam
     (regularisation penalty) on each feature instead of fitting it with
     grid search, therefore we don't consider model uncertainty resulting from
     other values of lam.
+
+    quantity='y' is only currently supported where gam.distribution is
+    Gaussian, as is the case with LinearGAM. This is because, unlike
+    GAM.sample(), we don't draw samples from the model distribution using
+    gam.distribution.sample() as this method is unseeded, preventing
+    reproducibility. Instead, we reimplement a seeded version of sampling from
+    the model distribution inside this function, but we have only done this for
+    a Gaussian model distribution so far.
 
     Parameters
     -----------
@@ -104,4 +120,13 @@ def quick_sample(gam, sample_at_X, random_seed, quantity="y", n_draws=100):
     if quantity == "mu":
         return mu_shape_n_draws_by_n_samples
     else:
-        return gam.distribution.sample(mu_shape_n_draws_by_n_samples)
+        if isinstance(gam.distribution, NormalDist):
+            scale = gam.distribution.scale
+            standard_deviation = scale ** 0.5 if scale else 1.0
+            return rnd.normal(
+                loc=mu_shape_n_draws_by_n_samples,
+                scale=standard_deviation,
+                size=None
+            )
+        else:
+            raise NotImplementedError
