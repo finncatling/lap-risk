@@ -1112,10 +1112,13 @@ class NovelModel:
         for imputer in (self.alb_imputer, self.lac_imputer):
             lacalb_and_indicator = (
                 imputer.get_complete_variable_and_missingness_indicator(
-                    fold_name,
-                    split_i,
-                    mice_imp_i,
-                    self._calculate_lac_alb_imp_i(mice_imp_i, lac_alb_imp_i)
+                    fold_name=fold_name,
+                    split_i=split_i,
+                    mice_imp_i=mice_imp_i,
+                    lac_alb_imp_i=self._calculate_lac_alb_imp_i(
+                        mice_imp_i,
+                        lac_alb_imp_i
+                    )
                 )
             )
             features = pd.concat([features, lacalb_and_indicator], axis=1)
