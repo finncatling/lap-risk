@@ -52,7 +52,7 @@ def quick_sample(
     random_seed: int,
     quantity: str = "y",
     n_draws: int = 100
-) -> np.ndaray:
+) -> np.ndarray:
     """
     Sample from the multivariate normal distribution over the model
     coefficients, and use the samples to predict a distribution over the target
