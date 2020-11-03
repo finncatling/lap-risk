@@ -80,13 +80,27 @@ def stratify_y_pred(
 
     Args:
         y_true: True labels
-        y_pred: Predicted probabilities
+        y_pred: Predicted probabilities. Either has shape (n_patients,)
+            representing a single prediction of y per patient, or has shape
+            (n_patients, n_samples) representing n_samples predictions of y per
+            patient
 
     Returns:
         Predicted probabilities where true label is 0
         Predicted probabilities where true label is 1
     """
-    return y_pred[np.where(y_true == 0)[0]], y_pred[np.where(y_true == 1)[0]]
+    if y_pred.ndim == 1:
+        return (
+            y_pred[np.where(y_true == 0)[0]],
+            y_pred[np.where(y_true == 1)[0]]
+        )
+    elif y_pred.ndim == 2:
+        return (
+            y_pred[:, np.where(y_true == 0)[0]],
+            y_pred[:, np.where(y_true == 1)[0]]
+        )
+    else:
+        raise NotImplementedError
 
 
 def somers_dxy(y_true, y_pred):

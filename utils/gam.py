@@ -50,8 +50,10 @@ def quick_sample(gam, sample_at_X, random_seed, quantity="y", n_draws=100):
         over the model coefficients, and use the samples to predict a
         distribution over the target quantity.
 
-    TODO: Investigate why the default .sample() method in pygam is more
-        involved than this
+    This is a simplified version of GAM.sample() as we prespecify the lam
+    (regularisation penalty) on each feature instead of fitting it with
+    grid search, therefore we don't consider model uncertainty resulting from
+    other values of lam.
 
     Parameters
     -----------
@@ -74,8 +76,8 @@ def quick_sample(gam, sample_at_X, random_seed, quantity="y", n_draws=100):
     -------
     draws : 2D array of length n_draws
         Simulations of the given `quantity` using samples from the
-        posterior distribution of the coefficients and smoothing parameter
-        given the response data. Each row is a pseudorandom sample.
+        posterior distribution of the coefficients given the response data.
+        Each row is a pseudorandom sample.
 
         If `quantity == 'coef'`, then the number of columns of `draws` is
         the number of coefficients (`len(self.coef_)`).

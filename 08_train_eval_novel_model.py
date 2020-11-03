@@ -193,7 +193,7 @@ scorer.print_scores(dec_places=3, point_estimate='split0')
 reporter.first("Saving model scorer for later use")
 save_object(
     scorer,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, f"08_novel_model_scorer.pkl"))
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model_scorer.pkl"))
 
 
 reporter.report('Preparing data for PDP histograms')
