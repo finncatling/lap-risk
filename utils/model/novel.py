@@ -764,7 +764,7 @@ class LactateAlbuminImputer(Imputer):
             categorical_imputer.target_variable_name
         )
         self.cat_imputer = categorical_imputer
-        self.cont_vars = NOVEL_MODEL_VARS["cont"]
+        self.cont_vars = NOVEL_MODEL_VARS["cont"]  # TODO: Remove if unused?
         self.lacalb_variable_name = lacalb_variable_name
         self.model_factory = imputation_model_factory
         self.winsor_quantiles = winsor_quantiles

@@ -1,5 +1,5 @@
 import copy
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Callable
 from unittest import mock
 
 import numpy as np
@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 from pandas.api.types import is_numeric_dtype
 from scipy.special import expit
+from pygam import LinearGAM, s
 
 import utils.model
 from utils.indications import (
@@ -165,7 +166,7 @@ class TestWinsorizeNovel:
 
 
 @pytest.fixture(scope='module')
-def df_fixture() -> pd.DataFrame:
+def tts_swm_catimp_df_fixture() -> pd.DataFrame:
     n_rows = 20
     rnd = np.random.RandomState(1)
     df = pd.DataFrame({'cont': np.linspace(-1, 1, num=n_rows)})
@@ -180,25 +181,25 @@ def df_fixture() -> pd.DataFrame:
     return df
 
 
-@pytest.fixture(scope='module')
-def mock_train_test_split_fixture(df_fixture) -> TrainTestSplitter:
+def mock_train_test_splitter_factory(n_rows: int) -> TrainTestSplitter:
     """We use a mock to allow deterministic splitting"""
-    even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
-    odd_i = np.arange(1, df_fixture.shape[0], 2)
-    tts = mock.create_autospec(TrainTestSplitter)
+    tts = mock.Mock(TrainTestSplitter)
+    even_i = np.arange(0, n_rows - 1, 2)
+    odd_i = np.arange(1, n_rows, 2)
     tts.train_i = [even_i, odd_i]
     tts.test_i = [odd_i, even_i]
-    tts.n_splits = len(tts.train_i)
+    tts.n_splits = 2
     return tts
 
 
 @pytest.fixture(scope='module')
 def splitter_winsor_mice_fixture(
-    df_fixture, mock_train_test_split_fixture
+    tts_swm_catimp_df_fixture
 ) -> utils.model.novel.SplitterWinsorMICE:
     swm = utils.model.novel.SplitterWinsorMICE(
-        df=df_fixture.drop('multicat', axis=1),
-        train_test_splitter=mock_train_test_split_fixture,
+        df=tts_swm_catimp_df_fixture.drop('multicat', axis=1),
+        train_test_splitter=mock_train_test_splitter_factory(
+            tts_swm_catimp_df_fixture.shape[0]),
         target_variable_name='target',
         cont_variables=['cont'],
         binary_variables=['bin'],
@@ -215,10 +216,10 @@ def splitter_winsor_mice_fixture(
 
 @pytest.fixture(scope='module')
 def categorical_imputer_fixture(
-    df_fixture, splitter_winsor_mice_fixture
+    tts_swm_catimp_df_fixture, splitter_winsor_mice_fixture
 ) -> utils.model.novel.CategoricalImputer:
     cat_imputer = utils.model.novel.CategoricalImputer(
-        df=df_fixture,
+        df=tts_swm_catimp_df_fixture,
         splitter_winsor_mice=splitter_winsor_mice_fixture,
         cat_vars=['multicat'],
         random_seed=1
@@ -451,3 +452,96 @@ class TestCategoricalImputer:
             ].values
             assert imputed.size == 1
             assert imputed[0] in possible_values
+
+
+class TestLactateAlbuminImputer:
+    """
+    Imputer._find_missing_indices() is tested in TestSplitterWinsorMICE so
+    isn't retested here.
+    """
+    @pytest.fixture(scope='class')
+    def lacalb_df_fixture(self) -> pd.DataFrame:
+        n_rows = 20
+        rnd = np.random.RandomState(1)
+        df = pd.DataFrame({'lacalb': np.linspace(0, 1, num=n_rows)})
+        df['cont'] = ((df['lacalb'] * 6) - 7) ** 2
+        df['target'] = rnd.binomial(n=1, p=df['lacalb'].values)
+        df.loc[(3, 16), 'lacalb'] = np.nan
+        return df
+
+    @pytest.fixture(scope='class')
+    def mock_cat_imputer_fixture(
+        self, lacalb_df_fixture
+    ) -> novel.CategoricalImputer:
+        """We use a mock to simplify testing."""
+        ci = mock.Mock(novel.CategoricalImputer)
+        ci.target_variable_name = 'lacalb'
+        ci.tts = mock_train_test_splitter_factory(
+            lacalb_df_fixture.shape[0])
+        ci.swm = mock.Mock(novel.SplitterWinsorMICE)
+        ci.swm.n_mice_imputations = 2
+        ci.get_imputed_df.return_value = lacalb_df_fixture.drop(
+            'lacalb', axis=1)
+        return ci
+
+    @pytest.fixture(scope='class')
+    def lacalb_model_factory_fixture(
+        self
+    ) -> Callable[[pd.Index, Dict[str, Tuple], str], LinearGAM]:
+        def model_factory(
+            columns: pd.Index,
+            multi_cat_levels: Dict[str, Tuple],
+            indication_var_name: str
+        ) -> LinearGAM:
+            return LinearGAM(
+                s(
+                    columns.get_loc("cont"),
+                    spline_order=2,
+                    n_splines=10,
+                    lam=75
+                ))
+        return model_factory
+
+    def test_check_df(
+        self,
+        lacalb_df_fixture,
+        mock_cat_imputer_fixture,
+        lacalb_model_factory_fixture
+    ):
+        """Should raise AssertionError as too many columns."""
+        with pytest.raises(AssertionError):
+            return novel.LactateAlbuminImputer(
+                df=lacalb_df_fixture,
+                categorical_imputer=mock_cat_imputer_fixture,
+                lacalb_variable_name='lacalb',
+                imputation_model_factory=lacalb_model_factory_fixture,
+                winsor_quantiles=(0.01, 0.99),
+                multi_cat_vars=dict(),
+                indication_var_name='this is not used',
+                random_seed=1
+            )
+
+    @pytest.fixture(scope='class')
+    def imputer_fixture(
+        self,
+        lacalb_df_fixture,
+        mock_cat_imputer_fixture,
+        lacalb_model_factory_fixture
+    ) -> novel.LactateAlbuminImputer:
+        imp = novel.LactateAlbuminImputer(
+            df=lacalb_df_fixture.drop('cont', axis=1),
+            categorical_imputer=mock_cat_imputer_fixture,
+            lacalb_variable_name='lacalb',
+            imputation_model_factory=lacalb_model_factory_fixture,
+            winsor_quantiles=(0.01, 0.99),
+            multi_cat_vars=dict(),
+            indication_var_name='this is not used',
+            random_seed=1
+        )
+        imp.fit()
+        return imp
+
+    def test_viz(self, imputer_fixture):
+        X, y = imputer_fixture.get_observed_and_predicted(
+            'train', 0, 0, 0, True)
+        print(X)
