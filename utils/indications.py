@@ -100,7 +100,7 @@ def report_ohe_category_assignment(
 
 
 class IndicationNameProcessor:
-    """Helper class to process indication names."""
+    """Process indication names for use in model specification and plotting."""
     def __init__(
         self,
         multi_category_levels: Dict[str, Tuple],
@@ -129,8 +129,7 @@ class IndicationNameProcessor:
         return [self._sanitize_indication(ind_name) for ind_name in self.names]
 
     def _sanitize_indication(self, ind: str) -> str:
-        """Hacky function to make individual indication names ready for use in
-            plotting."""
+        """Make individual indication names more human-readable when plotted."""
         ind = ind[len(self.ind_prefix):]
         ind_word_list = re.findall("[A-Z][^A-Z]*", ind)
         sanitized_list = [ind_word_list[0]]
@@ -143,4 +142,3 @@ class IndicationNameProcessor:
         sanitized = "\n".join(sanitized_list)
         sanitized = sanitized.lower()
         return sanitized[0].upper() + sanitized[1:]
-
