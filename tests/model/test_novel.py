@@ -7,10 +7,8 @@ import pandas as pd
 import pytest
 from pandas.api.types import is_numeric_dtype
 from scipy.special import expit
-from pygam import LinearGAM, s, f
 from sklearn.preprocessing import QuantileTransformer
 
-import utils.model
 from utils.indications import (
     INDICATION_VAR_NAME,
     MISSING_IND_CATEGORY,
@@ -24,7 +22,7 @@ from utils.model.novel import (
 )
 from utils.model.shared import flatten_model_var_dict
 from utils.split import TrainTestSplitter
-from utils.gam import quick_sample
+from utils.constants import RANDOM_SEED
 
 
 @pytest.fixture()
@@ -170,7 +168,7 @@ class TestWinsorizeNovel:
 @pytest.fixture()
 def df_fixture_complete() -> pd.DataFrame:
     n_rows = 20
-    rnd = np.random.RandomState(1)
+    rnd = np.random.RandomState(RANDOM_SEED)
     df = pd.DataFrame({'cont': np.linspace(-1, 1, num=n_rows)})
     df['bin'] = rnd.choice(2, size=n_rows)
     df['multicat'] = rnd.choice(3, size=n_rows)
@@ -219,7 +217,7 @@ def splitter_winsor_mice_fixture(
         n_mice_imputations=2,
         n_mice_burn_in=1,
         n_mice_skip=1,
-        random_seed=1
+        random_seed=RANDOM_SEED
     )
     swm.split_winsorize_mice()
     return swm
@@ -339,7 +337,7 @@ def categorical_imputer_fixture(
         df=df_fixture.drop('lacalb', axis=1),
         splitter_winsor_mice=splitter_winsor_mice_fixture,
         cat_vars=['multicat'],
-        random_seed=1
+        random_seed=RANDOM_SEED
     )
     cat_imputer.impute()
     return cat_imputer
@@ -496,7 +494,7 @@ def lacalb_imputer_fixture(
         winsor_quantiles=novel.WINSOR_QUANTILES,
         multi_cat_vars=dict(),  # unused
         indication_var_name='',  # unused
-        random_seed=1
+        random_seed=RANDOM_SEED
     )
     imp.fit()
     return imp
@@ -507,6 +505,7 @@ class TestLactateAlbuminImputer:
     _split() and _find_missing_indices() are base class methods tested
     elsewhere, so aren't retested here.
     """
+
     def test_check_df(
         self,
         df_fixture,
@@ -523,7 +522,7 @@ class TestLactateAlbuminImputer:
                 winsor_quantiles=novel.WINSOR_QUANTILES,
                 multi_cat_vars=dict(),  # unused
                 indication_var_name='',  # unused
-                random_seed=1
+                random_seed=RANDOM_SEED
             )
 
     @pytest.fixture()
