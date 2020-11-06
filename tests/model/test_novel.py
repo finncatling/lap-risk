@@ -628,10 +628,10 @@ class TestLactateAlbuminImputer:
     def test_get_features_where_lacalb_missing(
         self, lacalb_imputer_fixture, df_fixture, missing_features_fixture
     ):
-        """expected is only so simple to construct here because cont isn't
-            and extreme value affected by winsorization, and none of the
-            features has a missing values which would have otherwise been
-            imputed."""
+        """expected is only so simple to construct here because cont's
+        value isn't at an extreme of its domain (so wouldn't be winsorized
+        anyway), and none of the features has a missing values which would
+        need to be imputed."""
         even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
         df = df_fixture.loc[even_i].reset_index(drop=True)
         expected = df.loc[
@@ -653,14 +653,20 @@ class TestLactateAlbuminImputer:
         true = df_fixture_complete.loc[2, 'lacalb']
         assert pred > (true - 0.5)
         assert pred < (true + 0.5)
+
+    def test_get_complete_lacalb(
+        self,
+        lacalb_imputer_fixture,
+        missing_features_fixture,
+        df_fixture
+    ):
         pred = lacalb_imputer_fixture.impute(
             features=missing_features_fixture,
             split_i=0,
-            lac_alb_imp_i=0,
-            probabilistic=True)[0][0]
-
-    def test_get_complete_variable_and_missingness_indicator(self):
-        assert False
-
-    def get_observed_and_predicted(self):
-        assert False
+            lac_alb_imp_i=None,
+            probabilistic=False)
+        observed = lacalb_imputer_fixture._get_complete_lacalb(pred, 'train', 0)
+        even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
+        df = df_fixture.loc[even_i].reset_index(drop=True)
+        df.loc[1, 'lacalb'] = pred[0][0]
+        assert df.loc[:, ['lacalb']].equals(observed)
