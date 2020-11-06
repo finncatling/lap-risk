@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+from progressbar import progressbar as pb
 
 from utils.constants import (
     NOVEL_MODEL_OUTPUT_DIR,
@@ -145,13 +146,25 @@ novel_model = NovelModel(
         imputation_stages.multiple_of_previous_n_imputations[1]),
     random_seed=RANDOM_SEED
 )
-novel_model.fit()
+# novel_model.fit()
 
 
-reporter.report(f"Saving novel model for later use")
-save_object(
-    novel_model,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
+# TODO: BEGIN testing code to remove
+for split_i in pb(
+    range(novel_model.cat_imputer.tts.n_splits),
+    prefix="Split iteration"
+):
+    novel_model._single_train_test_split(split_i)
+    save_object(
+        novel_model,
+        os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
+# TODO: END testing code to remove
+
+
+# reporter.report(f"Saving novel model for later use")
+# save_object(
+#     novel_model,
+#     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
 
 
 # # TODO: Remove this development code
