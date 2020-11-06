@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from pandas.api.types import is_numeric_dtype
+from pygam import LinearGAM, LogisticGAM, s, f
 from scipy.special import expit
 from sklearn.preprocessing import QuantileTransformer
 
@@ -669,3 +670,49 @@ class TestLactateAlbuminImputer:
         df = df_fixture.loc[even_i].reset_index(drop=True)
         df.loc[1, 'lacalb'] = pred[0][0]
         assert df.loc[:, ['lacalb']].equals(observed)
+
+
+@pytest.fixture()
+def novel_model_factory_fixture() -> Callable[
+    [pd.Index, Dict[str, Tuple], str], LogisticGAM
+]:
+    def model_factory(
+        columns: pd.Index,
+        multi_cat_levels: Dict[str, Tuple],
+        indication_var_name: str
+    ) -> LogisticGAM:
+        return LogisticGAM(
+            s(columns.get_loc("cont"), spline_order=2, n_splines=5, lam=0.05)
+            + s(
+                columns.get_loc("lacalb"),
+                spline_order=2,
+                n_splines=5,
+                lam=100
+            )
+            + f(columns.get_loc("bin"), coding="dummy", lam=0.1)
+            + f(columns.get_loc("multicat"), coding="dummy", lam=0.1)
+        )
+    return model_factory
+
+
+@pytest.fixture()
+def novel_model_fixture(
+    categorical_imputer_fixture,
+    lacalb_imputer_fixture,
+    novel_model_factory_fixture
+) -> novel.NovelModel:
+    novel_model = novel.NovelModel(
+        categorical_imputer=categorical_imputer_fixture,
+        albumin_imputer=lacalb_imputer_fixture,
+        lactate_imputer=lacalb_imputer_fixture,
+        model_factory=novel_model_factory_fixture,
+        n_lacalb_imputations_per_mice_imp=2,
+        random_seed=RANDOM_SEED
+    )
+    novel_model.fit()
+    return novel_model
+
+
+class TestNovelModel:
+    def test_placeholder(self, novel_model_fixture):
+        print(novel_model_fixture)
