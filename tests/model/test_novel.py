@@ -6,11 +6,10 @@ import numpy as np
 import pandas as pd
 import pytest
 from pandas.api.types import is_numeric_dtype
+from pygam import LinearGAM, LogisticGAM, s, f
 from scipy.special import expit
-from pygam import LinearGAM, s, f
 from sklearn.preprocessing import QuantileTransformer
 
-import utils.model
 from utils.indications import (
     INDICATION_VAR_NAME,
     MISSING_IND_CATEGORY,
@@ -24,7 +23,7 @@ from utils.model.novel import (
 )
 from utils.model.shared import flatten_model_var_dict
 from utils.split import TrainTestSplitter
-from utils.gam import quick_sample
+from utils.constants import RANDOM_SEED
 
 
 @pytest.fixture()
@@ -170,14 +169,15 @@ class TestWinsorizeNovel:
 @pytest.fixture()
 def df_fixture_complete() -> pd.DataFrame:
     n_rows = 20
-    rnd = np.random.RandomState(1)
+    rnd = np.random.RandomState(RANDOM_SEED)
     df = pd.DataFrame({'cont': np.linspace(-1, 1, num=n_rows)})
     df['bin'] = rnd.choice(2, size=n_rows)
     df['multicat'] = rnd.choice(3, size=n_rows)
     df['target'] = rnd.binomial(
         n=1, p=expit(df.cont + df.bin + (df.multicat - 1))
     )
-    df['lacalb'] = ((df['cont'] * 2) + 0.3) ** 2
+    df['lactate'] = ((df['cont'] * 2) + 0.3) ** 2
+    df['albumin'] = ((df['cont'] * 5) + 6) ** 2
     return df
 
 
@@ -187,7 +187,8 @@ def df_fixture(df_fixture_complete) -> pd.DataFrame:
     df.loc[1, 'cont'] = np.nan
     df.loc[8, 'bin'] = np.nan
     df.loc[(3, 10), 'multicat'] = np.nan
-    df.loc[(2, 17), 'lacalb'] = np.nan
+    df.loc[(2, 17), 'lactate'] = np.nan
+    df.loc[(4, 15), 'albumin'] = np.nan
     return df
 
 
@@ -209,7 +210,7 @@ def splitter_winsor_mice_fixture(
     mock_train_test_splitter_fixture
 ) -> novel.SplitterWinsorMICE:
     swm = novel.SplitterWinsorMICE(
-        df=df_fixture.drop(['multicat', 'lacalb'], axis=1),
+        df=df_fixture.drop(['multicat', 'lactate', 'albumin'], axis=1),
         train_test_splitter=mock_train_test_splitter_fixture,
         target_variable_name='target',
         cont_variables=['cont'],
@@ -219,7 +220,7 @@ def splitter_winsor_mice_fixture(
         n_mice_imputations=2,
         n_mice_burn_in=1,
         n_mice_skip=1,
-        random_seed=1
+        random_seed=RANDOM_SEED
     )
     swm.split_winsorize_mice()
     return swm
@@ -336,10 +337,10 @@ def categorical_imputer_fixture(
     df_fixture, splitter_winsor_mice_fixture
 ) -> novel.CategoricalImputer:
     cat_imputer = novel.CategoricalImputer(
-        df=df_fixture.drop('lacalb', axis=1),
+        df=df_fixture.drop(['lactate', 'albumin'], axis=1),
         splitter_winsor_mice=splitter_winsor_mice_fixture,
         cat_vars=['multicat'],
-        random_seed=1
+        random_seed=RANDOM_SEED
     )
     cat_imputer.impute()
     return cat_imputer
@@ -439,8 +440,6 @@ class TestCategoricalImputer:
             quantiles=novel.WINSOR_QUANTILES,
             cont_vars=['cont']
         )
-        print(train_imputed)
-        print(train_unimputed)
         assert train_imputed[['cont', 'target']].equals(
             train_unimputed[['cont', 'target']]
         )
@@ -483,20 +482,40 @@ def lacalb_model_factory_fixture() -> Callable[
 
 
 @pytest.fixture()
-def lacalb_imputer_fixture(
+def lactate_imputer_fixture(
     df_fixture,
     categorical_imputer_fixture,
     lacalb_model_factory_fixture
 ) -> novel.LactateAlbuminImputer:
     imp = novel.LactateAlbuminImputer(
-        df=df_fixture.drop(['cont', 'bin', 'multicat'], axis=1),
+        df=df_fixture.drop(['cont', 'bin', 'multicat', 'albumin'], axis=1),
         categorical_imputer=categorical_imputer_fixture,
-        lacalb_variable_name='lacalb',
+        lacalb_variable_name='lactate',
         imputation_model_factory=lacalb_model_factory_fixture,
         winsor_quantiles=novel.WINSOR_QUANTILES,
         multi_cat_vars=dict(),  # unused
         indication_var_name='',  # unused
-        random_seed=1
+        random_seed=RANDOM_SEED
+    )
+    imp.fit()
+    return imp
+
+
+@pytest.fixture()
+def albumin_imputer_fixture(
+    df_fixture,
+    categorical_imputer_fixture,
+    lacalb_model_factory_fixture
+) -> novel.LactateAlbuminImputer:
+    imp = novel.LactateAlbuminImputer(
+        df=df_fixture.drop(['cont', 'bin', 'multicat', 'lactate'], axis=1),
+        categorical_imputer=categorical_imputer_fixture,
+        lacalb_variable_name='albumin',
+        imputation_model_factory=lacalb_model_factory_fixture,
+        winsor_quantiles=novel.WINSOR_QUANTILES,
+        multi_cat_vars=dict(),  # unused
+        indication_var_name='',  # unused
+        random_seed=RANDOM_SEED
     )
     imp.fit()
     return imp
@@ -507,6 +526,7 @@ class TestLactateAlbuminImputer:
     _split() and _find_missing_indices() are base class methods tested
     elsewhere, so aren't retested here.
     """
+
     def test_check_df(
         self,
         df_fixture,
@@ -518,18 +538,18 @@ class TestLactateAlbuminImputer:
             return novel.LactateAlbuminImputer(
                 df=df_fixture,
                 categorical_imputer=categorical_imputer_fixture,
-                lacalb_variable_name='lacalb',
+                lacalb_variable_name='lactate',
                 imputation_model_factory=lacalb_model_factory_fixture,
                 winsor_quantiles=novel.WINSOR_QUANTILES,
                 multi_cat_vars=dict(),  # unused
                 indication_var_name='',  # unused
-                random_seed=1
+                random_seed=RANDOM_SEED
             )
 
     @pytest.fixture()
-    def obs_lacalb_train_fixture(self, lacalb_imputer_fixture) -> pd.DataFrame:
-        lacalb_train, _, _, _ = lacalb_imputer_fixture._split(0)
-        return lacalb_imputer_fixture._get_observed_values(
+    def obs_lacalb_train_fixture(self, lactate_imputer_fixture) -> pd.DataFrame:
+        lacalb_train, _, _, _ = lactate_imputer_fixture._split(0)
+        return lactate_imputer_fixture._get_observed_values(
             fold="train",
             split_i=0,
             X=lacalb_train)
@@ -537,8 +557,8 @@ class TestLactateAlbuminImputer:
     @pytest.fixture()
     def expected_obs_lacalb_train_fixture(self, df_fixture) -> pd.DataFrame:
         even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
-        df = df_fixture.loc[even_i, ['lacalb']].reset_index(drop=True)
-        return df.loc[df['lacalb'].notnull()]
+        df = df_fixture.loc[even_i, ['lactate']].reset_index(drop=True)
+        return df.loc[df['lactate'].notnull()]
 
     def test_get_observed_values(
         self, obs_lacalb_train_fixture, expected_obs_lacalb_train_fixture
@@ -548,9 +568,9 @@ class TestLactateAlbuminImputer:
 
     @pytest.fixture()
     def obs_lacalb_train_winsorized_fixture(
-        self, lacalb_imputer_fixture, obs_lacalb_train_fixture
+        self, lactate_imputer_fixture, obs_lacalb_train_fixture
     ) -> pd.DataFrame:
-        return lacalb_imputer_fixture._winsorize(
+        return lactate_imputer_fixture._winsorize(
             split_i=0,
             lacalb=obs_lacalb_train_fixture)
 
@@ -559,9 +579,9 @@ class TestLactateAlbuminImputer:
         self, expected_obs_lacalb_train_fixture
     ) -> pd.DataFrame:
         df = expected_obs_lacalb_train_fixture
-        thresholds = list(df['lacalb'].quantile(novel.WINSOR_QUANTILES))
-        df.loc[df['lacalb'] < thresholds[0], 'lacalb'] = thresholds[0]
-        df.loc[df['lacalb'] > thresholds[1], 'lacalb'] = thresholds[1]
+        thresholds = list(df['lactate'].quantile(novel.WINSOR_QUANTILES))
+        df.loc[df['lactate'] < thresholds[0], 'lactate'] = thresholds[0]
+        df.loc[df['lactate'] > thresholds[1], 'lactate'] = thresholds[1]
         return df
 
     def test_winsorize(
@@ -574,29 +594,29 @@ class TestLactateAlbuminImputer:
 
     @pytest.fixture()
     def obs_lacalb_train_trans_fixture(
-        self, lacalb_imputer_fixture, obs_lacalb_train_winsorized_fixture
+        self, lactate_imputer_fixture, obs_lacalb_train_winsorized_fixture
     ) -> pd.DataFrame:
-        return lacalb_imputer_fixture._fit_transform(
+        return lactate_imputer_fixture._fit_transform(
             split_i=0,
             obs_lacalb_train=obs_lacalb_train_winsorized_fixture)
 
     def test_fit_transform(
         self,
-        lacalb_imputer_fixture,
+        lactate_imputer_fixture,
         obs_lacalb_train_trans_fixture
     ):
         """QuantileTransformer should transform to unit Gaussian, but variance
             is nowhere near 1 here, likely because the dataset is so small."""
-        assert len(lacalb_imputer_fixture.transformers) == 2
-        for trans in lacalb_imputer_fixture.transformers.values():
+        assert len(lactate_imputer_fixture.transformers) == 2
+        for trans in lactate_imputer_fixture.transformers.values():
             assert isinstance(trans, QuantileTransformer)
         df = obs_lacalb_train_trans_fixture
-        assert df['lacalb'].mean() < 0.1 and df['lacalb'].mean() > -0.1
-        # assert df['lacalb'].var() < 1.1 and df['lacalb'].var() > 0.9
+        assert df['lactate'].mean() < 0.1 and df['lactate'].mean() > -0.1
+        # assert df['lactate'].var() < 1.1 and df['lactate'].var() > 0.9
 
-    def test_fit_combine_gams(self, lacalb_imputer_fixture):
-        assert len(lacalb_imputer_fixture.imputers) == 2
-        for imp in lacalb_imputer_fixture.imputers.values():
+    def test_fit_combine_gams(self, lactate_imputer_fixture):
+        assert len(lactate_imputer_fixture.imputers) == 2
+        for imp in lactate_imputer_fixture.imputers.values():
             assert isinstance(imp, LinearGAM)
             assert len(imp.terms._terms) == 4  # cont, bin, multicat & intercept
         # import matplotlib.pyplot as plt
@@ -619,14 +639,14 @@ class TestLactateAlbuminImputer:
         #     bbox_inches="tight")
 
     @pytest.fixture()
-    def missing_features_fixture(self, lacalb_imputer_fixture) -> pd.DataFrame:
-        return lacalb_imputer_fixture._get_features_where_lacalb_missing(
+    def missing_features_fixture(self, lactate_imputer_fixture) -> pd.DataFrame:
+        return lactate_imputer_fixture._get_features_where_lacalb_missing(
             fold_name='train',
             split_i=0,
             mice_imp_i=0)
 
     def test_get_features_where_lacalb_missing(
-        self, lacalb_imputer_fixture, df_fixture, missing_features_fixture
+        self, lactate_imputer_fixture, df_fixture, missing_features_fixture
     ):
         """expected is only so simple to construct here because cont's
         value isn't at an extreme of its domain (so wouldn't be winsorized
@@ -635,38 +655,167 @@ class TestLactateAlbuminImputer:
         even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
         df = df_fixture.loc[even_i].reset_index(drop=True)
         expected = df.loc[
-            df['lacalb'].isnull()
-        ].drop(['target', 'lacalb'], axis=1)
+            df['lactate'].isnull()
+        ].drop(['target', 'lactate', 'albumin'], axis=1)
         assert expected.equals(missing_features_fixture)
 
     def test_impute_non_probabilistic(
         self,
-        lacalb_imputer_fixture,
+        lactate_imputer_fixture,
         missing_features_fixture,
         df_fixture_complete
     ):
-        pred = lacalb_imputer_fixture.impute(
+        pred = lactate_imputer_fixture.impute(
             features=missing_features_fixture,
             split_i=0,
             lac_alb_imp_i=None,
-            probabilistic=False)[0][0]
-        true = df_fixture_complete.loc[2, 'lacalb']
+            probabilistic=False)
+        assert pred.shape == (1, 1)
+        true = df_fixture_complete.loc[2, 'lactate']
         assert pred > (true - 0.5)
         assert pred < (true + 0.5)
 
     def test_get_complete_lacalb(
         self,
-        lacalb_imputer_fixture,
+        lactate_imputer_fixture,
         missing_features_fixture,
         df_fixture
     ):
-        pred = lacalb_imputer_fixture.impute(
+        pred = lactate_imputer_fixture.impute(
             features=missing_features_fixture,
             split_i=0,
             lac_alb_imp_i=None,
             probabilistic=False)
-        observed = lacalb_imputer_fixture._get_complete_lacalb(pred, 'train', 0)
+        observed = lactate_imputer_fixture._get_complete_lacalb(
+            pred, 'train', 0)
         even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
         df = df_fixture.loc[even_i].reset_index(drop=True)
-        df.loc[1, 'lacalb'] = pred[0][0]
-        assert df.loc[:, ['lacalb']].equals(observed)
+        df.loc[1, 'lactate'] = pred[0][0]
+        assert df.loc[:, ['lactate']].equals(observed)
+
+
+@pytest.fixture()
+def novel_model_factory_fixture() -> Callable[
+    [pd.Index, Dict[str, Tuple], str], LogisticGAM
+]:
+    def model_factory(
+        columns: pd.Index,
+        multi_cat_levels: Dict[str, Tuple],
+        indication_var_name: str
+    ) -> LogisticGAM:
+        return LogisticGAM(
+            s(columns.get_loc("cont"), spline_order=2, n_splines=5, lam=0.05)
+            + s(
+                columns.get_loc("lactate"),
+                spline_order=2,
+                n_splines=5,
+                lam=50
+            )
+            + s(
+                columns.get_loc("albumin"),
+                spline_order=2,
+                n_splines=5,
+                lam=50
+            )
+            + f(columns.get_loc("bin"), coding="dummy", lam=0.01)
+            + f(columns.get_loc("multicat"), coding="dummy", lam=0.01)
+            # missing indicators omitted here as producing convergence errors
+        )
+    return model_factory
+
+
+@pytest.fixture()
+def novel_model_fixture(
+    categorical_imputer_fixture,
+    lactate_imputer_fixture,
+    albumin_imputer_fixture,
+    novel_model_factory_fixture
+) -> novel.NovelModel:
+    novel_model = novel.NovelModel(
+        categorical_imputer=categorical_imputer_fixture,
+        albumin_imputer=albumin_imputer_fixture,
+        lactate_imputer=lactate_imputer_fixture,
+        model_factory=novel_model_factory_fixture,
+        n_lacalb_imputations_per_mice_imp=2,
+        random_seed=RANDOM_SEED
+    )
+    novel_model.fit()
+    return novel_model
+
+
+class TestNovelModel:
+    def test_calc_lac_alb_imp_i(self, novel_model_fixture):
+        imp_i = []
+        n_mice_imputations = 4
+        n_lacalb_imputations = 2  # must match n_lacalb_imputations_per_mice_imp
+        for i in range(n_mice_imputations):
+            for j in range(n_lacalb_imputations):
+                imp_i.append(novel_model_fixture._calculate_lac_alb_imp_i(i, j))
+        assert (np.array(imp_i) == np.arange(
+            n_mice_imputations * n_lacalb_imputations
+        ) + RANDOM_SEED).all()
+
+    def test_get_features_and_labels(self, novel_model_fixture, df_fixture):
+        X_obs, y_obs = novel_model_fixture.get_features_and_labels(
+            fold_name='train',
+            split_i=0,
+            mice_imp_i=0,
+            lac_alb_imp_i=0
+        )
+        even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
+        X_expected = df_fixture.loc[even_i, :].reset_index(drop=True)
+        assert set(X_obs.columns) == {
+            'cont',
+            'bin',
+            'multicat',
+            'lactate',
+            'lactate_missing',
+            'albumin',
+            'albumin_missing'
+        }
+        assert X_obs.shape == X_obs.dropna(how='any').shape
+        for var_name, missing_i in (
+            ('cont', ()),
+            ('lactate', (1,)),
+            ('albumin', (2,))
+        ):
+            # test only for approximate equality as X_expected in unwinsorized
+            assert (np.absolute(
+                X_obs.loc[X_obs.index.difference(missing_i), var_name] -
+                X_expected.loc[X_expected.index.difference(missing_i), var_name]
+            ) < 0.2).all()
+        for var_name, missing_i in (
+            ('lactate_missing', (1,)),
+            ('albumin_missing', (2,))
+        ):
+            assert X_obs.loc[missing_i, var_name] == 1
+            assert all(
+                X_obs.loc[X_obs.index.difference(missing_i), var_name] == 0)
+        print(X_obs)
+
+    def test_single_train_test_split(self, novel_model_fixture):
+        assert len(novel_model_fixture.models) == 2
+        for model in novel_model_fixture.models.values():
+            assert isinstance(model, LogisticGAM)
+            # terms are: cont, bin, multicat, lactate, albumin, intercept
+            assert len(model.terms._terms) == 6
+        # import matplotlib.pyplot as plt
+        # import os
+        # from utils.constants import INTERNAL_OUTPUT_DIR
+        # plt.figure()
+        # fig, axs = plt.subplots(1, 5, figsize=(10, 2.5))
+        # model = novel_model_fixture.models[0]
+        # for i, ax in enumerate(axs):
+        #     XX = model.generate_X_grid(term=i)
+        #     feature_i = model.terms.info['terms'][i]['feature']
+        #     ax.plot(XX[:, feature_i], model.partial_dependence(term=i, X=XX))
+        #     ax.plot(
+        #         XX[:, feature_i],
+        #         model.partial_dependence(term=i, X=XX, width=.95)[1],
+        #         c='r',
+        #         ls='--')
+        # fig.tight_layout()
+        # fig.savefig(
+        #     os.path.join(INTERNAL_OUTPUT_DIR, f"novel_model_gam.pdf"),
+        #     format='pdf',
+        #     bbox_inches="tight")
