@@ -108,3 +108,33 @@ def test_ohe_to_single_column():
         'disregard': [0.1, 8.4, 3.2, 12.],
         'a': ['a_1', 'a_0', 'a_2', 'a_0']
     }).equals(single_a_column_df)
+
+
+class TestIndicationNameProcessor:
+    @pytest.fixture(scope='class')
+    def inp_fixture(
+        self
+    ) -> indications.IndicationNameProcessor:
+        return indications.IndicationNameProcessor(
+            multi_category_levels={
+                'Indication': (
+                    "S05Ind_SmallBowelObstruction",
+                    "S05Ind_IntestinalObstruction",
+                    "S05Ind_Ischaemia",
+                    "S05Ind_Missing"
+                )},
+            max_line_length=12)
+
+    def test_names(self, inp_fixture):
+        assert inp_fixture.names == [
+            "S05Ind_SmallBowelObstruction",
+            "S05Ind_IntestinalObstruction",
+            "S05Ind_Ischaemia"
+        ]
+
+    def test_sanitized(self, inp_fixture):
+        assert inp_fixture.sanitized == [
+            "Small bowel\nobstruction",
+            "Intestinal\nobstruction",
+            "Ischaemia"
+        ]

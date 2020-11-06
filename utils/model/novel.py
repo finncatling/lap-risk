@@ -764,7 +764,7 @@ class LactateAlbuminImputer(Imputer):
             categorical_imputer.target_variable_name
         )
         self.cat_imputer = categorical_imputer
-        self.cont_vars = NOVEL_MODEL_VARS["cont"]
+        self.cont_vars = NOVEL_MODEL_VARS["cont"]  # TODO: Remove if unused?
         self.lacalb_variable_name = lacalb_variable_name
         self.model_factory = imputation_model_factory
         self.winsor_quantiles = winsor_quantiles
@@ -822,6 +822,7 @@ class LactateAlbuminImputer(Imputer):
     def _get_observed_values(
         self, fold: str, split_i: int, X: pd.DataFrame
     ) -> pd.DataFrame:
+        """Note that the index of the returned DataFrame isn't reset."""
         return X.loc[X.index.difference(
             self.missing_i[fold][split_i][self.lacalb_variable_name]
         )]
@@ -857,6 +858,10 @@ class LactateAlbuminImputer(Imputer):
         split_i: int,
         obs_lacalb_train: pd.DataFrame
     ) -> pd.DataFrame:
+        """Note that, as lactate / albumin are effectively discretised in the
+            NELA dataset (lactate is reported to 1 DP and albumin is reported
+            to 0 DP), the resolution of QuantileTransformer's quantiles is
+            limited despite us setting n_quantiles to a large number."""
         self.transformers[split_i] = QuantileTransformer(
             n_quantiles=10000,
             output_distribution='normal',
@@ -877,7 +882,9 @@ class LactateAlbuminImputer(Imputer):
             features_train = self.cat_imputer.get_imputed_df(
                 "train", split_i, mice_imp_i
             )
-            features_train.drop(self.target_variable_name, axis=1)
+            features_train = features_train.drop(
+                self.target_variable_name, axis=1
+            )
             obs_features_train = self._get_observed_values(
                 "train", split_i, features_train
             )
@@ -1007,7 +1014,7 @@ class LactateAlbuminImputer(Imputer):
     ) -> pd.DataFrame:
         features = self.cat_imputer.get_imputed_df(
             fold_name, split_i, mice_imp_i)
-        features.drop(self.target_variable_name, axis=1)
+        features = features.drop(self.target_variable_name, axis=1)
         return features.loc[
             self.missing_i[fold_name][split_i][self.lacalb_variable_name]]
 
@@ -1019,7 +1026,7 @@ class LactateAlbuminImputer(Imputer):
     ) -> pd.DataFrame:
         features = self.cat_imputer.get_imputed_df(
             fold_name, split_i, mice_imp_i)
-        features.drop(self.target_variable_name, axis=1)
+        features = features.drop(self.target_variable_name, axis=1)
         return features.loc[features.index.difference(
             self.missing_i[fold_name][split_i][self.lacalb_variable_name])]
 

@@ -1,5 +1,4 @@
 import os
-from typing import Tuple, Dict
 
 import pandas as pd
 
@@ -14,7 +13,6 @@ from utils.impute import ImputationInfo
 from utils.indications import INDICATION_VAR_NAME, IndicationNameProcessor
 from utils.io import load_object, save_object
 from utils.model.novel import (
-    CategoricalImputer,
     LactateAlbuminImputer,
     NovelModel,
     novel_model_factory,
@@ -35,15 +33,6 @@ reporter.title(
 
 
 reporter.report("Loading previous analysis outputs needed for novel model")
-multi_category_levels: Dict[str, Tuple] = load_object(
-    os.path.join(
-        NOVEL_MODEL_OUTPUT_DIR,
-        "05_multi_category_levels_with_indications.pkl"
-    )
-)
-cat_imputer: CategoricalImputer = load_object(
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "06_categorical_imputer.pkl")
-)
 albumin_imputer: LactateAlbuminImputer = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "07_albumin_imputer.pkl")
 )
@@ -57,7 +46,7 @@ imputation_stages: ImputationInfo = load_object(
 
 reporter.report("Specifying properties of GAM partial dependence plot")
 indication_names = IndicationNameProcessor(
-    multi_category_levels=multi_category_levels,
+    multi_category_levels=albumin_imputer.multi_cat_vars,
     remove_missing_category=True
 )
 pdp_terms = [
@@ -148,7 +137,7 @@ save_object(
 
 reporter.report("Beginning train-test splitting and model fitting")
 novel_model = NovelModel(
-    categorical_imputer=cat_imputer,
+    categorical_imputer=albumin_imputer.cat_imputer,
     albumin_imputer=albumin_imputer,
     lactate_imputer=lactate_imputer,
     model_factory=novel_model_factory,
