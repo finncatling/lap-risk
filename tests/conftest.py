@@ -44,7 +44,7 @@ def initial_df_permutations_fixture(
     """
     return simulate_initial_df(
         specification=initial_df_specification_fixture,
-        n_rows=600,
+        n_rows=800,
         n_hospitals=70,
         missing_frac=0.02,
         complete_indications=True,
