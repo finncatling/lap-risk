@@ -7,7 +7,8 @@ import pandas as pd
 import pytest
 from pandas.api.types import is_numeric_dtype
 from scipy.special import expit
-from pygam import LinearGAM, s
+from pygam import LinearGAM, s, f
+from sklearn.preprocessing import QuantileTransformer
 
 import utils.model
 from utils.indications import (
@@ -23,6 +24,7 @@ from utils.model.novel import (
 )
 from utils.model.shared import flatten_model_var_dict
 from utils.split import TrainTestSplitter
+from utils.gam import quick_sample
 
 
 @pytest.fixture()
@@ -165,8 +167,8 @@ class TestWinsorizeNovel:
         assert output_df_fixture.equals(winsor_df)
 
 
-@pytest.fixture(scope='module')
-def tts_swm_catimp_df_fixture() -> pd.DataFrame:
+@pytest.fixture()
+def df_fixture_complete() -> pd.DataFrame:
     n_rows = 20
     rnd = np.random.RandomState(1)
     df = pd.DataFrame({'cont': np.linspace(-1, 1, num=n_rows)})
@@ -175,31 +177,40 @@ def tts_swm_catimp_df_fixture() -> pd.DataFrame:
     df['target'] = rnd.binomial(
         n=1, p=expit(df.cont + df.bin + (df.multicat - 1))
     )
-    df.loc[1, 'cont'] = np.nan
-    df.loc[8, 'bin'] = np.nan
-    df.loc[(3, 10), 'multicat'] = np.nan
+    df['lacalb'] = ((df['cont'] * 2) + 0.3) ** 2
     return df
 
 
-def mock_train_test_splitter_factory(n_rows: int) -> TrainTestSplitter:
+@pytest.fixture()
+def df_fixture(df_fixture_complete) -> pd.DataFrame:
+    df = df_fixture_complete.copy()
+    df.loc[1, 'cont'] = np.nan
+    df.loc[8, 'bin'] = np.nan
+    df.loc[(3, 10), 'multicat'] = np.nan
+    df.loc[(2, 17), 'lacalb'] = np.nan
+    return df
+
+
+@pytest.fixture()
+def mock_train_test_splitter_fixture(df_fixture) -> TrainTestSplitter:
     """We use a mock to allow deterministic splitting"""
     tts = mock.Mock(TrainTestSplitter)
-    even_i = np.arange(0, n_rows - 1, 2)
-    odd_i = np.arange(1, n_rows, 2)
+    even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
+    odd_i = np.arange(1, df_fixture.shape[0], 2)
     tts.train_i = [even_i, odd_i]
     tts.test_i = [odd_i, even_i]
     tts.n_splits = 2
     return tts
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture()
 def splitter_winsor_mice_fixture(
-    tts_swm_catimp_df_fixture
-) -> utils.model.novel.SplitterWinsorMICE:
-    swm = utils.model.novel.SplitterWinsorMICE(
-        df=tts_swm_catimp_df_fixture.drop('multicat', axis=1),
-        train_test_splitter=mock_train_test_splitter_factory(
-            tts_swm_catimp_df_fixture.shape[0]),
+    df_fixture,
+    mock_train_test_splitter_fixture
+) -> novel.SplitterWinsorMICE:
+    swm = novel.SplitterWinsorMICE(
+        df=df_fixture.drop(['multicat', 'lacalb'], axis=1),
+        train_test_splitter=mock_train_test_splitter_fixture,
         target_variable_name='target',
         cont_variables=['cont'],
         binary_variables=['bin'],
@@ -212,20 +223,6 @@ def splitter_winsor_mice_fixture(
     )
     swm.split_winsorize_mice()
     return swm
-
-
-@pytest.fixture(scope='module')
-def categorical_imputer_fixture(
-    tts_swm_catimp_df_fixture, splitter_winsor_mice_fixture
-) -> utils.model.novel.CategoricalImputer:
-    cat_imputer = utils.model.novel.CategoricalImputer(
-        df=tts_swm_catimp_df_fixture,
-        splitter_winsor_mice=splitter_winsor_mice_fixture,
-        cat_vars=['multicat'],
-        random_seed=1
-    )
-    cat_imputer.impute()
-    return cat_imputer
 
 
 class TestSplitterWinsorMICE:
@@ -332,6 +329,20 @@ class TestSplitterWinsorMICE:
         imputed = train_imputed.loc[train_unimputed.bin.isnull(), 'bin'].values
         assert imputed.size == 1
         assert imputed[0] in {0, 1}
+
+
+@pytest.fixture()
+def categorical_imputer_fixture(
+    df_fixture, splitter_winsor_mice_fixture
+) -> novel.CategoricalImputer:
+    cat_imputer = novel.CategoricalImputer(
+        df=df_fixture.drop('lacalb', axis=1),
+        splitter_winsor_mice=splitter_winsor_mice_fixture,
+        cat_vars=['multicat'],
+        random_seed=1
+    )
+    cat_imputer.impute()
+    return cat_imputer
 
 
 class TestCategoricalImputer:
@@ -454,94 +465,202 @@ class TestCategoricalImputer:
             assert imputed[0] in possible_values
 
 
+@pytest.fixture()
+def lacalb_model_factory_fixture() -> Callable[
+    [pd.Index, Dict[str, Tuple], str], LinearGAM
+]:
+    def model_factory(
+        columns: pd.Index,
+        multi_cat_levels: Dict[str, Tuple],
+        indication_var_name: str
+    ) -> LinearGAM:
+        return LinearGAM(
+            s(columns.get_loc("cont"), spline_order=2, n_splines=5, lam=0.05)
+            + f(columns.get_loc("bin"), coding="dummy", lam=1000)
+            + f(columns.get_loc("multicat"), coding="dummy", lam=1000)
+        )
+    return model_factory
+
+
+@pytest.fixture()
+def lacalb_imputer_fixture(
+    df_fixture,
+    categorical_imputer_fixture,
+    lacalb_model_factory_fixture
+) -> novel.LactateAlbuminImputer:
+    imp = novel.LactateAlbuminImputer(
+        df=df_fixture.drop(['cont', 'bin', 'multicat'], axis=1),
+        categorical_imputer=categorical_imputer_fixture,
+        lacalb_variable_name='lacalb',
+        imputation_model_factory=lacalb_model_factory_fixture,
+        winsor_quantiles=novel.WINSOR_QUANTILES,
+        multi_cat_vars=dict(),  # unused
+        indication_var_name='',  # unused
+        random_seed=1
+    )
+    imp.fit()
+    return imp
+
+
 class TestLactateAlbuminImputer:
     """
-    Imputer._find_missing_indices() is tested in TestSplitterWinsorMICE so
-    isn't retested here.
+    _split() and _find_missing_indices() are base class methods tested
+    elsewhere, so aren't retested here.
     """
-    @pytest.fixture(scope='class')
-    def lacalb_df_fixture(self) -> pd.DataFrame:
-        n_rows = 20
-        rnd = np.random.RandomState(1)
-        df = pd.DataFrame({'lacalb': np.linspace(0, 1, num=n_rows)})
-        df['cont'] = ((df['lacalb'] * 6) - 7) ** 2
-        df['target'] = rnd.binomial(n=1, p=df['lacalb'].values)
-        df.loc[(3, 16), 'lacalb'] = np.nan
-        return df
-
-    @pytest.fixture(scope='class')
-    def mock_cat_imputer_fixture(
-        self, lacalb_df_fixture
-    ) -> novel.CategoricalImputer:
-        """We use a mock to simplify testing."""
-        ci = mock.Mock(novel.CategoricalImputer)
-        ci.target_variable_name = 'lacalb'
-        ci.tts = mock_train_test_splitter_factory(
-            lacalb_df_fixture.shape[0])
-        ci.swm = mock.Mock(novel.SplitterWinsorMICE)
-        ci.swm.n_mice_imputations = 2
-        ci.get_imputed_df.return_value = lacalb_df_fixture.drop(
-            'lacalb', axis=1)
-        return ci
-
-    @pytest.fixture(scope='class')
-    def lacalb_model_factory_fixture(
-        self
-    ) -> Callable[[pd.Index, Dict[str, Tuple], str], LinearGAM]:
-        def model_factory(
-            columns: pd.Index,
-            multi_cat_levels: Dict[str, Tuple],
-            indication_var_name: str
-        ) -> LinearGAM:
-            return LinearGAM(
-                s(
-                    columns.get_loc("cont"),
-                    spline_order=2,
-                    n_splines=10,
-                    lam=75
-                ))
-        return model_factory
-
     def test_check_df(
         self,
-        lacalb_df_fixture,
-        mock_cat_imputer_fixture,
+        df_fixture,
+        categorical_imputer_fixture,
         lacalb_model_factory_fixture
     ):
-        """Should raise AssertionError as too many columns."""
+        """Should raise AssertionError as too many columns in df."""
         with pytest.raises(AssertionError):
             return novel.LactateAlbuminImputer(
-                df=lacalb_df_fixture,
-                categorical_imputer=mock_cat_imputer_fixture,
+                df=df_fixture,
+                categorical_imputer=categorical_imputer_fixture,
                 lacalb_variable_name='lacalb',
                 imputation_model_factory=lacalb_model_factory_fixture,
-                winsor_quantiles=(0.01, 0.99),
-                multi_cat_vars=dict(),
-                indication_var_name='this is not used',
+                winsor_quantiles=novel.WINSOR_QUANTILES,
+                multi_cat_vars=dict(),  # unused
+                indication_var_name='',  # unused
                 random_seed=1
             )
 
-    @pytest.fixture(scope='class')
-    def imputer_fixture(
-        self,
-        lacalb_df_fixture,
-        mock_cat_imputer_fixture,
-        lacalb_model_factory_fixture
-    ) -> novel.LactateAlbuminImputer:
-        imp = novel.LactateAlbuminImputer(
-            df=lacalb_df_fixture.drop('cont', axis=1),
-            categorical_imputer=mock_cat_imputer_fixture,
-            lacalb_variable_name='lacalb',
-            imputation_model_factory=lacalb_model_factory_fixture,
-            winsor_quantiles=(0.01, 0.99),
-            multi_cat_vars=dict(),
-            indication_var_name='this is not used',
-            random_seed=1
-        )
-        imp.fit()
-        return imp
+    @pytest.fixture()
+    def obs_lacalb_train_fixture(self, lacalb_imputer_fixture) -> pd.DataFrame:
+        lacalb_train, _, _, _ = lacalb_imputer_fixture._split(0)
+        return lacalb_imputer_fixture._get_observed_values(
+            fold="train",
+            split_i=0,
+            X=lacalb_train)
 
-    def test_viz(self, imputer_fixture):
-        X, y = imputer_fixture.get_observed_and_predicted(
-            'train', 0, 0, 0, True)
-        print(X)
+    @pytest.fixture()
+    def expected_obs_lacalb_train_fixture(self, df_fixture) -> pd.DataFrame:
+        even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
+        df = df_fixture.loc[even_i, ['lacalb']].reset_index(drop=True)
+        return df.loc[df['lacalb'].notnull()]
+
+    def test_get_observed_values(
+        self, obs_lacalb_train_fixture, expected_obs_lacalb_train_fixture
+    ):
+        assert obs_lacalb_train_fixture.equals(
+            expected_obs_lacalb_train_fixture)
+
+    @pytest.fixture()
+    def obs_lacalb_train_winsorized_fixture(
+        self, lacalb_imputer_fixture, obs_lacalb_train_fixture
+    ) -> pd.DataFrame:
+        return lacalb_imputer_fixture._winsorize(
+            split_i=0,
+            lacalb=obs_lacalb_train_fixture)
+
+    @pytest.fixture()
+    def expected_obs_lacalb_train_winsorized_fixture(
+        self, expected_obs_lacalb_train_fixture
+    ) -> pd.DataFrame:
+        df = expected_obs_lacalb_train_fixture
+        thresholds = list(df['lacalb'].quantile(novel.WINSOR_QUANTILES))
+        df.loc[df['lacalb'] < thresholds[0], 'lacalb'] = thresholds[0]
+        df.loc[df['lacalb'] > thresholds[1], 'lacalb'] = thresholds[1]
+        return df
+
+    def test_winsorize(
+        self,
+        obs_lacalb_train_winsorized_fixture,
+        expected_obs_lacalb_train_winsorized_fixture
+    ):
+        assert obs_lacalb_train_winsorized_fixture.equals(
+            expected_obs_lacalb_train_winsorized_fixture)
+
+    @pytest.fixture()
+    def obs_lacalb_train_trans_fixture(
+        self, lacalb_imputer_fixture, obs_lacalb_train_winsorized_fixture
+    ) -> pd.DataFrame:
+        return lacalb_imputer_fixture._fit_transform(
+            split_i=0,
+            obs_lacalb_train=obs_lacalb_train_winsorized_fixture)
+
+    def test_fit_transform(
+        self,
+        lacalb_imputer_fixture,
+        obs_lacalb_train_trans_fixture
+    ):
+        """QuantileTransformer should transform to unit Gaussian, but variance
+            is nowhere near 1 here, likely because the dataset is so small."""
+        assert len(lacalb_imputer_fixture.transformers) == 2
+        for trans in lacalb_imputer_fixture.transformers.values():
+            assert isinstance(trans, QuantileTransformer)
+        df = obs_lacalb_train_trans_fixture
+        assert df['lacalb'].mean() < 0.1 and df['lacalb'].mean() > -0.1
+        # assert df['lacalb'].var() < 1.1 and df['lacalb'].var() > 0.9
+
+    def test_fit_combine_gams(self, lacalb_imputer_fixture):
+        assert len(lacalb_imputer_fixture.imputers) == 2
+        for imp in lacalb_imputer_fixture.imputers.values():
+            assert isinstance(imp, LinearGAM)
+            assert len(imp.terms._terms) == 4  # cont, bin, multicat & intercept
+        # import matplotlib.pyplot as plt
+        # import os
+        # from utils.constants import INTERNAL_OUTPUT_DIR
+        # plt.figure()
+        # fig, axs = plt.subplots(1, 3, figsize=(8, 2))
+        # axs.ravel()
+        # imp = lacalb_imputer_fixture.imputers[0]
+        # for j, ax in enumerate(axs):
+        #     XX = imp.generate_X_grid(term=j)
+        #     ax.plot(XX[:, j], imp.partial_dependence(term=j, X=XX))
+        #     ax.plot(XX[:, j],
+        #             imp.partial_dependence(term=j, X=XX, width=.95)[1],
+        #             c='r', ls='--')
+        # fig.tight_layout()
+        # fig.savefig(
+        #     os.path.join(INTERNAL_OUTPUT_DIR, f"lacalb_gam.pdf"),
+        #     format='pdf',
+        #     bbox_inches="tight")
+
+    @pytest.fixture()
+    def missing_features_fixture(self, lacalb_imputer_fixture) -> pd.DataFrame:
+        return lacalb_imputer_fixture._get_features_where_lacalb_missing(
+            fold_name='train',
+            split_i=0,
+            mice_imp_i=0)
+
+    def test_get_features_where_lacalb_missing(
+        self, lacalb_imputer_fixture, df_fixture, missing_features_fixture
+    ):
+        """expected is only so simple to construct here because cont isn't
+            and extreme value affected by winsorization, and none of the
+            features has a missing values which would have otherwise been
+            imputed."""
+        even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
+        df = df_fixture.loc[even_i].reset_index(drop=True)
+        expected = df.loc[
+            df['lacalb'].isnull()
+        ].drop(['target', 'lacalb'], axis=1)
+        assert expected.equals(missing_features_fixture)
+
+    def test_impute_non_probabilistic(
+        self,
+        lacalb_imputer_fixture,
+        missing_features_fixture,
+        df_fixture_complete
+    ):
+        pred = lacalb_imputer_fixture.impute(
+            features=missing_features_fixture,
+            split_i=0,
+            lac_alb_imp_i=None,
+            probabilistic=False)[0][0]
+        true = df_fixture_complete.loc[2, 'lacalb']
+        assert pred > (true - 0.5)
+        assert pred < (true + 0.5)
+        pred = lacalb_imputer_fixture.impute(
+            features=missing_features_fixture,
+            split_i=0,
+            lac_alb_imp_i=0,
+            probabilistic=True)[0][0]
+
+    def test_get_complete_variable_and_missingness_indicator(self):
+        assert False
+
+    def get_observed_and_predicted(self):
+        assert False
