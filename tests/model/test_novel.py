@@ -709,16 +709,17 @@ def novel_model_factory_fixture() -> Callable[
                 columns.get_loc("lactate"),
                 spline_order=2,
                 n_splines=5,
-                lam=500
+                lam=50
             )
             + s(
                 columns.get_loc("albumin"),
                 spline_order=2,
                 n_splines=5,
-                lam=500
+                lam=50
             )
-            + f(columns.get_loc("bin"), coding="dummy", lam=0.1)
-            + f(columns.get_loc("multicat"), coding="dummy", lam=0.1)
+            + f(columns.get_loc("bin"), coding="dummy", lam=0.01)
+            + f(columns.get_loc("multicat"), coding="dummy", lam=0.01)
+            # missing indicators omitted here as producing convergence errors
         )
     return model_factory
 
@@ -743,5 +744,78 @@ def novel_model_fixture(
 
 
 class TestNovelModel:
-    def test_placeholder(self, novel_model_fixture):
-        print(novel_model_fixture)
+    def test_calc_lac_alb_imp_i(self, novel_model_fixture):
+        imp_i = []
+        n_mice_imputations = 4
+        n_lacalb_imputations = 2  # must match n_lacalb_imputations_per_mice_imp
+        for i in range(n_mice_imputations):
+            for j in range(n_lacalb_imputations):
+                imp_i.append(novel_model_fixture._calculate_lac_alb_imp_i(i, j))
+        assert (np.array(imp_i) == np.arange(
+            n_mice_imputations * n_lacalb_imputations
+        ) + RANDOM_SEED).all()
+
+    def test_get_features_and_labels(self, novel_model_fixture, df_fixture):
+        X_obs, y_obs = novel_model_fixture.get_features_and_labels(
+            fold_name='train',
+            split_i=0,
+            mice_imp_i=0,
+            lac_alb_imp_i=0
+        )
+        even_i = np.arange(0, df_fixture.shape[0] - 1, 2)
+        X_expected = df_fixture.loc[even_i, :].reset_index(drop=True)
+        assert set(X_obs.columns) == {
+            'cont',
+            'bin',
+            'multicat',
+            'lactate',
+            'lactate_missing',
+            'albumin',
+            'albumin_missing'
+        }
+        assert X_obs.shape == X_obs.dropna(how='any').shape
+        for var_name, missing_i in (
+            ('cont', ()),
+            ('lactate', (1,)),
+            ('albumin', (2,))
+        ):
+            # test only for approximate equality as X_expected in unwinsorized
+            assert (np.absolute(
+                X_obs.loc[X_obs.index.difference(missing_i), var_name] -
+                X_expected.loc[X_expected.index.difference(missing_i), var_name]
+            ) < 0.2).all()
+        for var_name, missing_i in (
+            ('lactate_missing', (1,)),
+            ('albumin_missing', (2,))
+        ):
+            assert X_obs.loc[missing_i, var_name] == 1
+            assert all(
+                X_obs.loc[X_obs.index.difference(missing_i), var_name] == 0)
+        print(X_obs)
+
+    def test_single_train_test_split(self, novel_model_fixture):
+        assert len(novel_model_fixture.models) == 2
+        for model in novel_model_fixture.models.values():
+            assert isinstance(model, LogisticGAM)
+            # terms are: cont, bin, multicat, lactate, albumin, intercept
+            assert len(model.terms._terms) == 6
+        # import matplotlib.pyplot as plt
+        # import os
+        # from utils.constants import INTERNAL_OUTPUT_DIR
+        # plt.figure()
+        # fig, axs = plt.subplots(1, 5, figsize=(10, 2.5))
+        # model = novel_model_fixture.models[0]
+        # for i, ax in enumerate(axs):
+        #     XX = model.generate_X_grid(term=i)
+        #     feature_i = model.terms.info['terms'][i]['feature']
+        #     ax.plot(XX[:, feature_i], model.partial_dependence(term=i, X=XX))
+        #     ax.plot(
+        #         XX[:, feature_i],
+        #         model.partial_dependence(term=i, X=XX, width=.95)[1],
+        #         c='r',
+        #         ls='--')
+        # fig.tight_layout()
+        # fig.savefig(
+        #     os.path.join(INTERNAL_OUTPUT_DIR, f"novel_model_gam.pdf"),
+        #     format='pdf',
+        #     bbox_inches="tight")
