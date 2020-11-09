@@ -116,6 +116,7 @@ scorer = LogisticScorer(
     y_true=current_model.y_test,
     y_pred=current_model.y_pred,
     scorer_function=score_logistic_predictions,
+    n_splits=tt_splitter.n_splits,
     calibration_n_splines=CALIB_GAM_N_SPLINES,
     calibration_lam_candidates=CALIB_GAM_LAM_CANDIDATES,
 )
