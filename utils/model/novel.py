@@ -1168,10 +1168,18 @@ class NovelModel:
         split_i: int,
         n_samples_per_imp_i: int
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """Sample predicted mortality risks for the train or test fold of a
-            given train-test split. Also fetches the corresponding mortality
-            labels (these are the same regardless of mice_imp_i and
-            lac_alb_imp_i."""
+        """
+        Sample predicted mortality risks for the train or test fold of a
+        given train-test split. Also fetches the corresponding mortality
+        labels (these are the same regardless of mice_imp_i and lac_alb_imp_i.
+
+        Returns:
+            Observed mortality labels in {0, 1}. Shape is (n_patients_in_fold,)
+            Sampled predicted mortality risks in [0, 1]. Shape is
+                (n_samples_per_patient, n_patients_in_fold,) where
+                n_samples_per_patient = self.cat_imputer.swm.n_mice_imputations
+                * self.n_lacalb_imp * n_samples_per_imp_i
+        """
         mortality_risks = []
         for mice_imp_i in range(self.cat_imputer.swm.n_mice_imputations):
             for lac_alb_imp_i in range(self.n_lacalb_imp):
@@ -1203,10 +1211,18 @@ class NovelModel:
         fold_name: str,
         n_samples_per_imp_i: int
     ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
-        """Convenience function for preparing input to LogisticScorer. Fetches
-            the observed mortality labels from a given fold in every train-test
-            split, and the corresponding median mortality risks predicted by
-            novel model."""
+        """
+        Convenience function for preparing input to LogisticScorer. Fetches
+        the observed mortality labels from a given fold in every train-test
+        split, and the corresponding *median* mortality risks predicted by the
+        novel model.
+
+        Returns:
+            Each element of this list is an ndarray of observed mortality
+                labels in {0, 1}. Shape of each ndarray is (n_patients_in_fold,)
+            Each element of this list is an ndarray of median mortality risks
+                in [0, 1]. Shape of each ndarray is (n_patients_in_fold,)
+        """
         y_obs, y_preds = [], []
         for split_i in pb(
             range(self.cat_imputer.tts.n_splits),
