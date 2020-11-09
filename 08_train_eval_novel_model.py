@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+from progressbar import progressbar
 
 from utils.constants import (
     NOVEL_MODEL_OUTPUT_DIR,
@@ -28,7 +29,13 @@ reporter = Reporter()
 reporter.title(
     "Fit novel emergency laparotomy mortality risk model "
     "on the different train folds, and evaluate the models "
-    "obtained on the corresponding test folds"
+    "obtained on the corresponding test folds."
+)
+reporter.title(
+    "NB. If all model training is attempted in a single run of this script, "
+    "it may crash in the later stages of model training. If this "
+    "occurs, please see commented code in the script for loading your "
+    "partially-trained model and resuming training."
 )
 
 
@@ -135,29 +142,37 @@ save_object(
 )
 
 
-reporter.report("Beginning train-test splitting and model fitting")
-novel_model = NovelModel(
-    categorical_imputer=albumin_imputer.cat_imputer,
-    albumin_imputer=albumin_imputer,
-    lactate_imputer=lactate_imputer,
-    model_factory=novel_model_factory,
-    n_lacalb_imputations_per_mice_imp=(
-        imputation_stages.multiple_of_previous_n_imputations[1]),
-    random_seed=RANDOM_SEED
-)
-novel_model.fit()
+"""
+BEGIN code for either instantiating novel model (if no previous training) or 
+loading a partially-trained instance of novel model. Comment as appropriate.
+"""
+# reporter.report("Making new instance of novel model")
+# novel_model = NovelModel(
+#     categorical_imputer=albumin_imputer.cat_imputer,
+#     albumin_imputer=albumin_imputer,
+#     lactate_imputer=lactate_imputer,
+#     model_factory=novel_model_factory,
+#     n_lacalb_imputations_per_mice_imp=(
+#         imputation_stages.multiple_of_previous_n_imputations[1]),
+#     random_seed=RANDOM_SEED
+# )
 
-
-reporter.report(f"Saving novel model for later use")
-save_object(
-    novel_model,
+reporter.report(f"Loading pretrained novel model")
+novel_model: NovelModel = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
+"""END code for instantiating / loading novel model."""
 
 
-# # TODO: Remove this development code
-# reporter.report(f"Loading pretrained novel model")
-# novel_model: NovelModel = load_object(
-#     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
+reporter.report("Beginning train-test splitting and model fitting. Training "
+                "resumes where it left off if the model is partially trained, "
+                "and is skipped entirely if the model is fully trained.")
+for split_i in progressbar(
+    range(len(novel_model.models), novel_model.cat_imputer.tts.n_splits),
+    prefix="Split iteration"
+):
+    novel_model._single_train_test_split(split_i)
+    save_object(
+        novel_model, os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
 
 
 reporter.report(f"Scoring novel model performance.")
