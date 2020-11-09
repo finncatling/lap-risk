@@ -172,8 +172,7 @@ for split_i in progressbar(
 ):
     novel_model._single_train_test_split(split_i)
     save_object(
-        novel_model,
-        os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
+        novel_model, os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
 
 
 reporter.report(f"Scoring novel model performance.")
