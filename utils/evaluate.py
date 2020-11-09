@@ -275,6 +275,76 @@ class LogisticScorer(Scorer):
         self._calculate_medians_and_95ci()
 
 
+class ScoreComparer:
+    """Compare the per-split differences in scores of 2 models."""
+
+    def __init__(
+        self,
+        scorers: Tuple[
+            Union[Scorer, LogisticScorer],
+            Union[Scorer, LogisticScorer]],
+        scorer_names: Tuple[str, str]
+    ):
+        self.scorers = scorers
+        self.scorer_names = scorer_names
+        self.score_diff = {
+            'splits': {},
+            'split0': {},
+            'median': {},
+            '95ci': {}
+        }
+        self._sanity_check()
+
+    @property
+    def score_names(self) -> List[str]:
+        return list(self.scorers[0].scores["per_iter"][0].keys())
+
+    def compare_scores(self):
+        for score_name in self.score_names:
+            self._calculate_per_split_diff(score_name)
+            self._make_separate_dict_for_split0_diff(score_name)
+            self._calculate_median_diff(score_name)
+            self._calculate_95ci_diff(score_name)
+
+    def print_scores(self, point_estimate: str, dec_places: int):
+        if point_estimate == 'median':
+            pe_dict = self.score_diff["median"]
+        elif point_estimate == 'split0':
+            pe_dict = self.score_diff["split0"]
+        else:
+            raise ValueError
+        for score, pe in pe_dict.items():
+            print(
+                f"{score} = {np.round(pe, dec_places)}",
+                f"({np.round(self.score_diff['95ci'][score][0], dec_places)} -",
+                f"{np.round(self.score_diff['95ci'][score][1], dec_places)})")
+
+    def _sanity_check(self):
+        assert isinstance(self.scorers[0], type(self.scorers[1]))
+        assert len(self.scorers) == 2
+        assert len(self.scorer_names) == 2
+        assert set(self.score_names) == set(
+            self.scorers[1].scores["per_iter"][0].keys())
+
+    def _calculate_per_split_diff(self, score_name: str):
+        self.score_diff['splits'][score_name] = (
+            self.scorers[1].scores['per_score'][score_name] -
+            self.scorers[0].scores['per_score'][score_name]
+        )
+
+    def _make_separate_dict_for_split0_diff(self, score_name: str):
+        self.score_diff['split0'][score_name] = self.score_diff[
+            'splits'][score_name][0]
+
+    def _calculate_median_diff(self, score_name: str):
+        self.score_diff['median'][score_name] = np.median(
+            self.score_diff['splits'][score_name])
+
+    def _calculate_95ci_diff(self, score_name: str):
+        self.score_diff['95ci'][score_name] = np.percentile(
+            self.score_diff['splits'][score_name], (2.5, 97.5))
+
+
 def evaluate_samples(
     y: np.ndarray,
     y_samples: np.ndarray,
