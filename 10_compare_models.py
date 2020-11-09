@@ -76,6 +76,7 @@ non_target_imputation_scorers['comparer'] = ScoreComparer(
         non_target_imputation_scorers['novel']),
     scorer_names=('current', 'novel')
 )
+non_target_imputation_scorers['comparer'].compare_scores()
 reporter.first("Difference in scores with median as difference point estimate:")
 non_target_imputation_scorers['comparer'].print_scores(
     dec_places=4,
