@@ -736,7 +736,7 @@ class LactateAlbuminImputer(Imputer):
         categorical_imputer: CategoricalImputer,
         lacalb_variable_name: str,
         imputation_model_factory: Callable[
-            [pd.Index, Dict[str, Tuple], str], LinearGAM],
+            [pd.Index, Dict[str, Tuple], str, bool], LinearGAM],
         winsor_quantiles: Tuple[float, float],
         multi_cat_vars: Dict[str, Tuple],
         indication_var_name: str,
@@ -895,7 +895,8 @@ class LactateAlbuminImputer(Imputer):
             gam = self.model_factory(
                 obs_features_train.columns,
                 self.multi_cat_vars,
-                self.ind_var_name)
+                self.ind_var_name,
+                self.mortality_as_feature)
             gam.fit(obs_features_train.values, obs_lacalb_train.values)
             gams.append(gam)
         self.imputers[split_i] = combine_mi_gams(gams)

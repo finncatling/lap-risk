@@ -7,9 +7,10 @@ from pygam import LinearGAM, s, f, te
 def albumin_model_factory(
     columns: pd.Index,
     multi_cat_levels: Dict[str, Tuple],
-    indication_var_name: str
+    indication_var_name: str,
+    mortality_as_feature: bool
 ) -> LinearGAM:
-    return LinearGAM(
+    terms = (
         s(
             columns.get_loc("S01AgeOnArrival"),
             spline_order=2,
@@ -99,3 +100,6 @@ def albumin_model_factory(
             dtype=("categorical", "categorical"),
         )
     )
+    if mortality_as_feature:
+        terms += f(columns.get_loc("Target"), coding="dummy", lam=0.1)
+    return LinearGAM(terms)

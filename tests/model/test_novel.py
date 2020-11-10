@@ -471,7 +471,8 @@ def lacalb_model_factory_fixture() -> Callable[
     def model_factory(
         columns: pd.Index,
         multi_cat_levels: Dict[str, Tuple],
-        indication_var_name: str
+        indication_var_name: str,
+        mortality_as_feature: bool
     ) -> LinearGAM:
         return LinearGAM(
             s(columns.get_loc("cont"), spline_order=2, n_splines=5, lam=0.05)
