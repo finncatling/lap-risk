@@ -71,7 +71,7 @@ lacalb_pdp_terms[-1] = PDPTerm(
     "best")
 lacalb_pdp_terms.append(
     PDPTerm(
-        "Target",
+        NOVEL_MODEL_VARS["target"],
         "Mortality",
         (4, 2),
         ["Lived", "Died"]))
@@ -140,10 +140,8 @@ for pretty_name, variable_name, model_factory in (
     reporter.report('Preparing data for PDP histograms')
     pdp_hist_data = pd.concat(
         objs=(
-            cat_imputer.get_imputed_df('train', 0, 0).drop(
-                cat_imputer.target_variable_name, axis=1),
-            cat_imputer.get_imputed_df('test', 0, 0).drop(
-                cat_imputer.target_variable_name, axis=1),
+            cat_imputer.get_imputed_df('train', 0, 0),
+            cat_imputer.get_imputed_df('test', 0, 0),
         ),
         axis=0,
         ignore_index=True)
