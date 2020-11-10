@@ -77,6 +77,9 @@ lacalb_pdp_terms.append(
         ["Lived", "Died"]))
 
 
+cat_imputer.tts.n_splits = 1  # TODO: Remove this development code
+
+
 imputers = {}
 for pretty_name, variable_name, model_factory in (
     ('albumin', ALBUMIN_VAR_NAME, albumin_model_factory),
@@ -103,29 +106,29 @@ for pretty_name, variable_name, model_factory in (
                      f"11_{pretty_name}_imputer_with_mortality_feature.pkl"))
 
 
-    reporter.report(f"Scoring {pretty_name} imputation model performance.")
-    y_obs, y_preds = imputers[pretty_name].get_all_observed_and_predicted(
-        fold_name='test',
-        probabilistic=False,
-        lac_alb_imp_i=None)
-    scorer = Scorer(
-        y_true=y_obs,
-        y_pred=y_preds,
-        scorer_function=score_linear_predictions,
-        n_splits=imputers[pretty_name].tts.n_splits)
-    scorer.calculate_scores()
-    reporter.first("Scores with median as point estimate:")
-    scorer.print_scores(dec_places=3, point_estimate='median')
-    reporter.first("Scores with split 0 as point estimate:")
-    scorer.print_scores(dec_places=3, point_estimate='split0')
-
-
-    reporter.first("Saving model scorer for later use")
-    save_object(
-        scorer,
-        os.path.join(
-            NOVEL_MODEL_OUTPUT_DIR,
-            f"11_{pretty_name}_imputer_with_mortality_feature_scorer.pkl"))
+    # reporter.report(f"Scoring {pretty_name} imputation model performance.")
+    # y_obs, y_preds = imputers[pretty_name].get_all_observed_and_predicted(
+    #     fold_name='test',
+    #     probabilistic=False,
+    #     lac_alb_imp_i=None)
+    # scorer = Scorer(
+    #     y_true=y_obs,
+    #     y_pred=y_preds,
+    #     scorer_function=score_linear_predictions,
+    #     n_splits=imputers[pretty_name].tts.n_splits)
+    # scorer.calculate_scores()
+    # reporter.first("Scores with median as point estimate:")
+    # scorer.print_scores(dec_places=3, point_estimate='median')
+    # reporter.first("Scores with split 0 as point estimate:")
+    # scorer.print_scores(dec_places=3, point_estimate='split0')
+    #
+    #
+    # reporter.first("Saving model scorer for later use")
+    # save_object(
+    #     scorer,
+    #     os.path.join(
+    #         NOVEL_MODEL_OUTPUT_DIR,
+    #         f"11_{pretty_name}_imputer_with_mortality_feature_scorer.pkl"))
 
 
     # # TODO: Remove this development code
@@ -169,58 +172,58 @@ for pretty_name, variable_name, model_factory in (
                     f"{space}_pd_plot{hist_text}"))
 
 
-reporter.report("Restricting novel model refitting to zeroth train-test split")
-cat_imputer.tts.n_splits = 1
-
-
-reporter.report("Refitting novel model")
-novel_model = NovelModel(
-    categorical_imputer=cat_imputer,
-    albumin_imputer=imputers['albumin'],
-    lactate_imputer=imputers['lactate'],
-    model_factory=novel_model_factory,
-    n_lacalb_imputations_per_mice_imp=(
-        imputation_stages.multiple_of_previous_n_imputations[1]),
-    random_seed=RANDOM_SEED)
-novel_model.fit()
-
-
-reporter.report("Saving refitted novel model")
-save_object(
-    novel_model,
-    os.path.join(
-        NOVEL_MODEL_OUTPUT_DIR,
-        "11_novel_model_lacalb_sensitivity.pkl"))
-
-
-reporter.report('Preparing data for PDP histograms')
-pdp_hist_data = pd.concat(
-    objs=(
-        novel_model.get_features_and_labels('train', 0, 0, 0)[0],
-        novel_model.get_features_and_labels('test', 0, 0, 0)[0]
-    ),
-    axis=0,
-    ignore_index=True)
-
-
-reporter.first("Plotting novel model partial dependence plots")
-for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
-    for space, kwargs in (
-        ('log_odds', {}),
-        ('probability', {'transformer': LogOddsTransformer()})
-    ):
-        pdp_generator = PDPFigure(
-            gam=novel_model.models[0],
-            pdp_terms=novel_pdp_terms,
-            plot_hists=hist_switch,
-            hist_data=pdp_hist_data,
-            **kwargs)
-        plot_saver(
-            pdp_generator.plot,
-            output_dir=FIGURES_OUTPUT_DIR,
-            output_filename=(
-                f"11_novel_model_lacalb_sensitivity_{space}_pd_plot"
-                f"{hist_text}"))
-
-
-reporter.last("Done.")
+# reporter.report("Restricting novel model refitting to zeroth train-test split")
+# cat_imputer.tts.n_splits = 1
+#
+#
+# reporter.report("Refitting novel model")
+# novel_model = NovelModel(
+#     categorical_imputer=cat_imputer,
+#     albumin_imputer=imputers['albumin'],
+#     lactate_imputer=imputers['lactate'],
+#     model_factory=novel_model_factory,
+#     n_lacalb_imputations_per_mice_imp=(
+#         imputation_stages.multiple_of_previous_n_imputations[1]),
+#     random_seed=RANDOM_SEED)
+# novel_model.fit()
+#
+#
+# reporter.report("Saving refitted novel model")
+# save_object(
+#     novel_model,
+#     os.path.join(
+#         NOVEL_MODEL_OUTPUT_DIR,
+#         "11_novel_model_lacalb_sensitivity.pkl"))
+#
+#
+# reporter.report('Preparing data for PDP histograms')
+# pdp_hist_data = pd.concat(
+#     objs=(
+#         novel_model.get_features_and_labels('train', 0, 0, 0)[0],
+#         novel_model.get_features_and_labels('test', 0, 0, 0)[0]
+#     ),
+#     axis=0,
+#     ignore_index=True)
+#
+#
+# reporter.first("Plotting novel model partial dependence plots")
+# for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
+#     for space, kwargs in (
+#         ('log_odds', {}),
+#         ('probability', {'transformer': LogOddsTransformer()})
+#     ):
+#         pdp_generator = PDPFigure(
+#             gam=novel_model.models[0],
+#             pdp_terms=novel_pdp_terms,
+#             plot_hists=hist_switch,
+#             hist_data=pdp_hist_data,
+#             **kwargs)
+#         plot_saver(
+#             pdp_generator.plot,
+#             output_dir=FIGURES_OUTPUT_DIR,
+#             output_filename=(
+#                 f"11_novel_model_lacalb_sensitivity_{space}_pd_plot"
+#                 f"{hist_text}"))
+#
+#
+# reporter.last("Done.")
