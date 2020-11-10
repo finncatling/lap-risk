@@ -209,6 +209,7 @@ pdp_hist_data = pd.concat(
     axis=0,
     ignore_index=True)
 
+
 reporter.first("Plotting novel model partial dependence plots")
 for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
     for space, kwargs in (
