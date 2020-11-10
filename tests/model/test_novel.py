@@ -495,8 +495,8 @@ def lactate_imputer_fixture(
         winsor_quantiles=novel.WINSOR_QUANTILES,
         multi_cat_vars=dict(),  # unused
         indication_var_name='',  # unused
-        random_seed=RANDOM_SEED
-    )
+        mortality_as_feature=False,
+        random_seed=RANDOM_SEED)
     imp.fit()
     return imp
 
@@ -515,8 +515,8 @@ def albumin_imputer_fixture(
         winsor_quantiles=novel.WINSOR_QUANTILES,
         multi_cat_vars=dict(),  # unused
         indication_var_name='',  # unused
-        random_seed=RANDOM_SEED
-    )
+        mortality_as_feature=False,
+        random_seed=RANDOM_SEED)
     imp.fit()
     return imp
 
@@ -543,8 +543,8 @@ class TestLactateAlbuminImputer:
                 winsor_quantiles=novel.WINSOR_QUANTILES,
                 multi_cat_vars=dict(),  # unused
                 indication_var_name='',  # unused
-                random_seed=RANDOM_SEED
-            )
+                mortality_as_feature=False,
+                random_seed=RANDOM_SEED)
 
     @pytest.fixture()
     def obs_lacalb_train_fixture(self, lactate_imputer_fixture) -> pd.DataFrame:

@@ -740,10 +740,11 @@ class LactateAlbuminImputer(Imputer):
         winsor_quantiles: Tuple[float, float],
         multi_cat_vars: Dict[str, Tuple],
         indication_var_name: str,
-        random_seed
-    ):
+        mortality_as_feature: bool,
+        random_seed):
         """
         Args:
+            mortality_as_feature:
             df: Must just contain the variable to impute, plus the mortality
                 variable (latter needed for compatibility with Splitter).
             categorical_imputer: With pre-fit imputers for all categorical
@@ -756,6 +757,10 @@ class LactateAlbuminImputer(Imputer):
             multi_cat_vars: Keys are non-binary discrete variables, values are
                 the categories (excluding null values) prior to integer encoding
             indication_var_name: Name of the indication column
+            mortality_as_feature: If True, uses mortality labels as a feature
+                in this lactate / albumin imputation model (providing that
+                mortality is a feature in the GAM specification in
+                imputation_model_factory)
             random_seed: Used for QuantileTransformer
         """
         super().__init__(
@@ -770,6 +775,7 @@ class LactateAlbuminImputer(Imputer):
         self.winsor_quantiles = winsor_quantiles
         self.multi_cat_vars = multi_cat_vars
         self.ind_var_name = indication_var_name
+        self.mortality_as_feature = mortality_as_feature
         self.random_seed = random_seed
         self.imputed = None  # Override base class. This var shouldn't be used
         self._check_df(df)
@@ -880,19 +886,16 @@ class LactateAlbuminImputer(Imputer):
         gams = []
         for mice_imp_i in range(self.cat_imputer.swm.n_mice_imputations):
             features_train = self.cat_imputer.get_imputed_df(
-                "train", split_i, mice_imp_i
-            )
-            features_train = features_train.drop(
-                self.target_variable_name, axis=1
-            )
+                "train", split_i, mice_imp_i)
+            if not self.mortality_as_feature:
+                features_train = features_train.drop(
+                    self.target_variable_name, axis=1)
             obs_features_train = self._get_observed_values(
-                "train", split_i, features_train
-            )
+                "train", split_i, features_train)
             gam = self.model_factory(
                 obs_features_train.columns,
                 self.multi_cat_vars,
-                self.ind_var_name
-            )
+                self.ind_var_name)
             gam.fit(obs_features_train.values, obs_lacalb_train.values)
             gams.append(gam)
         self.imputers[split_i] = combine_mi_gams(gams)
@@ -1014,7 +1017,8 @@ class LactateAlbuminImputer(Imputer):
     ) -> pd.DataFrame:
         features = self.cat_imputer.get_imputed_df(
             fold_name, split_i, mice_imp_i)
-        features = features.drop(self.target_variable_name, axis=1)
+        if not self.mortality_as_feature:
+            features = features.drop(self.target_variable_name, axis=1)
         return features.loc[
             self.missing_i[fold_name][split_i][self.lacalb_variable_name]]
 
@@ -1026,7 +1030,8 @@ class LactateAlbuminImputer(Imputer):
     ) -> pd.DataFrame:
         features = self.cat_imputer.get_imputed_df(
             fold_name, split_i, mice_imp_i)
-        features = features.drop(self.target_variable_name, axis=1)
+        if not self.mortality_as_feature:
+            features = features.drop(self.target_variable_name, axis=1)
         return features.loc[features.index.difference(
             self.missing_i[fold_name][split_i][self.lacalb_variable_name])]
 
