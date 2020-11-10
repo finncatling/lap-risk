@@ -101,5 +101,5 @@ def lactate_model_factory(
         )
     )
     if mortality_as_feature:
-        terms += f(columns.get_loc("Target"), coding="dummy", lam=0.1)
+        terms += f(columns.get_loc("Target"), coding="dummy", lam=0.01)
     return LinearGAM(terms)
