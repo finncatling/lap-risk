@@ -167,7 +167,7 @@ imputers = {}
 for imputer_name in ('albumin', 'lactate'):
     imputers[imputer_name] = load_object(os.path.join(
         NOVEL_MODEL_OUTPUT_DIR,
-        f"11_{imputer_name}_imputer_with_mortality_feature_scorer.pkl"))
+        f"11_{imputer_name}_imputer_with_mortality_feature.pkl"))
 
 
 reporter.report("Restricting novel model refitting to zeroth train-test split")
