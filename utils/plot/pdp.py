@@ -354,7 +354,7 @@ def compare_pdps_from_different_gams_plot(
             _, confi = gam.partial_dependence(term=term_i, X=xx, quantiles=cis)
 
             if transformer:
-                ylabel = 'Mortality risk ratio'
+                ylabel = 'Relative mortality risk'
                 trans_centre = transformer.inverse_transform(
                     np.zeros((1, 1))
                 ).flatten()[0]
