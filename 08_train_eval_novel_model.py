@@ -16,9 +16,9 @@ from utils.io import load_object, save_object
 from utils.model.novel import (
     LactateAlbuminImputer,
     NovelModel,
-    novel_model_factory,
-    LogOddsTransformer
+    novel_model_factory
 )
+from utils.model.shared import LogOddsTransformer
 from utils.plot.helpers import plot_saver
 from utils.plot.pdp import PDPTerm, PDPFigure
 from utils.evaluate import LogisticScorer, score_logistic_predictions
