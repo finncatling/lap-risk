@@ -7,11 +7,12 @@ import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
-from pygam import GAM
+from pygam import GAM, LogisticGAM
 from sklearn.preprocessing import QuantileTransformer
 
 from utils.constants import GAM_CONFIDENCE_INTERVALS
 from utils.plot.helpers import generate_ci_quantiles
+from utils.model.shared import LogOddsTransformer
 
 
 @dataclass
@@ -322,3 +323,70 @@ class PDPFigure:
             return len(self.pdp_terms[i].labels)
         else:
             return self.max_hist_bins
+
+
+def compare_pdps_from_different_gams_plot(
+    gams: Tuple[LogisticGAM, LogisticGAM],
+    gam_names: Tuple[str, str],
+    term_indices: Tuple[int, int],
+    term_names: Tuple[str, str],
+    column_indices: Tuple[int, int],
+    transformer: Union[None, LogOddsTransformer] = None,
+    figsize: Tuple[int, int] = (8, 3),
+    legend_locs: Tuple[str, str] = ("upper left", "upper right"),
+    gam_colours: Tuple[str] = ("tab:blue", "tab:orange"),
+    confidence_intervals: Tuple = GAM_CONFIDENCE_INTERVALS
+) -> (Figure, Axes):
+    """Only works with LogisticGAM currently. term_indices are the indices
+        of the terms of interest in the GAM specification. column_indices are
+        the indices of the columns for these terms in the GAM input data."""
+    fig, ax = plt.subplots(1, 2, figsize=figsize)
+    ax = ax.ravel()
+    y_lim = [np.inf, -np.inf]
+    cis = generate_ci_quantiles(confidence_intervals)
+    n_cis = len(cis)
+
+    for ax_i, term_i in enumerate(term_indices):
+        legend_lines = []
+
+        for gam_i, gam in enumerate(gams):
+            xx = gam.generate_X_grid(term=term_i, n=100)
+            _, confi = gam.partial_dependence(term=term_i, X=xx, quantiles=cis)
+
+            if transformer:
+                ylabel = 'Mortality risk ratio'
+                trans_centre = transformer.inverse_transform(
+                    np.zeros((1, 1))
+                ).flatten()[0]
+                confi = transformer.inverse_transform(confi) / trans_centre
+            else:
+                ylabel = 'Log-odds of mortality'
+
+            if confi.min() < y_lim[0]:
+                y_lim[0] = confi.min()
+            if confi.max() > y_lim[1]:
+                y_lim[1] = confi.max()
+
+            for k in range(n_cis):
+                ax[ax_i].fill_between(
+                    xx[:, column_indices[ax_i]],
+                    confi[:, k],
+                    confi[:, -(k + 1)],
+                    alpha=1 / n_cis,
+                    color=gam_colours[gam_i],
+                    lw=0.0)
+
+            legend_lines.append(Line2D([0], [0], color=gam_colours[gam_i]))
+
+        ax[ax_i].legend(legend_lines, gam_names, loc=legend_locs[ax_i])
+        ax[ax_i].set_xlim(
+            xx[:, column_indices[ax_i]].min(),
+            xx[:, column_indices[ax_i]].max())
+        ax[ax_i].set_title(term_names[ax_i])
+        ax[ax_i].set_ylabel(ylabel)
+
+    for ax_i, _ in enumerate(ax):
+        ax[ax_i].set_ylim(y_lim)
+
+    fig.tight_layout()
+    return fig, ax

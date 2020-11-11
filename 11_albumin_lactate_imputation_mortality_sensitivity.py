@@ -21,12 +21,16 @@ from utils.model.novel import (
     CategoricalImputer,
     LactateAlbuminImputer,
     NovelModel,
-    novel_model_factory,
-    LogOddsTransformer
+    novel_model_factory
 )
+from utils.model.shared import LogOddsTransformer
 from utils.impute import ImputationInfo
 from utils.plot.helpers import plot_saver
-from utils.plot.pdp import PDPTerm, PDPFigure
+from utils.plot.pdp import (
+    PDPTerm,
+    PDPFigure,
+    compare_pdps_from_different_gams_plot
+)
 from utils.evaluate import Scorer, score_linear_predictions
 from utils.report import Reporter
 
@@ -175,7 +179,7 @@ cat_imputer.tts.n_splits = 1
 
 
 reporter.report("Refitting novel model")
-novel_model = NovelModel(
+refit_novel_model = NovelModel(
     categorical_imputer=cat_imputer,
     albumin_imputer=imputers['albumin'],
     lactate_imputer=imputers['lactate'],
@@ -183,12 +187,12 @@ novel_model = NovelModel(
     n_lacalb_imputations_per_mice_imp=(
         imputation_stages.multiple_of_previous_n_imputations[1]),
     random_seed=RANDOM_SEED)
-novel_model.fit()
+refit_novel_model.fit()
 
 
 reporter.report("Saving refitted novel model")
 save_object(
-    novel_model,
+    refit_novel_model,
     os.path.join(
         NOVEL_MODEL_OUTPUT_DIR,
         "11_novel_model_lacalb_sensitivity.pkl"))
@@ -197,21 +201,21 @@ save_object(
 reporter.report('Preparing data for PDP histograms')
 pdp_hist_data = pd.concat(
     objs=(
-        novel_model.get_features_and_labels('train', 0, 0, 0)[0],
-        novel_model.get_features_and_labels('test', 0, 0, 0)[0]
+        refit_novel_model.get_features_and_labels('train', 0, 0, 0)[0],
+        refit_novel_model.get_features_and_labels('test', 0, 0, 0)[0]
     ),
     axis=0,
     ignore_index=True)
 
 
-reporter.first("Plotting novel model partial dependence plots")
+reporter.report("Plotting novel model partial dependence plots")
 for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
     for space, kwargs in (
         ('log_odds', {}),
         ('probability', {'transformer': LogOddsTransformer()})
     ):
         pdp_generator = PDPFigure(
-            gam=novel_model.models[0],
+            gam=refit_novel_model.models[0],
             pdp_terms=novel_pdp_terms,
             plot_hists=hist_switch,
             hist_data=pdp_hist_data,
@@ -222,6 +226,30 @@ for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
             output_filename=(
                 f"11_novel_model_lacalb_sensitivity_{space}_pd_plot"
                 f"{hist_text}"))
+
+
+reporter.report("Loading 'original' novel model trained in script 08")
+original_novel_model: NovelModel = load_object(
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
+
+
+reporter.report("Plotting comparison of the PDPs for albumin and lactate in "
+                "the original and refit novel models")
+for space, transformer in (
+    ('log_odds', None),
+    ('risk_ratio', LogOddsTransformer)
+):
+    plot_saver(
+        compare_pdps_from_different_gams_plot,
+        gams=(original_novel_model.models[0], refit_novel_model.models[0]),
+        gam_names=('Original', 'Re-fit'),
+        term_indices=(6, 7),
+        term_names=("Lactate (mmol/L)", "Albumin (g/L)"),
+        column_indices=(19, 17),
+        transformer=transformer,
+        output_dir=FIGURES_OUTPUT_DIR,
+        output_filename=f"11_novel_model_vs_refit_lacalb_{space}_pd_plot"
+    )
 
 
 reporter.last("Done.")
