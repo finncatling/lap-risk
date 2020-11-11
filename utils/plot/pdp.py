@@ -37,7 +37,8 @@ class PDPFigure:
         self,
         gam: GAM,
         pdp_terms: List[PDPTerm],
-        transformer: Union[None, QuantileTransformer] = None,
+        transformer: Union[
+            None, QuantileTransformer, LogOddsTransformer] = None,
         plot_just_outer_ci: bool = False,
         plot_hists: bool = False,
         hist_data: Union[None, pd.DataFrame] = None,
