@@ -7,7 +7,7 @@ import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
-from pygam import GAM, LogisticGAM
+from pygam import GAM, LogisticGAM, LinearGAM
 from sklearn.preprocessing import QuantileTransformer
 
 from utils.constants import GAM_CONFIDENCE_INTERVALS
@@ -273,9 +273,16 @@ class PDPFigure:
         ax.set_ylabel(self.pdp_terms[i].pretty_name[1])
 
     def _inverse_transform(self, x: np.ndarray) -> np.ndarray:
-        return self.transformer.inverse_transform(
+        inv_trans_x = self.transformer.inverse_transform(
             x.reshape(np.prod(x.shape), 1)
-        ).reshape(x.shape) - self.trans_centre
+        ).reshape(x.shape)
+        if isinstance(self.gam, LinearGAM):
+            return inv_trans_x - self.trans_centre
+        elif isinstance(self.gam, LogisticGAM):
+            # Convert probability to risk ratio
+            return inv_trans_x / self.trans_centre
+        else:
+            raise NotImplementedError
 
     def _modify_axes(self):
         """Loop back over axes, optionally standardising their y axis scale and

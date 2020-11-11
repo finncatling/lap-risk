@@ -214,7 +214,7 @@ reporter.first("Plotting novel model partial dependence plots")
 for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
     for space, kwargs in (
         ('log_odds', {}),
-        ('probability', {'transformer': LogOddsTransformer()})
+        ('relative_risk', {'transformer': LogOddsTransformer()})
     ):
         pdp_generator = PDPFigure(
             gam=novel_model.models[0],

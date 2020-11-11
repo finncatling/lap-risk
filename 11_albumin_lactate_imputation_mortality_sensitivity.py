@@ -212,7 +212,7 @@ reporter.report("Plotting novel model partial dependence plots")
 for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
     for space, kwargs in (
         ('log_odds', {}),
-        ('probability', {'transformer': LogOddsTransformer()})
+        ('relative_risk', {'transformer': LogOddsTransformer()})
     ):
         pdp_generator = PDPFigure(
             gam=refit_novel_model.models[0],
@@ -237,7 +237,7 @@ reporter.report("Plotting comparison of the PDPs for albumin and lactate in "
                 "the original and refit novel models")
 for space, transformer in (
     ('log_odds', None),
-    ('risk_ratio', LogOddsTransformer)
+    ('relative_risk', LogOddsTransformer)
 ):
     plot_saver(
         compare_pdps_from_different_gams_plot,
