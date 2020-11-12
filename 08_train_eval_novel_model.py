@@ -216,12 +216,10 @@ for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
         ('log_odds', {}),
         ('relative_risk', {'transformer': LogOddsTransformer()})
     ):
-        pdp_generator = PDPFigure(
-            gam=novel_model.models[0],
-            pdp_terms=pdp_terms,
-            plot_hists=hist_switch,
-            hist_data=pdp_hist_data,
-            **kwargs)
+        pdp_generator = PDPFigure(gam=novel_model.models[0],
+                                  pdp_terms=pdp_terms, ylabel='',
+                                  plot_hists=hist_switch,
+                                  hist_data=pdp_hist_data, **kwargs)
         plot_saver(
             pdp_generator.plot,
             output_dir=FIGURES_OUTPUT_DIR,

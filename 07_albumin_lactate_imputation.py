@@ -198,12 +198,10 @@ for pretty_name, variable_name, model_factory in (
                 'plot_just_outer_ci': True
             })
         ):
-            pdp_generator = PDPFigure(
-                gam=imputer.imputers[0],
-                pdp_terms=pdp_terms,
-                plot_hists=hist_switch,
-                hist_data=pdp_hist_data,
-                **kwargs)
+            pdp_generator = PDPFigure(gam=imputer.imputers[0],
+                                      pdp_terms=pdp_terms, ylabel='',
+                                      plot_hists=hist_switch,
+                                      hist_data=pdp_hist_data, **kwargs)
             plot_saver(
                 pdp_generator.plot,
                 output_dir=FIGURES_OUTPUT_DIR,

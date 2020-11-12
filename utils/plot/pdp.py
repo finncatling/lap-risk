@@ -34,24 +34,18 @@ class PDPFigure:
         Gaussian back into lactate space. Optionally adds rug plots for
         univariate continuous features."""
 
-    def __init__(
-        self,
+    def __init__(self,
         gam: GAM,
-        pdp_terms: List[PDPTerm],
-        transformer: Union[
-            None, QuantileTransformer, LogOddsTransformer] = None,
-        plot_just_outer_ci: bool = False,
-        plot_hists: bool = False,
-        hist_data: Union[None, pd.DataFrame] = None,
-        max_hist_bins: int = 20,
-        standardise_y_scale: bool = True,
-        fig_width: float = 12.0,
-        n_cols: int = 3,
-        row_height: float = 3.0,
-        ticks_per_cat: int = 21,
-        strata_colours: Tuple[str] = ("tab:blue", "tab:orange"),
-        confidence_intervals: Tuple = GAM_CONFIDENCE_INTERVALS
-    ):
+                 pdp_terms: List[PDPTerm], ylabel,
+                 transformer: Union[
+                     None, QuantileTransformer, LogOddsTransformer] = None,
+                 plot_just_outer_ci: bool = False, plot_hists: bool = False,
+                 hist_data: Union[None, pd.DataFrame] = None,
+                 max_hist_bins: int = 20, standardise_y_scale: bool = True,
+                 fig_width: float = 12.0, n_cols: int = 3,
+                 row_height: float = 3.0, ticks_per_cat: int = 21,
+                 strata_colours: Tuple[str] = ("tab:blue", "tab:orange"),
+                 confidence_intervals: Tuple = GAM_CONFIDENCE_INTERVALS):
         self.gam = gam
         self.pdp_terms = pdp_terms
         self.transformer = transformer
