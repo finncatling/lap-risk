@@ -219,14 +219,18 @@ pdp_hist_data = pd.concat(
 
 reporter.report("Plotting novel model partial dependence plots")
 for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
-    for space, kwargs in (
-        ('log_odds', {}),
-        ('relative_risk', {'transformer': LogOddsTransformer()})
+    for space_name, pretty_space_name, kwargs in (
+        ('log_odds', 'Log-odds of mortality', {}),
+        ('relative_risk',
+         'Relative mortality risk',
+         {'transformer': LogOddsTransformer()})
     ):
-        pdp_generator = PDPFigure(gam=refit_novel_model.models[0],
-                                  pdp_terms=novel_pdp_terms, ylabel='',
-                                  plot_hists=hist_switch,
-                                  hist_data=pdp_hist_data, **kwargs)
+        pdp_generator = PDPFigure(
+            gam=refit_novel_model.models[0],
+            pdp_terms=novel_pdp_terms,
+            ylabel=pretty_space_name,
+            plot_hists=hist_switch,
+            hist_data=pdp_hist_data, **kwargs)
         plot_saver(
             pdp_generator.plot,
             output_dir=FIGURES_OUTPUT_DIR,
