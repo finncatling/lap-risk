@@ -123,11 +123,11 @@ save_object(
 )
 
 
-for pretty_name, variable_name, model_factory in (
-    ('albumin', ALBUMIN_VAR_NAME, albumin_model_factory),
-    ('lactate', LACTATE_VAR_NAME, lactate_model_factory)
+for name, pretty_name, variable_name, model_factory in (
+    ('albumin', 'Albumin (g/L)', ALBUMIN_VAR_NAME, albumin_model_factory),
+    ('lactate', 'Lactate (mmol/L)', LACTATE_VAR_NAME, lactate_model_factory)
 ):
-    reporter.report(f"Fitting imputers for {pretty_name}")
+    reporter.report(f"Fitting imputers for {name}")
     imputer = LactateAlbuminImputer(
         df=df.loc[:, [variable_name, NOVEL_MODEL_VARS["target"]]],
         categorical_imputer=cat_imputer,
@@ -136,17 +136,18 @@ for pretty_name, variable_name, model_factory in (
         winsor_quantiles=WINSOR_QUANTILES,
         multi_cat_vars=multi_category_levels,
         indication_var_name=INDICATION_VAR_NAME,
+        mortality_as_feature=False,
         random_seed=RANDOM_SEED)
     imputer.fit()
 
 
-    reporter.report(f"Saving {pretty_name} imputer for later use")
+    reporter.report(f"Saving {name} imputer for later use")
     save_object(
         imputer,
-        os.path.join(NOVEL_MODEL_OUTPUT_DIR, f"07_{pretty_name}_imputer.pkl"))
+        os.path.join(NOVEL_MODEL_OUTPUT_DIR, f"07_{name}_imputer.pkl"))
 
 
-    reporter.report(f"Scoring {pretty_name} imputation model performance.")
+    reporter.report(f"Scoring {name} imputation model performance.")
     y_obs, y_preds = imputer.get_all_observed_and_predicted(
         fold_name='test',
         probabilistic=False,
@@ -167,7 +168,7 @@ for pretty_name, variable_name, model_factory in (
     save_object(
         scorer,
         os.path.join(
-            NOVEL_MODEL_OUTPUT_DIR, f"07_{pretty_name}_imputer_scorer.pkl"))
+            NOVEL_MODEL_OUTPUT_DIR, f"07_{name}_imputer_scorer.pkl"))
 
 
     # # TODO: Remove this development code
@@ -188,18 +189,21 @@ for pretty_name, variable_name, model_factory in (
         ignore_index=True)
 
 
-    reporter.report(f"Plotting {pretty_name} imputer partial dependence plots")
+    reporter.report(f"Plotting {name} imputer partial dependence plots")
     for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
-        for space, kwargs in (
-            ('gaussian', {}),
-            ('inv_trans', {
-                'transformer': imputer.transformers[0],
-                'plot_just_outer_ci': True
-            })
+        for space, ylabel, kwargs in (
+            ('gaussian', None, {}),
+            ('inv_trans',
+             pretty_name,
+             {
+                 'transformer': imputer.transformers[0],
+                 'plot_just_outer_ci': True
+             })
         ):
             pdp_generator = PDPFigure(
                 gam=imputer.imputers[0],
                 pdp_terms=pdp_terms,
+                ylabel=ylabel,
                 plot_hists=hist_switch,
                 hist_data=pdp_hist_data,
                 **kwargs)
@@ -207,7 +211,7 @@ for pretty_name, variable_name, model_factory in (
                 pdp_generator.plot,
                 output_dir=FIGURES_OUTPUT_DIR,
                 output_filename=(
-                    f"07_{pretty_name}_imputer_{space}_pd_plot{hist_text}"))
+                    f"07_{name}_imputer_{space}_pd_plot{hist_text}"))
 
 
 reporter.last("Done.")

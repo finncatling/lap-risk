@@ -16,9 +16,9 @@ from utils.io import load_object, save_object
 from utils.model.novel import (
     LactateAlbuminImputer,
     NovelModel,
-    novel_model_factory,
-    LogOddsTransformer
+    novel_model_factory
 )
+from utils.model.shared import LogOddsTransformer
 from utils.plot.helpers import plot_saver
 from utils.plot.pdp import PDPTerm, PDPFigure
 from utils.evaluate import LogisticScorer, score_logistic_predictions
@@ -209,22 +209,25 @@ pdp_hist_data = pd.concat(
     axis=0,
     ignore_index=True)
 
+
 reporter.first("Plotting novel model partial dependence plots")
 for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
-    for space, kwargs in (
-        ('log_odds', {}),
-        ('probability', {'transformer': LogOddsTransformer()})
+    for space_name, pretty_space_name, kwargs in (
+        ('log_odds', 'Log-odds of mortality', {}),
+        ('relative_risk',
+         'Relative mortality risk',
+         {'transformer': LogOddsTransformer()})
     ):
         pdp_generator = PDPFigure(
             gam=novel_model.models[0],
             pdp_terms=pdp_terms,
+            ylabel=pretty_space_name,
             plot_hists=hist_switch,
-            hist_data=pdp_hist_data,
-            **kwargs)
+            hist_data=pdp_hist_data, **kwargs)
         plot_saver(
             pdp_generator.plot,
             output_dir=FIGURES_OUTPUT_DIR,
-            output_filename=f"08_novel_model_{space}_pd_plot{hist_text}")
+            output_filename=f"08_novel_model_{space_name}_pd_plot{hist_text}")
 
 
 reporter.last("Done.")

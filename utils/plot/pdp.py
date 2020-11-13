@@ -7,11 +7,12 @@ import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
-from pygam import GAM
+from pygam import GAM, LogisticGAM, LinearGAM
 from sklearn.preprocessing import QuantileTransformer
 
 from utils.constants import GAM_CONFIDENCE_INTERVALS
 from utils.plot.helpers import generate_ci_quantiles
+from utils.model.shared import LogOddsTransformer
 
 
 @dataclass
@@ -33,11 +34,12 @@ class PDPFigure:
         Gaussian back into lactate space. Optionally adds rug plots for
         univariate continuous features."""
 
-    def __init__(
-        self,
+    def __init__(self,
         gam: GAM,
         pdp_terms: List[PDPTerm],
-        transformer: Union[None, QuantileTransformer] = None,
+        ylabel: str,
+        transformer: Union[
+            None, QuantileTransformer, LogOddsTransformer] = None,
         plot_just_outer_ci: bool = False,
         plot_hists: bool = False,
         hist_data: Union[None, pd.DataFrame] = None,
@@ -52,6 +54,7 @@ class PDPFigure:
     ):
         self.gam = gam
         self.pdp_terms = pdp_terms
+        self.ylabel = ylabel
         self.transformer = transformer
         self.plot_just_outer_ci = plot_just_outer_ci
         self.plot_hists = plot_hists
@@ -65,9 +68,9 @@ class PDPFigure:
         self.strata_colours = strata_colours
         self.n_rows = self._calculate_n_rows()
         self.trans_centre = self._calculate_transformation_centre()
+        self.y_min, self.y_max = self._init_y_min_and_max()
         self.cis = generate_ci_quantiles(confidence_intervals)
         self.fig, self.gs = None, None
-        self.y_min, self.y_max = {'2d': 0., '3d': 0.}, {'2d': 0., '3d': 0.}
 
     @property
     def terms(self) -> List[Dict]:
@@ -99,6 +102,12 @@ class PDPFigure:
         else:
             return self.transformer.inverse_transform(
                 np.zeros((1, 1))).flatten()[0]
+
+    def _init_y_min_and_max(self) -> Tuple[Dict[str, float], Dict[str, float]]:
+        if self.transformer is None or isinstance(self.gam, LinearGAM):
+            return {'2d': 0., '3d': 0.}, {'2d': 0., '3d': 0.}
+        else:
+            return {'2d': 1., '3d': 1.}, {'2d': 1., '3d': 1.}
 
     def _update_y_min_max(
         self,
@@ -175,6 +184,7 @@ class PDPFigure:
                     lw=0.0)
         self._set_non_tensor_x_labels(i, ax, xx, term["feature"], x_length)
         ax.set_xlim(xx[:, term["feature"]].min(), xx[:, term["feature"]].max())
+        ax.set_ylabel(self.ylabel)
 
     def _set_non_tensor_x_labels(
         self,
@@ -234,6 +244,7 @@ class PDPFigure:
                   loc=self.pdp_terms[i].legend_loc)
         ax.set_xlim(xx[0][0, 0], xx[0][-1, 0])
         self._set_tensor_x_labels(i, ax, xx, x_length)
+        ax.set_ylabel(self.ylabel)
 
     def _set_tensor_x_labels(
         self,
@@ -269,11 +280,19 @@ class PDPFigure:
         ax.view_init(*self.pdp_terms[i].view_3d)
         ax.set_xlabel(self.pdp_terms[i].pretty_name[0])
         ax.set_ylabel(self.pdp_terms[i].pretty_name[1])
+        ax.set_zlabel(self.ylabel)
 
     def _inverse_transform(self, x: np.ndarray) -> np.ndarray:
-        return self.transformer.inverse_transform(
+        """Converts probability to risk ration for logistic models."""
+        inv_trans_x = self.transformer.inverse_transform(
             x.reshape(np.prod(x.shape), 1)
-        ).reshape(x.shape) - self.trans_centre
+        ).reshape(x.shape)
+        if isinstance(self.gam, LinearGAM):
+            return inv_trans_x - self.trans_centre
+        elif isinstance(self.gam, LogisticGAM):
+            return inv_trans_x / self.trans_centre
+        else:
+            raise NotImplementedError
 
     def _modify_axes(self):
         """Loop back over axes, optionally standardising their y axis scale and
@@ -321,3 +340,70 @@ class PDPFigure:
             return len(self.pdp_terms[i].labels)
         else:
             return self.max_hist_bins
+
+
+def compare_pdps_from_different_gams_plot(
+    gams: Tuple[LogisticGAM, LogisticGAM],
+    gam_names: Tuple[str, str],
+    term_indices: Tuple[int, int],
+    term_names: Tuple[str, str],
+    column_indices: Tuple[int, int],
+    transformer: Union[None, LogOddsTransformer] = None,
+    figsize: Tuple[int, int] = (8, 3),
+    legend_locs: Tuple[str, str] = ("upper left", "upper right"),
+    gam_colours: Tuple[str] = ("tab:blue", "tab:orange"),
+    confidence_intervals: Tuple = GAM_CONFIDENCE_INTERVALS
+) -> (Figure, Axes):
+    """Only works with LogisticGAM currently. term_indices are the indices
+        of the terms of interest in the GAM specification. column_indices are
+        the indices of the columns for these terms in the GAM input data."""
+    fig, ax = plt.subplots(1, 2, figsize=figsize)
+    ax = ax.ravel()
+    y_lim = [np.inf, -np.inf]
+    cis = generate_ci_quantiles(confidence_intervals)
+    n_cis = len(cis)
+
+    for ax_i, term_i in enumerate(term_indices):
+        legend_lines = []
+
+        for gam_i, gam in enumerate(gams):
+            xx = gam.generate_X_grid(term=term_i, n=100)
+            _, confi = gam.partial_dependence(term=term_i, X=xx, quantiles=cis)
+
+            if transformer:
+                ylabel = 'Relative mortality risk'
+                trans_centre = transformer.inverse_transform(
+                    np.zeros((1, 1))
+                ).flatten()[0]
+                confi = transformer.inverse_transform(confi) / trans_centre
+            else:
+                ylabel = 'Log-odds of mortality'
+
+            if confi.min() < y_lim[0]:
+                y_lim[0] = confi.min()
+            if confi.max() > y_lim[1]:
+                y_lim[1] = confi.max()
+
+            for k in range(n_cis):
+                ax[ax_i].fill_between(
+                    xx[:, column_indices[ax_i]],
+                    confi[:, k],
+                    confi[:, -(k + 1)],
+                    alpha=1 / n_cis,
+                    color=gam_colours[gam_i],
+                    lw=0.0)
+
+            legend_lines.append(Line2D([0], [0], color=gam_colours[gam_i]))
+
+        ax[ax_i].legend(legend_lines, gam_names, loc=legend_locs[ax_i])
+        ax[ax_i].set_xlim(
+            xx[:, column_indices[ax_i]].min(),
+            xx[:, column_indices[ax_i]].max())
+        ax[ax_i].set_title(term_names[ax_i])
+        ax[ax_i].set_ylabel(ylabel)
+
+    for ax_i, _ in enumerate(ax):
+        ax[ax_i].set_ylim(y_lim)
+
+    fig.tight_layout()
+    return fig, ax

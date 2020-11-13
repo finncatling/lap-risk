@@ -471,7 +471,8 @@ def lacalb_model_factory_fixture() -> Callable[
     def model_factory(
         columns: pd.Index,
         multi_cat_levels: Dict[str, Tuple],
-        indication_var_name: str
+        indication_var_name: str,
+        mortality_as_feature: bool
     ) -> LinearGAM:
         return LinearGAM(
             s(columns.get_loc("cont"), spline_order=2, n_splines=5, lam=0.05)
@@ -495,8 +496,8 @@ def lactate_imputer_fixture(
         winsor_quantiles=novel.WINSOR_QUANTILES,
         multi_cat_vars=dict(),  # unused
         indication_var_name='',  # unused
-        random_seed=RANDOM_SEED
-    )
+        mortality_as_feature=False,
+        random_seed=RANDOM_SEED)
     imp.fit()
     return imp
 
@@ -515,8 +516,8 @@ def albumin_imputer_fixture(
         winsor_quantiles=novel.WINSOR_QUANTILES,
         multi_cat_vars=dict(),  # unused
         indication_var_name='',  # unused
-        random_seed=RANDOM_SEED
-    )
+        mortality_as_feature=False,
+        random_seed=RANDOM_SEED)
     imp.fit()
     return imp
 
@@ -543,8 +544,8 @@ class TestLactateAlbuminImputer:
                 winsor_quantiles=novel.WINSOR_QUANTILES,
                 multi_cat_vars=dict(),  # unused
                 indication_var_name='',  # unused
-                random_seed=RANDOM_SEED
-            )
+                mortality_as_feature=False,
+                random_seed=RANDOM_SEED)
 
     @pytest.fixture()
     def obs_lacalb_train_fixture(self, lactate_imputer_fixture) -> pd.DataFrame:
