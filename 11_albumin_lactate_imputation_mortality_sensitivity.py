@@ -144,17 +144,21 @@ for pretty_name, variable_name, model_factory in (
 
     reporter.report(f"Plotting {pretty_name} imputer partial dependence plots")
     for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
-        for space, kwargs in (
-            ('gaussian', {}),
-            ('inv_trans', {
+        for space, ylabel, kwargs in (
+            ('gaussian', None, {}),
+            ('inv_trans',
+             pretty_name,
+             {
                 'transformer': imputers[pretty_name].transformers[0],
                 'plot_just_outer_ci': True
-            })
+             })
         ):
-            pdp_generator = PDPFigure(gam=imputers[pretty_name].imputers[0],
-                                      pdp_terms=lacalb_pdp_terms, ylabel='',
-                                      plot_hists=hist_switch,
-                                      hist_data=pdp_hist_data, **kwargs)
+            pdp_generator = PDPFigure(
+                gam=imputers[pretty_name].imputers[0],
+                pdp_terms=lacalb_pdp_terms,
+                ylabel=ylabel,
+                plot_hists=hist_switch,
+                hist_data=pdp_hist_data, **kwargs)
             plot_saver(
                 pdp_generator.plot,
                 output_dir=FIGURES_OUTPUT_DIR,

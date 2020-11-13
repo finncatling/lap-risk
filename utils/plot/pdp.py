@@ -36,18 +36,25 @@ class PDPFigure:
 
     def __init__(self,
         gam: GAM,
-                 pdp_terms: List[PDPTerm], ylabel,
-                 transformer: Union[
-                     None, QuantileTransformer, LogOddsTransformer] = None,
-                 plot_just_outer_ci: bool = False, plot_hists: bool = False,
-                 hist_data: Union[None, pd.DataFrame] = None,
-                 max_hist_bins: int = 20, standardise_y_scale: bool = True,
-                 fig_width: float = 12.0, n_cols: int = 3,
-                 row_height: float = 3.0, ticks_per_cat: int = 21,
-                 strata_colours: Tuple[str] = ("tab:blue", "tab:orange"),
-                 confidence_intervals: Tuple = GAM_CONFIDENCE_INTERVALS):
+        pdp_terms: List[PDPTerm],
+        ylabel: str,
+        transformer: Union[
+            None, QuantileTransformer, LogOddsTransformer] = None,
+        plot_just_outer_ci: bool = False,
+        plot_hists: bool = False,
+        hist_data: Union[None, pd.DataFrame] = None,
+        max_hist_bins: int = 20,
+        standardise_y_scale: bool = True,
+        fig_width: float = 12.0,
+        n_cols: int = 3,
+        row_height: float = 3.0,
+        ticks_per_cat: int = 21,
+        strata_colours: Tuple[str] = ("tab:blue", "tab:orange"),
+        confidence_intervals: Tuple = GAM_CONFIDENCE_INTERVALS
+    ):
         self.gam = gam
         self.pdp_terms = pdp_terms
+        self.ylabel = ylabel
         self.transformer = transformer
         self.plot_just_outer_ci = plot_just_outer_ci
         self.plot_hists = plot_hists
@@ -171,6 +178,7 @@ class PDPFigure:
                     lw=0.0)
         self._set_non_tensor_x_labels(i, ax, xx, term["feature"], x_length)
         ax.set_xlim(xx[:, term["feature"]].min(), xx[:, term["feature"]].max())
+        ax.set_ylabel(self.ylabel)
 
     def _set_non_tensor_x_labels(
         self,
@@ -230,6 +238,7 @@ class PDPFigure:
                   loc=self.pdp_terms[i].legend_loc)
         ax.set_xlim(xx[0][0, 0], xx[0][-1, 0])
         self._set_tensor_x_labels(i, ax, xx, x_length)
+        ax.set_ylabel(self.ylabel)
 
     def _set_tensor_x_labels(
         self,
@@ -265,15 +274,16 @@ class PDPFigure:
         ax.view_init(*self.pdp_terms[i].view_3d)
         ax.set_xlabel(self.pdp_terms[i].pretty_name[0])
         ax.set_ylabel(self.pdp_terms[i].pretty_name[1])
+        ax.set_zlabel(self.ylabel)
 
     def _inverse_transform(self, x: np.ndarray) -> np.ndarray:
+        """Converts probability to risk ration for logistic models."""
         inv_trans_x = self.transformer.inverse_transform(
             x.reshape(np.prod(x.shape), 1)
         ).reshape(x.shape)
         if isinstance(self.gam, LinearGAM):
             return inv_trans_x - self.trans_centre
         elif isinstance(self.gam, LogisticGAM):
-            # Convert probability to risk ratio
             return inv_trans_x / self.trans_centre
         else:
             raise NotImplementedError
