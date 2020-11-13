@@ -86,57 +86,50 @@ for name, pretty_name, variable_name, model_factory in (
     ('albumin', 'Albumin (g/L)', ALBUMIN_VAR_NAME, albumin_model_factory),
     ('lactate', 'Lactate (mmol/L)', LACTATE_VAR_NAME, lactate_model_factory)
 ):
-    # reporter.report(f"Fitting imputers for {pretty_name}")
-    # imputers[pretty_name] = LactateAlbuminImputer(
-    #     df=df.loc[:, [variable_name, NOVEL_MODEL_VARS["target"]]],
-    #     categorical_imputer=cat_imputer,
-    #     lacalb_variable_name=variable_name,
-    #     imputation_model_factory=model_factory,
-    #     winsor_quantiles=WINSOR_QUANTILES,
-    #     multi_cat_vars=multi_category_levels,
-    #     indication_var_name=INDICATION_VAR_NAME,
-    #     mortality_as_feature=True,
-    #     random_seed=RANDOM_SEED)
-    # imputers[pretty_name].fit()
-    #
-    #
-    # reporter.report(f"Saving {pretty_name} imputer for later use")
-    # save_object(
-    #     imputers[pretty_name],
-    #     os.path.join(NOVEL_MODEL_OUTPUT_DIR,
-    #                  f"11_{pretty_name}_imputer_with_mortality_feature.pkl"))
-    #
-    #
-    # reporter.report(f"Scoring {pretty_name} imputation model performance.")
-    # y_obs, y_preds = imputers[pretty_name].get_all_observed_and_predicted(
-    #     fold_name='test',
-    #     probabilistic=False,
-    #     lac_alb_imp_i=None)
-    # scorer = Scorer(
-    #     y_true=y_obs,
-    #     y_pred=y_preds,
-    #     scorer_function=score_linear_predictions,
-    #     n_splits=imputers[pretty_name].tts.n_splits)
-    # scorer.calculate_scores()
-    # reporter.first("Scores with median as point estimate:")
-    # scorer.print_scores(dec_places=3, point_estimate='median')
-    # reporter.first("Scores with split 0 as point estimate:")
-    # scorer.print_scores(dec_places=3, point_estimate='split0')
-    #
-    #
-    # reporter.first("Saving model scorer for later use")
-    # save_object(
-    #     scorer,
-    #     os.path.join(
-    #         NOVEL_MODEL_OUTPUT_DIR,
-    #         f"11_{pretty_name}_imputer_with_mortality_feature_scorer.pkl"))
+    reporter.report(f"Fitting imputers for {name}")
+    imputers[name] = LactateAlbuminImputer(
+        df=df.loc[:, [variable_name, NOVEL_MODEL_VARS["target"]]],
+        categorical_imputer=cat_imputer,
+        lacalb_variable_name=variable_name,
+        imputation_model_factory=model_factory,
+        winsor_quantiles=WINSOR_QUANTILES,
+        multi_cat_vars=multi_category_levels,
+        indication_var_name=INDICATION_VAR_NAME,
+        mortality_as_feature=True,
+        random_seed=RANDOM_SEED)
+    imputers[name].fit()
 
 
-    # TODO: Remove this development code
-    reporter.report(f"Loading pretrained imputation model")
-    imputers[name] = load_object(os.path.join(
-        NOVEL_MODEL_OUTPUT_DIR,
-        f"11_{name}_imputer_with_mortality_feature.pkl"))
+    reporter.report(f"Saving {name} imputer for later use")
+    save_object(
+        imputers[name],
+        os.path.join(NOVEL_MODEL_OUTPUT_DIR,
+                     f"11_{name}_imputer_with_mortality_feature.pkl"))
+
+
+    reporter.report(f"Scoring {name} imputation model performance.")
+    y_obs, y_preds = imputers[name].get_all_observed_and_predicted(
+        fold_name='test',
+        probabilistic=False,
+        lac_alb_imp_i=None)
+    scorer = Scorer(
+        y_true=y_obs,
+        y_pred=y_preds,
+        scorer_function=score_linear_predictions,
+        n_splits=imputers[name].tts.n_splits)
+    scorer.calculate_scores()
+    reporter.first("Scores with median as point estimate:")
+    scorer.print_scores(dec_places=3, point_estimate='median')
+    reporter.first("Scores with split 0 as point estimate:")
+    scorer.print_scores(dec_places=3, point_estimate='split0')
+
+
+    reporter.first("Saving model scorer for later use")
+    save_object(
+        scorer,
+        os.path.join(
+            NOVEL_MODEL_OUTPUT_DIR,
+            f"11_{name}_imputer_with_mortality_feature_scorer.pkl"))
 
 
     reporter.report('Preparing data for PDP histograms')
@@ -174,35 +167,35 @@ for name, pretty_name, variable_name, model_factory in (
                     f"{space}_pd_plot{hist_text}"))
 
 
-# reporter.report("Restricting novel model refitting to zeroth train-test split")
-# cat_imputer.tts.n_splits = 1
-#
-#
-# reporter.report("Refitting novel model")
-# refit_novel_model = NovelModel(
-#     categorical_imputer=cat_imputer,
-#     albumin_imputer=imputers['albumin'],
-#     lactate_imputer=imputers['lactate'],
-#     model_factory=novel_model_factory,
-#     n_lacalb_imputations_per_mice_imp=(
-#         imputation_stages.multiple_of_previous_n_imputations[1]),
-#     random_seed=RANDOM_SEED)
-# refit_novel_model.fit()
-#
-#
-# reporter.report("Saving refitted novel model")
-# save_object(
-#     refit_novel_model,
-#     os.path.join(
-#         NOVEL_MODEL_OUTPUT_DIR,
-#         "11_novel_model_lacalb_sensitivity.pkl"))
+reporter.report("Restricting novel model refitting to zeroth train-test split")
+cat_imputer.tts.n_splits = 1
 
 
-# TODO: Remove this development code
-reporter.report("Loading pre-refitted novel model")
-refit_novel_model: NovelModel = load_object(os.path.join(
-    NOVEL_MODEL_OUTPUT_DIR,
-    "11_novel_model_lacalb_sensitivity.pkl"))
+reporter.report("Refitting novel model")
+refit_novel_model = NovelModel(
+    categorical_imputer=cat_imputer,
+    albumin_imputer=imputers['albumin'],
+    lactate_imputer=imputers['lactate'],
+    model_factory=novel_model_factory,
+    n_lacalb_imputations_per_mice_imp=(
+        imputation_stages.multiple_of_previous_n_imputations[1]),
+    random_seed=RANDOM_SEED)
+refit_novel_model.fit()
+
+
+reporter.report("Saving refitted novel model")
+save_object(
+    refit_novel_model,
+    os.path.join(
+        NOVEL_MODEL_OUTPUT_DIR,
+        "11_novel_model_lacalb_sensitivity.pkl"))
+
+
+# # TODO: Remove this development code
+# reporter.report("Loading pre-refitted novel model")
+# refit_novel_model: NovelModel = load_object(os.path.join(
+#     NOVEL_MODEL_OUTPUT_DIR,
+#     "11_novel_model_lacalb_sensitivity.pkl"))
 
 
 reporter.report('Preparing data for PDP histograms')
