@@ -82,9 +82,9 @@ lacalb_pdp_terms.append(
 
 
 imputers = {}
-for pretty_name, variable_name, model_factory in (
-    ('albumin', ALBUMIN_VAR_NAME, albumin_model_factory),
-    ('lactate', LACTATE_VAR_NAME, lactate_model_factory)
+for name, pretty_name, variable_name, model_factory in (
+    ('albumin', 'Albumin (g/L)', ALBUMIN_VAR_NAME, albumin_model_factory),
+    ('lactate', 'Lactate (mmol/L)', LACTATE_VAR_NAME, lactate_model_factory)
 ):
     # reporter.report(f"Fitting imputers for {pretty_name}")
     # imputers[pretty_name] = LactateAlbuminImputer(
@@ -134,9 +134,9 @@ for pretty_name, variable_name, model_factory in (
 
     # TODO: Remove this development code
     reporter.report(f"Loading pretrained imputation model")
-    imputers[pretty_name] = load_object(os.path.join(
+    imputers[name] = load_object(os.path.join(
         NOVEL_MODEL_OUTPUT_DIR,
-        f"11_{pretty_name}_imputer_with_mortality_feature.pkl"))
+        f"11_{name}_imputer_with_mortality_feature.pkl"))
 
 
     reporter.report('Preparing data for PDP histograms')
@@ -149,19 +149,19 @@ for pretty_name, variable_name, model_factory in (
         ignore_index=True)
 
 
-    reporter.report(f"Plotting {pretty_name} imputer partial dependence plots")
+    reporter.report(f"Plotting {name} imputer partial dependence plots")
     for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
         for space, ylabel, kwargs in (
             ('gaussian', None, {}),
             ('inv_trans',
              pretty_name,
              {
-                'transformer': imputers[pretty_name].transformers[0],
+                'transformer': imputers[name].transformers[0],
                 'plot_just_outer_ci': True
              })
         ):
             pdp_generator = PDPFigure(
-                gam=imputers[pretty_name].imputers[0],
+                gam=imputers[name].imputers[0],
                 pdp_terms=lacalb_pdp_terms,
                 ylabel=ylabel,
                 plot_hists=hist_switch,
@@ -170,7 +170,7 @@ for pretty_name, variable_name, model_factory in (
                 pdp_generator.plot,
                 output_dir=FIGURES_OUTPUT_DIR,
                 output_filename=(
-                    f"11_{pretty_name}_imputer_with_mortality_feature_"
+                    f"11_{name}_imputer_with_mortality_feature_"
                     f"{space}_pd_plot{hist_text}"))
 
 
@@ -233,7 +233,7 @@ for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
             pdp_generator.plot,
             output_dir=FIGURES_OUTPUT_DIR,
             output_filename=(
-                f"11_novel_model_lacalb_sensitivity_{space}_pd_plot"
+                f"11_novel_model_lacalb_sensitivity_{space_name}_pd_plot"
                 f"{hist_text}"))
 
 
