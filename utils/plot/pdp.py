@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Tuple, List, Union, Dict
 
+import copy
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -68,9 +69,9 @@ class PDPFigure:
         self.strata_colours = strata_colours
         self.n_rows = self._calculate_n_rows()
         self.trans_centre = self._calculate_transformation_centre()
+        self.y_min, self.y_max = self._init_y_min_and_max()
         self.cis = generate_ci_quantiles(confidence_intervals)
         self.fig, self.gs = None, None
-        self.y_min, self.y_max = {'2d': 0., '3d': 0.}, {'2d': 0., '3d': 0.}
 
     @property
     def terms(self) -> List[Dict]:
@@ -102,6 +103,15 @@ class PDPFigure:
         else:
             return self.transformer.inverse_transform(
                 np.zeros((1, 1))).flatten()[0]
+
+    def _init_y_min_and_max(self) -> Tuple[Dict[str, float], Dict[str, float]]:
+        if self.transformer is None:
+            return {'2d': 0., '3d': 0.}, {'2d': 0., '3d': 0.}
+        else:
+            return ({'2d': copy.copy(self.trans_centre),
+                     '3d': copy.copy(self.trans_centre)},
+                    {'2d': copy.copy(self.trans_centre),
+                     '3d': copy.copy(self.trans_centre)})
 
     def _update_y_min_max(
         self,
