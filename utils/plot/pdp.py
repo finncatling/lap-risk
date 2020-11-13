@@ -105,13 +105,10 @@ class PDPFigure:
                 np.zeros((1, 1))).flatten()[0]
 
     def _init_y_min_and_max(self) -> Tuple[Dict[str, float], Dict[str, float]]:
-        if self.transformer is None:
+        if self.transformer is None or isinstance(self.gam, LinearGAM):
             return {'2d': 0., '3d': 0.}, {'2d': 0., '3d': 0.}
         else:
-            return ({'2d': copy.copy(self.trans_centre),
-                     '3d': copy.copy(self.trans_centre)},
-                    {'2d': copy.copy(self.trans_centre),
-                     '3d': copy.copy(self.trans_centre)})
+            return {'2d': 1., '3d': 1.}, {'2d': 1., '3d': 1.}
 
     def _update_y_min_max(
         self,
