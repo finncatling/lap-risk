@@ -205,7 +205,8 @@ for name, pretty_name, variable_name, model_factory in (
                 pdp_terms=pdp_terms,
                 ylabel=ylabel,
                 plot_hists=hist_switch,
-                hist_data=pdp_hist_data, **kwargs)
+                hist_data=pdp_hist_data,
+                **kwargs)
             plot_saver(
                 pdp_generator.plot,
                 output_dir=FIGURES_OUTPUT_DIR,
