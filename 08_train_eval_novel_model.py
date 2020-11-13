@@ -163,41 +163,41 @@ novel_model: NovelModel = load_object(
 """END code for instantiating / loading novel model."""
 
 
-reporter.report("Beginning train-test splitting and model fitting. Training "
-                "resumes where it left off if the model is partially trained, "
-                "and is skipped entirely if the model is fully trained.")
-for split_i in progressbar(
-    range(len(novel_model.models), novel_model.cat_imputer.tts.n_splits),
-    prefix="Split iteration"
-):
-    novel_model._single_train_test_split(split_i)
-    save_object(
-        novel_model, os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
-
-
-reporter.report(f"Scoring novel model performance.")
-y_obs, y_preds = novel_model.get_all_observed_and_median_predicted(
-    fold_name='test',
-    n_samples_per_imp_i=5
-)
-scorer = LogisticScorer(
-    y_true=y_obs,
-    y_pred=y_preds,
-    scorer_function=score_logistic_predictions,
-    n_splits=novel_model.cat_imputer.tts.n_splits,
-    calibration_n_splines=CALIB_GAM_N_SPLINES,
-    calibration_lam_candidates=CALIB_GAM_LAM_CANDIDATES)
-scorer.calculate_scores()
-reporter.first("Scores with median as point estimate:")
-scorer.print_scores(dec_places=3, point_estimate='median')
-reporter.first("Scores with split 0 as point estimate:")
-scorer.print_scores(dec_places=3, point_estimate='split0')
-
-
-reporter.first("Saving model scorer for later use")
-save_object(
-    scorer,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model_scorer.pkl"))
+# reporter.report("Beginning train-test splitting and model fitting. Training "
+#                 "resumes where it left off if the model is partially trained, "
+#                 "and is skipped entirely if the model is fully trained.")
+# for split_i in progressbar(
+#     range(len(novel_model.models), novel_model.cat_imputer.tts.n_splits),
+#     prefix="Split iteration"
+# ):
+#     novel_model._single_train_test_split(split_i)
+#     save_object(
+#         novel_model, os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
+#
+#
+# reporter.report(f"Scoring novel model performance.")
+# y_obs, y_preds = novel_model.get_all_observed_and_median_predicted(
+#     fold_name='test',
+#     n_samples_per_imp_i=5
+# )
+# scorer = LogisticScorer(
+#     y_true=y_obs,
+#     y_pred=y_preds,
+#     scorer_function=score_logistic_predictions,
+#     n_splits=novel_model.cat_imputer.tts.n_splits,
+#     calibration_n_splines=CALIB_GAM_N_SPLINES,
+#     calibration_lam_candidates=CALIB_GAM_LAM_CANDIDATES)
+# scorer.calculate_scores()
+# reporter.first("Scores with median as point estimate:")
+# scorer.print_scores(dec_places=3, point_estimate='median')
+# reporter.first("Scores with split 0 as point estimate:")
+# scorer.print_scores(dec_places=3, point_estimate='split0')
+#
+#
+# reporter.first("Saving model scorer for later use")
+# save_object(
+#     scorer,
+#     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model_scorer.pkl"))
 
 
 reporter.report('Preparing data for PDP histograms')
