@@ -68,7 +68,8 @@ print(df.shape)
 
 # ## S01Sex
 # 1 = male, 2 = female
-df = binarize(df, 'S01Sex')
+# df = binarize(df, 'S01Sex')
+df = combine_categories(df, {'S01Sex': {1: 0, 2: 1}})
 
 
 # ## 'S02PreOpCTPerformed'
