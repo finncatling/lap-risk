@@ -1,40 +1,13 @@
 import os
 import numpy as np
 import pandas as pd
-from typing import List, Tuple
+
+from utils.wrangling import remap_categories, remove_non_whole_numbers
+from utils.report import Reporter
 
 
-def remove_non_whole_numbers(df, var_name):
-    """Removes non-whole-number floats. Preserves other missing
-        values."""
-    unrounded = df.loc[df[var_name].notnull(), var_name]
-    rounded = unrounded.round()
-    diff = rounded != unrounded
-    diff_i = diff[diff == True].index
-    df.loc[diff_i, var_name] = np.nan
-    return df
-
-
-def combine60(x):
-    if x == 60:
-        # if status is still alive at 60 days
-        x = 1
-
-    # flip values so they make more sense
-    if x == 1:
-        x = 0
-    elif x == 0:
-        x = 1
-    return int(x)
-
-
-def remap_categories(
-        df: pd.DataFrame, col_name: str, mapping: List[Tuple]
-) -> pd.DataFrame:
-    for old, new in mapping:
-        df.loc[df[col_name] == old, col_name] = new
-    return df
-
+reporter = Reporter()
+reporter.title("Initial data wrangling")
 
 data_path = os.path.join(os.pardir,
                          os.pardir,
@@ -43,8 +16,8 @@ data_path = os.path.join(os.pardir,
                          'hqip254NELAdata21May2019.csv')
 df = pd.read_csv(data_path)
 
-num_rows = df.shape[0]
-print(f'Dataset contains {num_rows} patients')
+
+print(f'Dataset contains {df.shape[0]} patients')
 
 
 # ## HospitalId.anon
