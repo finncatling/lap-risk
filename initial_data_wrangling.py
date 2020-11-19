@@ -151,32 +151,32 @@ df.drop('S07Status_Disch', axis=1)
 
 reporter.report('Dropping variables unused in downstream analysis')
 lap_risk_vars = [
-                    "HospitalId.anon",
-                    "S01Sex",
-                    "S03ASAScore",
-                    "S03NCEPODUrgency",
-                    "S03ECG",
-                    "S03NumberOfOperativeProcedures",
-                    "S03CardiacSigns",
-                    "S03RespiratorySigns",
-                    "S03Pred_Peritsoil",
-                    "S03Pred_TBL",
-                    "S03DiagnosedMalignancy",
-                    "S03WhatIsTheOperativeSeverity",
-                    "S03GlasgowComaScore",
-                    "S01AgeOnArrival",
-                    "S03SerumCreatinine",
-                    "S03Sodium",
-                    "S03Potassium",
-                    "S03Urea",
-                    "S03WhiteCellCount",
-                    "S03Pulse",
-                    "S03SystolicBloodPressure",
-                    "S02PreOpCTPerformed",
-                    "S03PreOpArterialBloodLactate",
-                    "S03PreOpLowestAlbumin",
-                    "Target"
-                ] + indications
+    "HospitalId.anon",
+    "S01Sex",
+    "S03ASAScore",
+    "S03NCEPODUrgency",
+    "S03ECG",
+    "S03NumberOfOperativeProcedures",
+    "S03CardiacSigns",
+    "S03RespiratorySigns",
+    "S03Pred_Peritsoil",
+    "S03Pred_TBL",
+    "S03DiagnosedMalignancy",
+    "S03WhatIsTheOperativeSeverity",
+    "S03GlasgowComaScore",
+    "S01AgeOnArrival",
+    "S03SerumCreatinine",
+    "S03Sodium",
+    "S03Potassium",
+    "S03Urea",
+    "S03WhiteCellCount",
+    "S03Pulse",
+    "S03SystolicBloodPressure",
+    "S02PreOpCTPerformed",
+    "S03PreOpArterialBloodLactate",
+    "S03PreOpLowestAlbumin",
+    "Target"
+] + indications
 
 
 reporter.report('Resetting DataFrame index')
@@ -197,4 +197,4 @@ assert df.equals(comparison)
 # df.to_pickle(NELA_DATA_FILEPATH)
 
 
-reporter.report('Done.')
+reporter.last('Done.')
