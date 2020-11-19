@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,11 +7,8 @@ from IPython.display import display
 from scipy import stats
 
 
-def cat_data(df: pd.DataFrame, col_name: str, binary: bool = False) -> None:
-    """Display some useful attributes of a categorical feature. Note
-        that binary=True alters the underlying input DataFrame."""
-    if binary:
-        df.loc[:, col_name] = df[col_name].apply(convert_to_binary)
+def cat_data(df: pd.DataFrame, col_name: str) -> None:
+    """Display some useful attributes of a categorical feature."""
     print(f"Data type: {df[col_name].dtype}")
     print(f"Missing rows: {percent_missing(df, col_name)}%")
     dot_chart(df[col_name].value_counts(dropna=False), col_name)
@@ -77,15 +74,6 @@ def last_digit(df: pd.DataFrame, col_name: str) -> None:
 def percent_missing(df: pd.DataFrame, col_name: str) -> float:
     """Calculate percent missing values for column of data."""
     return df[col_name].isnull().sum() / df.shape[0] * 100
-
-
-def convert_to_binary(x):
-    """Convert binary input (e.g. DataFrame row) coded as 1s and 2s,
-        to 0s and 1s."""
-    if x == 1:
-        return 0
-    elif x == 2:
-        return 1
 
 
 def dot_chart(vc: pd.Series, title: str) -> None:
@@ -171,3 +159,41 @@ def multi_dot_chart(
 
     plt.legend(loc="lower right")
     plt.show()
+
+
+def remove_non_whole_numbers(
+    df: pd.DataFrame, var_name: str
+) -> pd.DataFrame:
+    """Removes non-whole-number floats. Preserves other missing
+        values."""
+    unrounded = df.loc[df[var_name].notnull(), var_name]
+    rounded = unrounded.round()
+    diff = rounded != unrounded
+    diff_i = diff[diff == True].index
+    df.loc[diff_i, var_name] = np.nan
+    return df
+
+
+def remap_categories(
+    df: pd.DataFrame, col_name: str, mapping: List[Tuple]
+) -> pd.DataFrame:
+    for old, new in mapping:
+        df.loc[df[col_name] == old, col_name] = new
+    return df
+
+
+def drop_values_under_threshold(
+    df: pd.DataFrame,
+    col_name: str,
+    threshold: float,
+    print_reports: bool = True
+) -> pd.DataFrame:
+    n_nonmissing_pre_drop = df[df[col_name].notnull()].shape[0]
+    df.loc[df[col_name] < threshold, col_name] = np.nan
+    n_nonmissing_post_drop = df[df[col_name].notnull()].shape[0]
+    if print_reports:
+        print(f'{col_name} has {n_nonmissing_pre_drop} non-missing values')
+        print(f'Dropped {n_nonmissing_pre_drop - n_nonmissing_post_drop} '
+              f'values < {threshold}')
+        print(f'{n_nonmissing_post_drop} non-missing values remain')
+    return df

@@ -11,7 +11,17 @@ ROOT_DIR = os.path.split(
     os.path.dirname(os.path.abspath(__file__))
 )[0]
 
-# Folder where source data and this data after initial manual wrangling are kept
+# Folder where the raw data is kept
+RAW_NELA_DATA_FILEPATH = os.path.join(
+    ROOT_DIR,
+    os.pardir,
+    os.pardir,
+    'extract',
+    'datadownload_20190524',
+    'hqip254NELAdata21May2019.csv'
+)
+
+# Folder where data after initial wrangling are kept
 DATA_DIR = os.path.join(ROOT_DIR, os.pardir, "nelarisk", "data")
 
 # Path to data after initial manual wrangling

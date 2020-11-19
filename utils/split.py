@@ -5,7 +5,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from utils.inspect import percent_missing
+from utils.wrangling import percent_missing
 
 
 def drop_incomplete_cases(df: pd.DataFrame) -> (pd.DataFrame, Dict[str, float]):
