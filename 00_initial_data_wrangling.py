@@ -2,6 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 
+from utils.model.novel import combine_categories
+
 
 def binarize(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
     df.loc[df[col_name] == 1, col_name] = 0
@@ -37,7 +39,7 @@ def combine60(x):
         x = 0
     elif x == 0:
         x = 1
-    return (int(x))
+    return int(x)
 
 
 data_path = os.path.join(os.pardir,
@@ -66,7 +68,7 @@ print(df.shape)
 
 # ## S01Sex
 # 1 = male, 2 = female
-binarize(df, 'S01Sex')
+df = binarize(df, 'S01Sex')
 
 
 # ## 'S02PreOpCTPerformed'
