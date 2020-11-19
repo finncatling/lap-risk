@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 
+from utils.constants import RAW_NELA_DATA_FILEPATH, NELA_DATA_FILEPATH
 from utils.wrangling import remap_categories, remove_non_whole_numbers
 from utils.report import Reporter
 
@@ -11,12 +12,7 @@ reporter.title("Initial data wrangling")
 
 
 reporter.report('Loading raw data')
-data_path = os.path.join(os.pardir,
-                         os.pardir,
-                         'extract',
-                         'datadownload_20190524',
-                         'hqip254NELAdata21May2019.csv')
-df = pd.read_csv(data_path)
+df = pd.read_csv(RAW_NELA_DATA_FILEPATH)
 print(f'Dataset contains {df.shape[0]} patients')
 
 
@@ -203,7 +199,8 @@ assert df.equals(comparison)
 
 
 # TODO: Uncomment when script rewriting is complete
-# save wrangled data
-# df[lap_risk_vars + indications].reset_index(drop=True).to_pickle(
-#    os.path.join('data',
-#                 'lap_risk_df_after_univariate_wrangling.pkl'))
+# reporter.report('Saving wrangled data')
+# df.to_pickle(NELA_DATA_FILEPATH)
+
+
+reporter.report('Done.')
