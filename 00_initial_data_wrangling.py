@@ -4,8 +4,6 @@ import pandas as pd
 
 
 def binarize(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
-    """Display some useful attributes of a categorical feature. Note
-        that binary=True alters the underlying input DataFrame."""
     df.loc[df[col_name] == 1, col_name] = 0
     df.loc[df[col_name] == 2, col_name] = 1
     return df
@@ -52,17 +50,6 @@ df = pd.read_csv(data_path)
 num_rows = df.shape[0]
 print(f'Dataset contains {num_rows} patients')
 
-comparison = pd.read_pickle(os.path.join(
-    os.pardir,
-    'nelarisk',
-    'data',
-    'lap_risk_df_after_univariate_wrangling.pkl'))
-
-print('comparison shape:', comparison.shape)
-
-# ## TrustId.anon
-# Remove 'trust' prefix and convert to integers
-df['TrustId.anon'] = df['TrustId.anon'].str[5:].astype(int)
 
 # ## HospitalId.anon
 # Remove 'trust' prefix and convert to integers
@@ -207,9 +194,18 @@ lap_risk_vars = [
 
 df = df[lap_risk_vars].reset_index(drop=True)
 
+
+# TODO: Remove this testing code
+comparison = pd.read_pickle(os.path.join(
+    os.pardir,
+    'nelarisk',
+    'data',
+    'lap_risk_df_after_univariate_wrangling.pkl'))
+print('comparison shape:', comparison.shape)
 assert df.equals(comparison)
 
 
+# TODO: Uncomment when script finished
 # save wrangled data
 # df[lap_risk_vars + indications].reset_index(drop=True).to_pickle(
 #    os.path.join('data',
