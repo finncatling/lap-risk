@@ -9,22 +9,23 @@ from utils.report import Reporter
 reporter = Reporter()
 reporter.title("Initial data wrangling")
 
+
+reporter.report('Loading raw data')
 data_path = os.path.join(os.pardir,
                          os.pardir,
                          'extract',
                          'datadownload_20190524',
                          'hqip254NELAdata21May2019.csv')
 df = pd.read_csv(data_path)
-
-
 print(f'Dataset contains {df.shape[0]} patients')
 
 
-# ## HospitalId.anon
+reporter.report('Processing HospitalId.anon')
 # Remove 'trust' prefix and convert to integers
 df['HospitalId.anon'] = df['HospitalId.anon'].str[4:].astype(int)
 
-# ## S01AgeOnArrival
+
+reporter.report('Processing S01AgeOnArrival')
 # - **Decision to exclude the <18yo patients**
 # - **Decision to exclude these 3 oldest patients as very likely erroneous**
 print(df.shape)
@@ -33,13 +34,12 @@ print(df.shape)
 df = df.loc[df['S01AgeOnArrival'] > 17]
 print(df.shape)
 
-# ## S01Sex
+reporter.report('Processing S01Sex')
 # 1 = male, 2 = female
 df = remap_categories(df, 'S01Sex', [(1, 0), (2, 1)])
 
 
-# ## 'S02PreOpCTPerformed'
-# 
+reporter.report('Processing S02PreOpCTPerformed')
 # - 1 = yes
 # - 0 = no
 # - 9 = unknown
@@ -47,24 +47,31 @@ df = remap_categories(df, 'S01Sex', [(1, 0), (2, 1)])
 df.loc[df['S02PreOpCTPerformed'] == 9,
        'S02PreOpCTPerformed'] = np.nan
 
+
+reporter.report('Processing urea and creatinine')
 ## Have people mixed up the creatinine and urea fields?
-# **Decision to redact very low creatinine values.** Our search reveals assays can't detect below 8.8 (see GitHub reference).
+# **Decision to redact very low creatinine values.**
+# Our search reveals assays can't detect below 8.8 (see GitHub reference).
 redact = df[['S03SerumCreatinine', 'S03Urea']].copy()
 redact.loc[redact['S03SerumCreatinine'] < 8.8,
            'S03SerumCreatinine'] = np.nan
 print(df.loc[df['S03SerumCreatinine'].notnull()].shape[0])
 print(redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0])
-# **Decision to redact very high urea values.** Highest we found in a case report was 72.
+# **Decision to redact very high urea values.**
+# Highest we found in a case report was 72.
 redact.loc[redact['S03Urea'] > 72,
            'S03Urea'] = np.nan
 print(df.loc[df['S03Urea'].notnull()].shape[0])
 print(redact.loc[redact['S03Urea'].notnull()].shape[0])
-# There also appear to be some patients where Urea and creatinine are exactly the same (the straight line above). **Decision to remove both values in these cases**
+# There also appear to be some patients where Urea and creatinine are exactly
+# the same (the straight line above).
+# **Decision to remove both values in these cases**
 redact.loc[(redact['S03SerumCreatinine'] - redact['S03Urea']) < 0.1,
            ['S03SerumCreatinine', 'S03Urea']] = np.nan
 print(df.loc[df['S03SerumCreatinine'].notnull()].shape[0])
 print(redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0])
-# **Decision to apply the rule**: redact any creatinine and urea where ($a$ * urea) > creatinine, where urea is over some threshold?
+# **Decision to apply the rule**: redact any creatinine and urea where
+# (a * urea) > creatinine, where urea is over some threshold?
 a = 2.0
 redact.loc[((a * redact['S03Urea'] > redact['S03SerumCreatinine'])
             & (redact['S03Urea'] > 30)),
@@ -75,19 +82,22 @@ print(redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0])
 df[['S03SerumCreatinine', 'S03Urea']] = redact[
     ['S03SerumCreatinine', 'S03Urea']]
 
-# ## 'S03PreOpArterialBloodLactate'
+
+reporter.report('Processing S03PreOpArterialBloodLactate')
 # **decision to remove values which are zero**.
 print(df[df['S03PreOpArterialBloodLactate'].notnull()].shape[0])
 df.loc[df['S03PreOpArterialBloodLactate'] < 0.001,
        'S03PreOpArterialBloodLactate'] = np.nan
 print(df[df['S03PreOpArterialBloodLactate'].notnull()].shape[0])
 
-# ## 'S03PreOpLowestAlbumin'
+
+reporter.report('Processing S03PreOpLowestAlbumin')
 # **decision to remove values which are zero**.
 print(df[df['S03PreOpLowestAlbumin'].notnull()].shape[0])
 df.loc[df['S03PreOpLowestAlbumin'] < 0.001,
        'S03PreOpLowestAlbumin'] = np.nan
 print(df[df['S03PreOpLowestAlbumin'].notnull()].shape[0])
+
 
 # **Decision to redact very low systolic BP and HR values:**
 for v, lower in [('S03SystolicBloodPressure', 60.0),
@@ -97,16 +107,19 @@ for v, lower in [('S03SystolicBloodPressure', 60.0),
     df.loc[df[v] < lower, v] = np.nan
     print(df.loc[df[v].notnull()].shape[0], '\n')
 
-# ## 'S03GlasgowComaScore'
+
+reporter.report('Processing S03GlasgowComaScore')
 df = remove_non_whole_numbers(df, 'S03GlasgowComaScore')
 
-## ## S03WhatIsTheOperativeSeverity
+
+reporter.report('Processing S03WhatIsTheOperativeSeverity')
 # - 8 is 'major+'
 # - 4 is 'major'
 # We convert this to a binary variable
 df = remap_categories(df, 'S03WhatIsTheOperativeSeverity', [(8, 1), (4, 0)])
 
-# ## 'S03NCEPODUrgency'
+
+reporter.report('Processing S03NCEPODUrgency')
 # - 1 = 3 expedited (>18 hours)
 # - 2 = 2B urgent (6-18 hours)
 # - 3 = 2A urgent (2-6 hours)
@@ -114,7 +127,8 @@ df = remap_categories(df, 'S03WhatIsTheOperativeSeverity', [(8, 1), (4, 0)])
 # - 8 = 1 immediate (<2 hours)
 df.loc[df['S03NCEPODUrgency'] == 4., 'S03NCEPODUrgency'] = 3.
 
-# ## S05Ind...
+
+reporter.report('Processing indications')
 indications = [c for c in df.columns if "S05Ind_" in c]
 # - 1 = this is the indication
 # - 2 = This isn't the indication
@@ -125,12 +139,14 @@ for c in indications:
     df.loc[df[c] != 1, c] = 0
     df.loc[:, c] = df[c].astype(int).values
 
-# ## 'S07Status_Disch'
+
+reporter.report('Processing S07Status_Disch')
 # - 0 - Dead
 # - 1 - Alive
 # - 60 - still in hospital at 60 days
-# **Decision to combine 1 and 60 for the purposes of mortality prediction, accepting that the 60 patients are likely to be systematically different for the 1 patients**
-# df['Target'] = df['S07Status_Disch'].apply(combine60)
+# **Decision to combine 1 and 60 for the purposes of mortality prediction,
+# accepting that the 60 patients are likely to be systematically different
+# for the 1 patients**
 df = remap_categories(df, 'S07Status_Disch', [
     (60, 1),
     (1, 2),  # make temporary category 2 so that (0, 1) works properly below
@@ -141,7 +157,7 @@ df['Target'] = df['S07Status_Disch'].copy()
 df.drop('S07Status_Disch', axis=1)
 
 
-# ## Export only those variables used in downstream preoperative mortality modelling by `lap-risk`
+reporter.report('Dropping variables unused in downstream analysis')
 lap_risk_vars = [
                     "HospitalId.anon",
                     "S01Sex",
@@ -170,6 +186,8 @@ lap_risk_vars = [
                     "Target"
                 ] + indications
 
+
+reporter.report('Resetting DataFrame index')
 df = df[lap_risk_vars].reset_index(drop=True)
 
 
@@ -183,7 +201,7 @@ print('comparison shape:', comparison.shape)
 assert df.equals(comparison)
 
 
-# TODO: Uncomment when script finished
+# TODO: Uncomment when script rewriting is complete
 # save wrangled data
 # df[lap_risk_vars + indications].reset_index(drop=True).to_pickle(
 #    os.path.join('data',
