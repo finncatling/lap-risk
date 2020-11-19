@@ -20,22 +20,23 @@ df = pd.read_csv(data_path)
 print(f'Dataset contains {df.shape[0]} patients')
 
 
-reporter.report('Processing HospitalId.anon')
+reporter.report('Processing S01AgeOnArrival')
+reporter.report('Excluding patients < 18 years old')
+df = df.loc[df['S01AgeOnArrival'] > 17]
+print(df.shape[0], 'patients remain')
+reporter.report('Excluding patients >= 110')
+df = df.loc[df['S01AgeOnArrival'] < 110]
+print(df.shape[0], 'patients remain')
+
+
+reporter.report('Preprocessing HospitalId.anon')
 # Remove 'trust' prefix and convert to integers
 df['HospitalId.anon'] = df['HospitalId.anon'].str[4:].astype(int)
 
 
-reporter.report('Processing S01AgeOnArrival')
-# - **Decision to exclude the <18yo patients**
-# - **Decision to exclude these 3 oldest patients as very likely erroneous**
-print(df.shape)
-df = df.loc[df['S01AgeOnArrival'] < 110]
-print(df.shape)
-df = df.loc[df['S01AgeOnArrival'] > 17]
-print(df.shape)
-
 reporter.report('Processing S01Sex')
-# 1 = male, 2 = female
+# 1 = male, 2 = female.
+# We convert this to binary
 df = remap_categories(df, 'S01Sex', [(1, 0), (2, 1)])
 
 
@@ -43,13 +44,13 @@ reporter.report('Processing S02PreOpCTPerformed')
 # - 1 = yes
 # - 0 = no
 # - 9 = unknown
-# **Decision to convert the unknowns to NaNs**
+# We convert the unknowns to missing values
 df.loc[df['S02PreOpCTPerformed'] == 9,
        'S02PreOpCTPerformed'] = np.nan
 
 
 reporter.report('Processing urea and creatinine')
-## Have people mixed up the creatinine and urea fields?
+# Looks like some creatinine and urea values are swapped
 # **Decision to redact very low creatinine values.**
 # Our search reveals assays can't detect below 8.8 (see GitHub reference).
 redact = df[['S03SerumCreatinine', 'S03Urea']].copy()
@@ -64,7 +65,7 @@ redact.loc[redact['S03Urea'] > 72,
 print(df.loc[df['S03Urea'].notnull()].shape[0])
 print(redact.loc[redact['S03Urea'].notnull()].shape[0])
 # There also appear to be some patients where Urea and creatinine are exactly
-# the same (the straight line above).
+# the same
 # **Decision to remove both values in these cases**
 redact.loc[(redact['S03SerumCreatinine'] - redact['S03Urea']) < 0.1,
            ['S03SerumCreatinine', 'S03Urea']] = np.nan
@@ -78,7 +79,7 @@ redact.loc[((a * redact['S03Urea'] > redact['S03SerumCreatinine'])
            ['S03SerumCreatinine', 'S03Urea']] = np.nan
 print(df.loc[df['S03SerumCreatinine'].notnull()].shape[0])
 print(redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0])
-# update the main DataFrame with these changes
+# update the main data with these changes
 df[['S03SerumCreatinine', 'S03Urea']] = redact[
     ['S03SerumCreatinine', 'S03Urea']]
 
@@ -133,7 +134,7 @@ indications = [c for c in df.columns if "S05Ind_" in c]
 # - 1 = this is the indication
 # - 2 = This isn't the indication
 # 
-# There are some NaNs - why?
+# There are some NaNs - unclear why
 # Convert indications to binary, eliminating NaNs
 for c in indications:
     df.loc[df[c] != 1, c] = 0
