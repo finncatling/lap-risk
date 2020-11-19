@@ -15,13 +15,6 @@ def remove_non_whole_numbers(df, var_name):
     return df
 
 
-def sev_to_binary(x):
-    if x == 8:
-        return 1
-    elif x == 4:
-        return 0
-
-
 def combine60(x):
     if x == 60:
         # if status is still alive at 60 days
@@ -138,8 +131,6 @@ df = remove_non_whole_numbers(df, 'S03GlasgowComaScore')
 # - 8 is 'major+'
 # - 4 is 'major'
 # We convert this to a binary variable
-# df.loc[:, 'S03WhatIsTheOperativeSeverity'] = df[
-#     'S03WhatIsTheOperativeSeverity'].apply(sev_to_binary)
 df = remap_categories(df, 'S03WhatIsTheOperativeSeverity', [(8, 1), (4, 0)])
 
 # ## 'S03NCEPODUrgency'
@@ -166,7 +157,14 @@ for c in indications:
 # - 1 - Alive
 # - 60 - still in hospital at 60 days
 # **Decision to combine 1 and 60 for the purposes of mortality prediction, accepting that the 60 patients are likely to be systematically different for the 1 patients**
-df['Target'] = df['S07Status_Disch'].apply(combine60)
+# df['Target'] = df['S07Status_Disch'].apply(combine60)
+df = remap_categories(df, 'S07Status_Disch', [
+    (60, 1),
+    (1, 2),  # make temporary category 2 so that (0, 1) works properly below
+    (0, 1),
+    (2, 0)  # reassign from temporary category
+])
+
 
 # ## Export only those variables used in downstream preoperative mortality modelling by `lap-risk`
 lap_risk_vars = [
