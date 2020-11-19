@@ -7,11 +7,8 @@ from IPython.display import display
 from scipy import stats
 
 
-def cat_data(df: pd.DataFrame, col_name: str, binary: bool = False) -> None:
-    """Display some useful attributes of a categorical feature. Note
-        that binary=True alters the underlying input DataFrame."""
-    if binary:
-        df.loc[:, col_name] = df[col_name].apply(convert_to_binary)
+def cat_data(df: pd.DataFrame, col_name: str) -> None:
+    """Display some useful attributes of a categorical feature."""
     print(f"Data type: {df[col_name].dtype}")
     print(f"Missing rows: {percent_missing(df, col_name)}%")
     dot_chart(df[col_name].value_counts(dropna=False), col_name)
@@ -77,15 +74,6 @@ def last_digit(df: pd.DataFrame, col_name: str) -> None:
 def percent_missing(df: pd.DataFrame, col_name: str) -> float:
     """Calculate percent missing values for column of data."""
     return df[col_name].isnull().sum() / df.shape[0] * 100
-
-
-def convert_to_binary(x):
-    """Convert binary input (e.g. DataFrame row) coded as 1s and 2s,
-        to 0s and 1s."""
-    if x == 1:
-        return 0
-    elif x == 2:
-        return 1
 
 
 def dot_chart(vc: pd.Series, title: str) -> None:
