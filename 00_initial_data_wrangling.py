@@ -4,12 +4,6 @@ import pandas as pd
 from typing import List, Tuple
 
 
-def binarize(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
-    df.loc[df[col_name] == 1, col_name] = 0
-    df.loc[df[col_name] == 2, col_name] = 1
-    return df
-
-
 def remove_non_whole_numbers(df, var_name):
     """Removes non-whole-number floats. Preserves other missing
         values."""
@@ -75,7 +69,6 @@ print(df.shape)
 
 # ## S01Sex
 # 1 = male, 2 = female
-# df = binarize(df, 'S01Sex')
 df = remap_categories(df, 'S01Sex', [(1, 0), (2, 1)])
 
 
@@ -143,9 +136,11 @@ df = remove_non_whole_numbers(df, 'S03GlasgowComaScore')
 
 ## ## S03WhatIsTheOperativeSeverity
 # - 8 is 'major+'
-# - 4 is 'major' 
-df.loc[:, 'S03WhatIsTheOperativeSeverity'] = df[
-    'S03WhatIsTheOperativeSeverity'].apply(sev_to_binary)
+# - 4 is 'major'
+# We convert this to a binary variable
+# df.loc[:, 'S03WhatIsTheOperativeSeverity'] = df[
+#     'S03WhatIsTheOperativeSeverity'].apply(sev_to_binary)
+df = remap_categories(df, 'S03WhatIsTheOperativeSeverity', [(8, 1), (4, 0)])
 
 # ## 'S03NCEPODUrgency'
 # - 1 = 3 expedited (>18 hours)
