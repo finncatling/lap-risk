@@ -164,6 +164,8 @@ df = remap_categories(df, 'S07Status_Disch', [
     (0, 1),
     (2, 0)  # reassign from temporary category
 ])
+df['Target'] = df['S07Status_Disch'].copy()
+df.drop('S07Status_Disch', axis=1)
 
 
 # ## Export only those variables used in downstream preoperative mortality modelling by `lap-risk`
