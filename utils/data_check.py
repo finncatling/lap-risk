@@ -7,7 +7,7 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
 from utils.constants import NELA_DATA_FILEPATH, ROOT_DIR
-from utils.inspect import percent_missing
+from utils.wrangling import percent_missing
 from utils.io import load_object
 from utils.indications import get_indication_variable_names
 

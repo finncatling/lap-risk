@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -159,3 +159,24 @@ def multi_dot_chart(
 
     plt.legend(loc="lower right")
     plt.show()
+
+
+def remove_non_whole_numbers(
+    df: pd.DataFrame, var_name: str
+) -> pd.DataFrame:
+    """Removes non-whole-number floats. Preserves other missing
+        values."""
+    unrounded = df.loc[df[var_name].notnull(), var_name]
+    rounded = unrounded.round()
+    diff = rounded != unrounded
+    diff_i = diff[diff == True].index
+    df.loc[diff_i, var_name] = np.nan
+    return df
+
+
+def remap_categories(
+    df: pd.DataFrame, col_name: str, mapping: List[Tuple]
+) -> pd.DataFrame:
+    for old, new in mapping:
+        df.loc[df[col_name] == old, col_name] = new
+    return df
