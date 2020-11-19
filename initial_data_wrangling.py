@@ -6,7 +6,7 @@ from utils.constants import RAW_NELA_DATA_FILEPATH, NELA_DATA_FILEPATH
 from utils.wrangling import (
     remap_categories,
     remove_non_whole_numbers,
-    drop_values_close_to_zero
+    drop_values_under_threshold
 )
 from utils.report import Reporter
 
@@ -85,23 +85,22 @@ df[['S03SerumCreatinine', 'S03Urea']] = redact[
 
 
 reporter.first('Processing S03PreOpArterialBloodLactate')
-drop_values_close_to_zero(df, 'S03PreOpArterialBloodLactate')
+drop_values_under_threshold(df, 'S03PreOpArterialBloodLactate', 0.001)
 
 
-reporter.report('Processing S03PreOpLowestAlbumin')
-drop_values_close_to_zero(df, 'S03PreOpLowestAlbumin')
+reporter.first('Processing S03PreOpLowestAlbumin')
+drop_values_under_threshold(df, 'S03PreOpLowestAlbumin', 0.001)
 
 
-# **Decision to redact very low systolic BP and HR values:**
-for v, lower in [('S03SystolicBloodPressure', 60.0),
-                 ('S03Pulse', 30.0), ]:
-    print(v)
-    print(df.loc[df[v].notnull()].shape[0])
-    df.loc[df[v] < lower, v] = np.nan
-    print(df.loc[df[v].notnull()].shape[0], '\n')
+reporter.first('Processing S03SystolicBloodPressure')
+drop_values_under_threshold(df, 'S03SystolicBloodPressure', 60.0)
 
 
-reporter.report('Processing S03GlasgowComaScore')
+reporter.first('Processing S03Pulse')
+drop_values_under_threshold(df, 'S03Pulse', 30.0)
+
+
+reporter.first('Processing S03GlasgowComaScore')
 df = remove_non_whole_numbers(df, 'S03GlasgowComaScore')
 
 

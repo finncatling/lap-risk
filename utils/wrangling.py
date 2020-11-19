@@ -182,10 +182,10 @@ def remap_categories(
     return df
 
 
-def drop_values_close_to_zero(
+def drop_values_under_threshold(
     df: pd.DataFrame,
     col_name: str,
-    threshold: float = 0.001,
+    threshold: float,
     print_reports: bool = True
 ) -> pd.DataFrame:
     n_nonmissing_pre_drop = df[df[col_name].notnull()].shape[0]
