@@ -132,24 +132,32 @@ for c in indications:
     df.loc[:, c] = df[c].astype(int).values
 
 
-reporter.report('Processing S07Status_Disch')
+reporter.first('Processing S07Status_Disch')
 # - 0 - Dead
 # - 1 - Alive
 # - 60 - still in hospital at 60 days
-# **Decision to combine 1 and 60 for the purposes of mortality prediction,
-# accepting that the 60 patients are likely to be systematically different
-# for the 1 patients**
+reporter.first('Summarising mortality in raw data (as frequencies)')
+print(df['S07Status_Disch'].value_counts())
+reporter.first('Summarising mortality in raw data (as proportions)')
+print(df['S07Status_Disch'].value_counts(normalize=True))
+
+
+reporter.first('Reassigning patients still alive in hospital at 60 days post-op as alive')
 df = remap_categories(df, 'S07Status_Disch', [
     (60, 1),
     (1, 2),  # make temporary category 2 so that (0, 1) works properly below
     (0, 1),
     (2, 0)  # reassign from temporary category
 ])
+reporter.first('Summarising mortality in raw data (as frequencies)')
+print(df['S07Status_Disch'].value_counts())
+reporter.first('Summarising mortality in raw data (as proportions)')
+print(df['S07Status_Disch'].value_counts(normalize=True))
 df['Target'] = df['S07Status_Disch'].copy()
 df.drop('S07Status_Disch', axis=1)
 
 
-reporter.report('Dropping variables unused in downstream analysis')
+reporter.first('Dropping variables unused in downstream analysis')
 lap_risk_vars = [
     "HospitalId.anon",
     "S01Sex",
