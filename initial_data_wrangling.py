@@ -3,7 +3,11 @@ import numpy as np
 import pandas as pd
 
 from utils.constants import RAW_NELA_DATA_FILEPATH, NELA_DATA_FILEPATH
-from utils.wrangling import remap_categories, remove_non_whole_numbers
+from utils.wrangling import (
+    remap_categories,
+    remove_non_whole_numbers,
+    drop_values_close_to_zero
+)
 from utils.report import Reporter
 
 
@@ -16,7 +20,7 @@ df = pd.read_csv(RAW_NELA_DATA_FILEPATH)
 print(f'Dataset contains {df.shape[0]} patients')
 
 
-reporter.report('Processing S01AgeOnArrival')
+reporter.first('Processing S01AgeOnArrival')
 reporter.report('Excluding patients < 18 years old')
 df = df.loc[df['S01AgeOnArrival'] > 17]
 print(df.shape[0], 'patients remain')
@@ -25,7 +29,7 @@ df = df.loc[df['S01AgeOnArrival'] < 110]
 print(df.shape[0], 'patients remain')
 
 
-reporter.report('Preprocessing HospitalId.anon')
+reporter.first('Preprocessing HospitalId.anon')
 # Remove 'trust' prefix and convert to integers
 df['HospitalId.anon'] = df['HospitalId.anon'].str[4:].astype(int)
 
@@ -45,7 +49,7 @@ df.loc[df['S02PreOpCTPerformed'] == 9,
        'S02PreOpCTPerformed'] = np.nan
 
 
-reporter.report('Processing urea and creatinine')
+reporter.first('Processing urea and creatinine')
 # Looks like some creatinine and urea values are swapped
 # **Decision to redact very low creatinine values.**
 # Our search reveals assays can't detect below 8.8 (see GitHub reference).
@@ -80,20 +84,12 @@ df[['S03SerumCreatinine', 'S03Urea']] = redact[
     ['S03SerumCreatinine', 'S03Urea']]
 
 
-reporter.report('Processing S03PreOpArterialBloodLactate')
-# **decision to remove values which are zero**.
-print(df[df['S03PreOpArterialBloodLactate'].notnull()].shape[0])
-df.loc[df['S03PreOpArterialBloodLactate'] < 0.001,
-       'S03PreOpArterialBloodLactate'] = np.nan
-print(df[df['S03PreOpArterialBloodLactate'].notnull()].shape[0])
+reporter.first('Processing S03PreOpArterialBloodLactate')
+drop_values_close_to_zero(df, 'S03PreOpArterialBloodLactate')
 
 
 reporter.report('Processing S03PreOpLowestAlbumin')
-# **decision to remove values which are zero**.
-print(df[df['S03PreOpLowestAlbumin'].notnull()].shape[0])
-df.loc[df['S03PreOpLowestAlbumin'] < 0.001,
-       'S03PreOpLowestAlbumin'] = np.nan
-print(df[df['S03PreOpLowestAlbumin'].notnull()].shape[0])
+drop_values_close_to_zero(df, 'S03PreOpLowestAlbumin')
 
 
 # **Decision to redact very low systolic BP and HR values:**
@@ -194,7 +190,6 @@ comparison = pd.read_pickle(os.path.join(
     'nelarisk',
     'data',
     'lap_risk_df_after_univariate_wrangling.pkl'))
-print('comparison shape:', comparison.shape)
 assert df.equals(comparison)
 
 

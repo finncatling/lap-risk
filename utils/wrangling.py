@@ -180,3 +180,20 @@ def remap_categories(
     for old, new in mapping:
         df.loc[df[col_name] == old, col_name] = new
     return df
+
+
+def drop_values_close_to_zero(
+    df: pd.DataFrame,
+    col_name: str,
+    threshold: float = 0.001,
+    print_reports: bool = True
+) -> pd.DataFrame:
+    n_nonmissing_pre_drop = df[df[col_name].notnull()].shape[0]
+    df.loc[df[col_name] < threshold, col_name] = np.nan
+    n_nonmissing_post_drop = df[df[col_name].notnull()].shape[0]
+    if print_reports:
+        print(f'{col_name} has {n_nonmissing_pre_drop} non-missing values')
+        print(f'Dropped {n_nonmissing_pre_drop - n_nonmissing_post_drop} '
+              f'values < {threshold}')
+        print(f'{n_nonmissing_post_drop} non-missing values remain')
+    return df
