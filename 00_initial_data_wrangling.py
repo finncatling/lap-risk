@@ -1,24 +1,14 @@
-import os, copy, re, sys
+import os
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 
-def cat_data(df: pd.DataFrame, col_name: str,
-             binary: bool = False) -> pd.core.series.Series:
+def binarize(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
     """Display some useful attributes of a categorical feature. Note
         that binary=True alters the underlying input DataFrame."""
-    if binary:
-        df.loc[:, col_name] = df[col_name].apply(convert_to_binary)
-
-
-def convert_to_binary(x):
-    """Convert binary input (e.g. DataFrame row) coded as 1s and 2s,
-        to 0s and 1s."""
-    if x == 1:
-        return 0
-    elif x == 2:
-        return 1
+    df.loc[df[col_name] == 1, col_name] = 0
+    df.loc[df[col_name] == 2, col_name] = 1
+    return df
 
 
 def remove_non_whole_numbers(df, var_name):
@@ -41,15 +31,15 @@ def sev_to_binary(x):
 
 def combine60(x):
     if x == 60:
-        #if status is still alive at 60 days
+        # if status is still alive at 60 days
         x = 1
-    
-    #flip values so they make more sense
+
+    # flip values so they make more sense
     if x == 1:
         x = 0
     elif x == 0:
         x = 1
-    return(int(x))        
+    return (int(x))
 
 
 data_path = os.path.join(os.pardir,
@@ -59,30 +49,24 @@ data_path = os.path.join(os.pardir,
                          'hqip254NELAdata21May2019.csv')
 df = pd.read_csv(data_path)
 
-
 num_rows = df.shape[0]
 print(f'Dataset contains {num_rows} patients')
-
 
 comparison = pd.read_pickle(os.path.join(
     os.pardir,
     'nelarisk',
     'data',
     'lap_risk_df_after_univariate_wrangling.pkl'))
-    
 
-print('comparison shape:', comparison.shape)    
-
+print('comparison shape:', comparison.shape)
 
 # ## TrustId.anon
 # Remove 'trust' prefix and convert to integers
 df['TrustId.anon'] = df['TrustId.anon'].str[5:].astype(int)
 
-
 # ## HospitalId.anon
 # Remove 'trust' prefix and convert to integers
 df['HospitalId.anon'] = df['HospitalId.anon'].str[4:].astype(int)
-
 
 # ## S01AgeOnArrival
 # - **Decision to exclude the <18yo patients**
@@ -93,15 +77,9 @@ print(df.shape)
 df = df.loc[df['S01AgeOnArrival'] > 17]
 print(df.shape)
 
-
-
 # ## S01Sex
 # 1 = male, 2 = female
-cat_data(df, 'S01Sex', binary=True)
-
-
-# ## S01Adm_Type
-cat_data(df, 'S01Adm_Type', binary=True)
+binarize(df, 'S01Sex')
 
 
 # ## 'S02PreOpCTPerformed'
@@ -112,7 +90,6 @@ cat_data(df, 'S01Adm_Type', binary=True)
 # **Decision to convert the unknowns to NaNs**
 df.loc[df['S02PreOpCTPerformed'] == 9,
        'S02PreOpCTPerformed'] = np.nan
-
 
 ## Have people mixed up the creatinine and urea fields?
 # **Decision to redact very low creatinine values.** Our search reveals assays can't detect below 8.8 (see GitHub reference).
@@ -142,14 +119,12 @@ print(redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0])
 df[['S03SerumCreatinine', 'S03Urea']] = redact[
     ['S03SerumCreatinine', 'S03Urea']]
 
-
 # ## 'S03PreOpArterialBloodLactate'
 # **decision to remove values which are zero**.
 print(df[df['S03PreOpArterialBloodLactate'].notnull()].shape[0])
 df.loc[df['S03PreOpArterialBloodLactate'] < 0.001,
        'S03PreOpArterialBloodLactate'] = np.nan
 print(df[df['S03PreOpArterialBloodLactate'].notnull()].shape[0])
-
 
 # ## 'S03PreOpLowestAlbumin'
 # **decision to remove values which are zero**.
@@ -158,25 +133,22 @@ df.loc[df['S03PreOpLowestAlbumin'] < 0.001,
        'S03PreOpLowestAlbumin'] = np.nan
 print(df[df['S03PreOpLowestAlbumin'].notnull()].shape[0])
 
-
 # **Decision to redact very low systolic BP and HR values:**
 for v, lower in [('S03SystolicBloodPressure', 60.0),
-                 ('S03Pulse', 30.0),]:
+                 ('S03Pulse', 30.0), ]:
     print(v)
     print(df.loc[df[v].notnull()].shape[0])
     df.loc[df[v] < lower, v] = np.nan
     print(df.loc[df[v].notnull()].shape[0], '\n')
 
-
 # ## 'S03GlasgowComaScore'
 df = remove_non_whole_numbers(df, 'S03GlasgowComaScore')
-
 
 ## ## S03WhatIsTheOperativeSeverity
 # - 8 is 'major+'
 # - 4 is 'major' 
-df.loc[:, 'S03WhatIsTheOperativeSeverity'] = df['S03WhatIsTheOperativeSeverity'].apply(sev_to_binary)
-
+df.loc[:, 'S03WhatIsTheOperativeSeverity'] = df[
+    'S03WhatIsTheOperativeSeverity'].apply(sev_to_binary)
 
 # ## 'S03NCEPODUrgency'
 # - 1 = 3 expedited (>18 hours)
@@ -185,7 +157,6 @@ df.loc[:, 'S03WhatIsTheOperativeSeverity'] = df['S03WhatIsTheOperativeSeverity']
 # - 4 = Emergency, resuscitation of >2 hours possible (no longer available)
 # - 8 = 1 immediate (<2 hours)
 df.loc[df['S03NCEPODUrgency'] == 4., 'S03NCEPODUrgency'] = 3.
-
 
 # ## S05Ind...
 indications = [c for c in df.columns if "S05Ind_" in c]
@@ -198,7 +169,6 @@ for c in indications:
     df.loc[df[c] != 1, c] = 0
     df.loc[:, c] = df[c].astype(int).values
 
-
 # ## 'S07Status_Disch'
 # - 0 - Dead
 # - 1 - Alive
@@ -206,45 +176,41 @@ for c in indications:
 # **Decision to combine 1 and 60 for the purposes of mortality prediction, accepting that the 60 patients are likely to be systematically different for the 1 patients**
 df['Target'] = df['S07Status_Disch'].apply(combine60)
 
-
 # ## Export only those variables used in downstream preoperative mortality modelling by `lap-risk`
 lap_risk_vars = [
-    "HospitalId.anon",
-    "S01Sex",
-    "S03ASAScore",
-    "S03NCEPODUrgency",
-    "S03ECG",
-    "S03NumberOfOperativeProcedures",
-    "S03CardiacSigns",
-    "S03RespiratorySigns",
-    "S03Pred_Peritsoil",
-    "S03Pred_TBL",
-    "S03DiagnosedMalignancy",
-    "S03WhatIsTheOperativeSeverity",
-    "S03GlasgowComaScore",
-    "S01AgeOnArrival",
-    "S03SerumCreatinine",
-    "S03Sodium",
-    "S03Potassium",
-    "S03Urea",
-    "S03WhiteCellCount",
-    "S03Pulse",
-    "S03SystolicBloodPressure",
-    "S02PreOpCTPerformed",
-    "S03PreOpArterialBloodLactate",
-    "S03PreOpLowestAlbumin",
-    "Target"
-] + indications
-
+                    "HospitalId.anon",
+                    "S01Sex",
+                    "S03ASAScore",
+                    "S03NCEPODUrgency",
+                    "S03ECG",
+                    "S03NumberOfOperativeProcedures",
+                    "S03CardiacSigns",
+                    "S03RespiratorySigns",
+                    "S03Pred_Peritsoil",
+                    "S03Pred_TBL",
+                    "S03DiagnosedMalignancy",
+                    "S03WhatIsTheOperativeSeverity",
+                    "S03GlasgowComaScore",
+                    "S01AgeOnArrival",
+                    "S03SerumCreatinine",
+                    "S03Sodium",
+                    "S03Potassium",
+                    "S03Urea",
+                    "S03WhiteCellCount",
+                    "S03Pulse",
+                    "S03SystolicBloodPressure",
+                    "S02PreOpCTPerformed",
+                    "S03PreOpArterialBloodLactate",
+                    "S03PreOpLowestAlbumin",
+                    "Target"
+                ] + indications
 
 df = df[lap_risk_vars].reset_index(drop=True)
-
 
 assert df.equals(comparison)
 
 
 # save wrangled data
-#df[lap_risk_vars + indications].reset_index(drop=True).to_pickle(
+# df[lap_risk_vars + indications].reset_index(drop=True).to_pickle(
 #    os.path.join('data',
 #                 'lap_risk_df_after_univariate_wrangling.pkl'))
-
