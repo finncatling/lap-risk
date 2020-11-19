@@ -1,8 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
-
-from utils.model.novel import combine_categories
+from typing import List, Tuple
 
 
 def binarize(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
@@ -42,6 +41,14 @@ def combine60(x):
     return int(x)
 
 
+def remap_categories(
+        df: pd.DataFrame, col_name: str, mapping: List[Tuple]
+) -> pd.DataFrame:
+    for old, new in mapping:
+        df.loc[df[col_name] == old, col_name] = new
+    return df
+
+
 data_path = os.path.join(os.pardir,
                          os.pardir,
                          'extract',
@@ -69,7 +76,7 @@ print(df.shape)
 # ## S01Sex
 # 1 = male, 2 = female
 # df = binarize(df, 'S01Sex')
-df = combine_categories(df, {'S01Sex': {1: 0, 2: 1}})
+df = remap_categories(df, 'S01Sex', [(1, 0), (2, 1)])
 
 
 # ## 'S02PreOpCTPerformed'
