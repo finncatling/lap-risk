@@ -241,12 +241,16 @@ class TrainTestSplitter:
         )
 
     def _calculate_split_stats(self):
+        self.split_stats["n_train_cases"].append(self.train_i[-1].shape[0])
         self.split_stats["n_test_cases"].append(self.test_i[-1].shape[0])
-        self.split_stats["test_fraction_of_complete_cases"].append(
-            self.test_i[-1].shape[0] / self.drop_stats["n_complete_cases"]
+        self.split_stats["train_fraction_of_total_cases"].append(
+            self.train_i[-1].shape[0] / self.drop_stats["n_total_cases"]
         )
         self.split_stats["test_fraction_of_total_cases"].append(
             self.test_i[-1].shape[0] / self.drop_stats["n_total_cases"]
+        )
+        self.split_stats["test_fraction_of_complete_cases"].append(
+            self.test_i[-1].shape[0] / self.drop_stats["n_complete_cases"]
         )
 
 
