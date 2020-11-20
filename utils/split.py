@@ -156,9 +156,11 @@ class TrainTestSplitter:
         self.train_i: List[np.ndarray] = []
         self.test_i: List[np.ndarray] = []
         self.split_stats = {
+            "n_train_cases": [],
             "n_test_cases": [],
-            "test_fraction_of_complete_cases": [],
-            "test_fraction_of_total_cases": []
+            "train_fraction_of_total_cases": [],
+            "test_fraction_of_total_cases": [],
+            "test_fraction_of_complete_cases": []
         }
 
     @property

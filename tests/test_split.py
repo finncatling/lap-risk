@@ -104,9 +104,11 @@ class TestTrainTestSplitter:
 
     def test_split_stats(self, train_test_split_fixture):
         assert train_test_split_fixture.split_stats == {
+            "n_train_cases": [4, 3],
             "n_test_cases": [1, 2],
-            "test_fraction_of_complete_cases": [1 / 3, 2 / 3],
+            "train_fraction_of_total_cases": [0.8, 0.6],
             "test_fraction_of_total_cases": [0.2, 0.4],
+            "test_fraction_of_complete_cases": [1 / 3, 2 / 3]
         }
 
 
