@@ -96,7 +96,7 @@ tt_splitter: TrainTestSplitter = load_object(
 
 reporter.report("Beginning train-test splitting and model fitting")
 current_model = CurrentModel(
-    df,
+    preprocessed_df,
     train_test_splitter=tt_splitter,
     target_variable_name=CURRENT_MODEL_VARS["target"],
     random_seed=RANDOM_SEED,
