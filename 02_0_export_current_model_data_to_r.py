@@ -1,23 +1,19 @@
 import os
-from datetime import datetime
 
 from utils.constants import (
-    RANDOM_SEED,
-    INTERNAL_OUTPUT_DIR,
-    STATS_OUTPUT_DIR,
     CURRENT_MODEL_OUTPUT_DIR,
-    CALIB_GAM_N_SPLINES,
-    CALIB_GAM_LAM_CANDIDATES,
+    CURRENT_MODEL_FEATHER_DIR,
+    INTERNAL_OUTPUT_DIR
 )
 from utils.data_check import load_nela_data_and_sanity_check
-from utils.evaluate import LogisticScorer, score_logistic_predictions
-from utils.io import load_object, save_object
+from utils.io import load_object, make_directory, save_object
 from utils.model.current import (
-    preprocess_current,
-    CurrentModel,
-    WINSOR_THRESHOLDS,
-    CURRENT_MODEL_VARS,
     CENTRES,
+    CONTINUOUS_VARIABLES_AFTER_PREPROCESSING,
+    CURRENT_MODEL_VARS,
+    CurrentModelDataIO,
+    WINSOR_THRESHOLDS,
+    preprocess_current
 )
 from utils.model.shared import flatten_model_var_dict
 from utils.report import Reporter
@@ -26,10 +22,16 @@ from utils.split import TrainTestSplitter, drop_incomplete_cases
 
 reporter = Reporter()
 reporter.title(
-    "Re-fit current NELA emergency laparotomy mortality risk "
-    "model on the different train folds, and evaluate the models "
-    "obtained on the corresponding test folds"
+    "Preprocess data ready for fitting the current NELA model, "
+    "then export it to .feather ready for import to R in a later script."
 )
+
+
+reporter.report("Creating output directories (if they don't already exist)")
+make_directory(CURRENT_MODEL_FEATHER_DIR)
+make_directory(os.path.join(CURRENT_MODEL_FEATHER_DIR, 'train'))
+make_directory(os.path.join(CURRENT_MODEL_FEATHER_DIR, 'test'))
+make_directory(os.path.join(CURRENT_MODEL_FEATHER_DIR, 'y_pred'))
 
 
 reporter.report("Loading manually-wrangled NELA data")
@@ -37,7 +39,7 @@ df = load_nela_data_and_sanity_check()
 
 
 reporter.report("Removing unused variables")
-df = df[flatten_model_var_dict(CURRENT_MODEL_VARS)]
+df = df[flatten_model_var_dict(CURRENT_MODEL_VARS) + ['HospitalId.anon']]
 
 
 reporter.report("Dropping cases which are incomplete for the models' variables")
@@ -94,62 +96,21 @@ tt_splitter: TrainTestSplitter = load_object(
 )
 
 
-reporter.report("Beginning train-test splitting and model fitting")
-current_model = CurrentModel(
-    preprocessed_df,
+reporter.report("Exporting each train and test fold as .feather files")
+current_model_io = CurrentModelDataIO(
+    df=preprocessed_df,
     train_test_splitter=tt_splitter,
     target_variable_name=CURRENT_MODEL_VARS["target"],
-    random_seed=RANDOM_SEED,
+    continuous_variables=CONTINUOUS_VARIABLES_AFTER_PREPROCESSING,
+    save_parent_directory=CURRENT_MODEL_FEATHER_DIR
 )
-current_model.split_train_predict()
+current_model_io.export_data()
 
 
-reporter.report("Saving CurrentModel for later use")
+reporter.report("Saving CurrentModelDataIO for later use")
 save_object(
-    current_model,
-    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model.pkl")
-)
-
-
-reporter.report("Scoring model performance")
-scorer = LogisticScorer(
-    y_true=current_model.y_test,
-    y_pred=current_model.y_pred,
-    scorer_function=score_logistic_predictions,
-    n_splits=tt_splitter.n_splits,
-    calibration_n_splines=CALIB_GAM_N_SPLINES,
-    calibration_lam_candidates=CALIB_GAM_LAM_CANDIDATES,
-)
-scorer.calculate_scores()
-reporter.first("Scores with median as point estimate:")
-scorer.print_scores(dec_places=3, point_estimate='median')
-reporter.first("Scores with fold 0 as point estimate:")
-scorer.print_scores(dec_places=3, point_estimate='split0')
-
-
-reporter.first("Saving model scorer for later use")
-save_object(
-    scorer,
-    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model_scorer.pkl")
-)
-
-
-reporter.report("Saving summary statistics for external use")
-current_model_stats = {
-    "start_datetime": datetime.fromtimestamp(reporter.timer.start_time),
-    "train_fold_stats": current_model.split_stats,
-    "model_features": current_model.features,
-    "model_coefficients": current_model.coefficients,
-    "scores": scorer.scores,
-    "calib_p": scorer.p,
-    "calib_curves": scorer.calib_curves,
-    "calib_n_splines": scorer.calib_n_splines,
-    "calib_lam_candidates": scorer.calib_lam_candidates,
-    "calib_best_lams": scorer.calib_lams,
-}
-save_object(
-    current_model_stats,
-    os.path.join(STATS_OUTPUT_DIR, "02_current_model_stats.pkl"),
+    current_model_io,
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model_data_io.pkl")
 )
 
 

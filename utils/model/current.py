@@ -1,12 +1,15 @@
+import os
 from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from progressbar import progressbar as pb
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import LabelBinarizer, StandardScaler
+from pyarrow import feather
 
-from utils.split import TrainTestSplitter, Splitter
+from utils.io import make_directory
+from utils.split import Splitter, TrainTestSplitter
 
 """
 Web form for current NELA risk model includes Hb, but only uses this to
@@ -65,6 +68,31 @@ CENTRES = {
     "S03Potassium": -4.0,
     "S03Sodium": -123.0,
 }
+
+CONTINUOUS_VARIABLES_AFTER_PREPROCESSING = (
+    'S03Potassium',
+    'S03WhiteCellCount',
+    'S03Pulse',
+    'S03SystolicBloodPressure',
+    'logcreat',
+    'logurea',
+    'S03Potassium_2',
+    'S03WhiteCellCount_2',
+    'S03Pulse_2',
+    'S03SystolicBloodPressure_2',
+    'logcreat_2',
+    'logurea_2',
+    'S03Sodium_3',
+    'S03Sodium_3_log',
+    'age_asa12',
+    'age_2_asa12',
+    'age_asa3',
+    'age_2_asa3',
+    'age_asa4',
+    'age_2_asa4',
+    'age_asa5',
+    'age_2_asa5'
+)
 
 
 def discretise_gcs(df: pd.DataFrame) -> pd.DataFrame:
@@ -338,3 +366,88 @@ class CurrentModel(Splitter):
         self.coefficients[-1][0] = model.intercept_
         self.coefficients[-1][1:] = coefficients
         return model
+
+
+class CurrentModelDataIO(Splitter):
+    """Splits current model data, scales its continuous variables (otherwise
+        R's glmer() doesn't converge), then exports as .feather for later
+        random-effects logistic model fitting / prediction in R."""
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        train_test_splitter: TrainTestSplitter,
+        target_variable_name: str,
+        continuous_variables: Tuple[str, ...],
+        save_parent_directory: str
+    ):
+        """
+        Args:
+            df: Preprocessed NELA data. When using with current model,
+                incomplete cases should have been removed but the DataFrame
+                index should not be reset
+            train_test_splitter: TrainTestSplitter instance from
+                01_train_test_split.py
+            target_variable_name: Name of DataFrame column containing mortality
+                status
+            continuous_variables: Names of continuous variables in DataFrame
+                output by preprocess_current
+            save_parent_directory: Parent directory path for saving the .feather
+                files. They will be saved in parent_directory/train and
+                parent_directory/test
+        """
+        super().__init__(df, train_test_splitter, target_variable_name)
+        self.cont_vars = continuous_variables
+        self.save_dir = save_parent_directory
+        self.y_test: List[np.ndarray] = []
+        self.y_pred: List[np.ndarray] = []
+
+    def export_data(self) -> None:
+        for i in pb(range(self.tts.n_splits), prefix="Split iteration"):
+            X_train, y_train, X_test, y_test = self._split(i)
+            self.y_test.append(y_test)
+            folds = {
+                'train': self._combine_X_y(X_train, y_train),
+                'test': self._combine_X_y(X_test, y_test)
+            }
+            folds = self._rename_hospital_variable(folds)
+            folds = self._scale_continuous_variables(folds)
+            self._save_feathers(folds, i)
+
+    def import_data(self) -> None:
+        for i in pb(range(self.tts.n_splits), prefix="Split iteration"):
+            y_pred_df = feather.read_feather(
+                os.path.join(self.save_dir, 'y_pred', f'{i}_y_pred.feather'))
+            self.y_pred.append(y_pred_df.iloc[:, 0].values)
+
+    def _combine_X_y(self, X: pd.DataFrame, y: np.ndarray) -> pd.DataFrame:
+        X[self.target_variable_name] = y
+        return X
+
+    @staticmethod
+    def _rename_hospital_variable(
+        folds: Dict[str, pd.DataFrame]
+    ) -> Dict[str, pd.DataFrame]:
+        for fold_name in folds.keys():
+            folds[fold_name] = folds[fold_name].rename(
+                {'HospitalId.anon': 'HospitalId'}, axis=1)
+        return folds
+
+    def _scale_continuous_variables(
+        self,
+        folds: Dict[str, pd.DataFrame]
+    ) -> Dict[str, pd.DataFrame]:
+        scaler = StandardScaler()
+        folds['train'].loc[:, self.cont_vars] = scaler.fit_transform(
+            folds['train'].loc[:, self.cont_vars])
+        folds['test'].loc[:, self.cont_vars] = scaler.transform(
+            folds['test'].loc[:, self.cont_vars])
+        return folds
+
+    def _save_feathers(self, folds: Dict[str, pd.DataFrame], i: int) -> None:
+        for fold_name in folds.keys():
+            feather.write_feather(
+                df=folds[fold_name],
+                dest=os.path.join(
+                    self.save_dir, fold_name, f'{i}_{fold_name}.feather'),
+                compression='uncompressed')

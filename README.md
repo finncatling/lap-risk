@@ -7,7 +7,11 @@ Modelling mortality risk in emergency laparotomy, using data from the NELA.
 
 ## Install
 
-This codebase is written in Python 3.8.6. We manage dependencies with pipenv. You'll need to [install Python and pip](https://pipenv-fork.readthedocs.io/en/latest/install.html#make-sure-you-ve-got-python-pip), then [install pipenv](https://pipenv-fork.readthedocs.io/en/latest/install.html#installing-pipenv) in order to get started.
+This codebase is written in Python 3.8.6 and R 4.0.3. We manage dependencies with pipenv and renv. To get started, you'll need to:
+
+- Install Python and pip
+- [Install pipenv](https://pipenv-fork.readthedocs.io/en/latest/install.html#installing-pipenv)
+- Install R and renv
 
 If working in the Imperial BDAU, pipenv isn't in path. We can define a convenient alias for it in this case:
 
@@ -15,11 +19,7 @@ If working in the Imperial BDAU, pipenv isn't in path. We can define a convenien
 alias pipenv='/opt/python/3.8.6/bin/pipenv'
 ```
 
-Then install dependencies:
-
-```console
-pipenv install
-```
+Then install dependencies with  `pipenv install` and `renv::restore()`
 
 ## Running the analysis
 
@@ -43,7 +43,7 @@ When running in the Imperial BDAU, we should limit the number of cores used for 
 taskset -c 0-7 python 01_train_test_split.py
 ```
 
-The convenience shell script `run_full_analysis_on_bdau.sh` automates running the analysis (not the initial install) on the BDAU. It runs each python script in sequence inside our pipenv environment, restricting itself to 8 cores. 
+The convenience shell script `run_full_analysis_on_bdau.sh` automates running the analysis (not the initial install) on the BDAU. It runs all scripts in sequence inside our pipenv and renv environments, restricting itself to 8 cores. 
 
 ## Running tests
 
