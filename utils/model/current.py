@@ -368,7 +368,7 @@ class CurrentModel(Splitter):
         return model
 
 
-class CurrentModelDataExporter(Splitter):
+class CurrentModelDataIO(Splitter):
     """Splits current model data, scales its continuous variables (otherwise
         R's glmer() doesn't converge), then exports as .feather for later
         random-effects logistic model fitting / prediction in R."""
@@ -399,10 +399,13 @@ class CurrentModelDataExporter(Splitter):
         super().__init__(df, train_test_splitter, target_variable_name)
         self.cont_vars = continuous_variables
         self.save_dir = save_parent_directory
+        self.y_test: List[np.ndarray] = []
+        self.y_pred: List[np.ndarray] = []
 
-    def export(self) -> None:
+    def export_data(self) -> None:
         for i in pb(range(self.tts.n_splits), prefix="Split iteration"):
             X_train, y_train, X_test, y_test = self._split(i)
+            self.y_test.append(y_test)
             folds = {
                 'train': self._combine_X_y(X_train, y_train),
                 'test': self._combine_X_y(X_test, y_test)
@@ -410,6 +413,12 @@ class CurrentModelDataExporter(Splitter):
             folds = self._rename_hospital_variable(folds)
             folds = self._scale_continuous_variables(folds)
             self._save_feathers(folds, i)
+
+    def import_data(self) -> None:
+        for i in pb(range(self.tts.n_splits), prefix="Split iteration"):
+            y_pred_df = feather.read_feather(
+                os.path.join(self.save_dir, 'y_pred', f'{i}_y_pred.feather'))
+            self.y_pred.append(y_pred_df.iloc[:, 0].values)
 
     def _combine_X_y(self, X: pd.DataFrame, y: np.ndarray) -> pd.DataFrame:
         X[self.target_variable_name] = y

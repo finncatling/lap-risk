@@ -1,16 +1,19 @@
 import os
-from progressbar import progressbar as pb
 
-from utils.constants import INTERNAL_OUTPUT_DIR, CURRENT_MODEL_FEATHER_DIR
+from utils.constants import (
+    CURRENT_MODEL_OUTPUT_DIR,
+    CURRENT_MODEL_FEATHER_DIR,
+    INTERNAL_OUTPUT_DIR
+)
 from utils.data_check import load_nela_data_and_sanity_check
-from utils.io import load_object, make_directory
+from utils.io import load_object, make_directory, save_object
 from utils.model.current import (
     CENTRES,
-    CURRENT_MODEL_VARS,
-    WINSOR_THRESHOLDS,
     CONTINUOUS_VARIABLES_AFTER_PREPROCESSING,
-    preprocess_current,
-    CurrentModelDataExporter
+    CURRENT_MODEL_VARS,
+    CurrentModelDataIO,
+    WINSOR_THRESHOLDS,
+    preprocess_current
 )
 from utils.model.shared import flatten_model_var_dict
 from utils.report import Reporter
@@ -95,14 +98,21 @@ tt_splitter: TrainTestSplitter = load_object(
 
 
 reporter.report("Exporting each train and test fold as .feather files")
-exporter = CurrentModelDataExporter(
+current_model_io = CurrentModelDataIO(
     df=preprocessed_df,
     train_test_splitter=tt_splitter,
     target_variable_name=CURRENT_MODEL_VARS["target"],
     continuous_variables=CONTINUOUS_VARIABLES_AFTER_PREPROCESSING,
     save_parent_directory=CURRENT_MODEL_FEATHER_DIR
 )
-exporter.export()
+current_model_io.export_data()
+
+
+reporter.report("Saving CurrentModelDataIO for later use")
+save_object(
+    current_model_io,
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_alt_current_model_data_io.pkl")
+)
 
 
 reporter.last("Done.")
