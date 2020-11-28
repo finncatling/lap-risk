@@ -21,7 +21,7 @@ reporter.title(
 
 reporter.report("Loading current model data IO")
 current_model_io: CurrentModelDataIO = load_object(
-    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_alt_current_model_data_io.pkl")
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model_data_io.pkl")
 )
 
 
@@ -48,7 +48,7 @@ scorer.print_scores(dec_places=3, point_estimate='split0')
 reporter.first("Saving model scorer for later use")
 save_object(
     scorer,
-    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_alt_current_model_scorer.pkl")
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model_scorer.pkl")
 )
 
 
@@ -63,7 +63,7 @@ current_model_stats = {
 }
 save_object(
     current_model_stats,
-    os.path.join(STATS_OUTPUT_DIR, "02_alt_current_model_score_stats.pkl"),
+    os.path.join(STATS_OUTPUT_DIR, "02_current_model_stats.pkl"),
 )
 
 

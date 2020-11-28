@@ -23,8 +23,7 @@ from utils.split import TrainTestSplitter, drop_incomplete_cases
 reporter = Reporter()
 reporter.title(
     "Preprocess data ready for fitting the current NELA model, "
-    "then export it to .feather ready for import to R in a later "
-    "script."
+    "then export it to .feather ready for import to R in a later script."
 )
 
 
@@ -111,7 +110,7 @@ current_model_io.export_data()
 reporter.report("Saving CurrentModelDataIO for later use")
 save_object(
     current_model_io,
-    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_alt_current_model_data_io.pkl")
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model_data_io.pkl")
 )
 
 

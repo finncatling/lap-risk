@@ -4,7 +4,9 @@ shopt -s expand_aliases
 alias pipenv='/opt/python/3.8.6/bin/pipenv'
 
 pipenv run taskset -c 32-39 python 01_train_test_split.py
-pipenv run taskset -c 32-39 python 02_train_eval_current_model.py
+pipenv run taskset -c 32-39 python 02_0_export_current_model_data_to_r.py
+taskset -c 32-39 Rscript 02_1_train_current_model_and_predict.R
+pipenv run taskset -c 32-39 python 02_2_eval_current_model_predictions.py
 pipenv run taskset -c 32-39 python 03_plot_current_model.py
 pipenv run taskset -c 32-39 python 04_consolidate_indications.py
 pipenv run taskset -c 32-39 python 05_wrangling_and_mice.py

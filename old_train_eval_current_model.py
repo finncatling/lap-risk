@@ -27,8 +27,9 @@ from utils.split import TrainTestSplitter, drop_incomplete_cases
 reporter = Reporter()
 reporter.title(
     "Re-fit current NELA emergency laparotomy mortality risk "
-    "model on the different train folds, and evaluate the models "
-    "obtained on the corresponding test folds"
+    "model on the different train folds (just using standard logistic "
+    "regression rather than a logistic random intercept model), and evaluate "
+    "the models obtained on the corresponding test folds"
 )
 
 
@@ -107,7 +108,7 @@ current_model.split_train_predict()
 reporter.report("Saving CurrentModel for later use")
 save_object(
     current_model,
-    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model.pkl")
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_old_current_model.pkl")
 )
 
 
@@ -130,7 +131,7 @@ scorer.print_scores(dec_places=3, point_estimate='split0')
 reporter.first("Saving model scorer for later use")
 save_object(
     scorer,
-    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_current_model_scorer.pkl")
+    os.path.join(CURRENT_MODEL_OUTPUT_DIR, "02_old_current_model_scorer.pkl")
 )
 
 
@@ -149,7 +150,7 @@ current_model_stats = {
 }
 save_object(
     current_model_stats,
-    os.path.join(STATS_OUTPUT_DIR, "02_current_model_stats.pkl"),
+    os.path.join(STATS_OUTPUT_DIR, "02_old_current_model_stats.pkl"),
 )
 
 
