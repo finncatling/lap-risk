@@ -8,10 +8,13 @@ from utils.model.current import (
     CENTRES,
     CURRENT_MODEL_VARS,
     WINSOR_THRESHOLDS,
-    preprocess_current)
+    CONTINUOUS_VARIABLES_AFTER_PREPROCESSING,
+    preprocess_current,
+    CurrentModelDataExporter
+)
 from utils.model.shared import flatten_model_var_dict
 from utils.report import Reporter
-from utils.split import TrainTestSplitter, drop_incomplete_cases, Splitter
+from utils.split import TrainTestSplitter, drop_incomplete_cases
 
 
 reporter = Reporter()
@@ -91,15 +94,15 @@ tt_splitter: TrainTestSplitter = load_object(
 )
 
 
-reporter.report("Saving each train-test split as a .feather")
-splitter = Splitter(
-    preprocessed_df,
+reporter.report("Exporting each train and test fold as .feather files")
+exporter = CurrentModelDataExporter(
+    df=preprocessed_df,
     train_test_splitter=tt_splitter,
-    target_variable_name=CURRENT_MODEL_VARS["target"]
+    target_variable_name=CURRENT_MODEL_VARS["target"],
+    continuous_variables=CONTINUOUS_VARIABLES_AFTER_PREPROCESSING,
+    save_parent_directory=CURRENT_MODEL_FEATHER_DIR
 )
-for i in pb(range(splitter.tts.n_splits), prefix="Split iteration"):
-    X_train, y_train, X_test, y_test = splitter._split(i)
-
+exporter.export()
 
 
 reporter.last("Done.")
