@@ -49,7 +49,12 @@ for (i in 1:n_splits){
     )
 
     # Generate predicted probabilities on test fold
-    me_y_pred <- predict(me_logreg, re.form=NA, newdata=test, type='response')
+    me_y_pred <- predict(
+      me_logreg,
+      re.form=NA,  # Disregard random intercepts during prediction
+      newdata=test,
+      type='response'
+    )
     me_y_pred_df <- data.frame(me_y_pred)
 
     write_feather(
