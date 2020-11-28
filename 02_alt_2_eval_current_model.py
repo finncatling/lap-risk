@@ -25,6 +25,10 @@ current_model_io: CurrentModelDataIO = load_object(
 )
 
 
+reporter.report("Loading predicted risk generated earlier in R")
+current_model_io.import_data()
+
+
 reporter.report("Scoring model performance")
 scorer = LogisticScorer(
     y_true=current_model_io.y_test,
