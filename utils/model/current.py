@@ -440,5 +440,5 @@ class CurrentModelDataExporter(Splitter):
             feather.write_feather(
                 df=folds[fold_name],
                 dest=os.path.join(
-                    self.save_dir, fold_name, f'{i}_train.feather'),
+                    self.save_dir, fold_name, f'{i}_{fold_name}.feather'),
                 compression='uncompressed')
