@@ -33,7 +33,7 @@ print(glue("Formula is {me_formula}"))
 
 
 print("Beginning model fitting and prediction for each train-test split")
-for (i in 1:n_splits){
+for (i in 0 : n_splits - 1){
     train <- read_feather(glue('train/{i}_train.feather'))
     test <- read_feather(glue('test/{i}_test.feather'))
 
