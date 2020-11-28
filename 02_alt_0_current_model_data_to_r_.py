@@ -37,7 +37,7 @@ df = load_nela_data_and_sanity_check()
 
 
 reporter.report("Removing unused variables")
-df = df[flatten_model_var_dict(CURRENT_MODEL_VARS)]
+df = df[flatten_model_var_dict(CURRENT_MODEL_VARS) + ['HospitalId.anon']]
 
 
 reporter.report("Dropping cases which are incomplete for the models' variables")
