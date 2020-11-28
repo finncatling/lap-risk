@@ -33,6 +33,7 @@ NELA_DATA_FILEPATH = os.path.join(
 # Locations where 'internal' outputs are saved for use later in the analysis
 INTERNAL_OUTPUT_DIR = os.path.join(ROOT_DIR, "outputs")
 CURRENT_MODEL_OUTPUT_DIR = os.path.join(INTERNAL_OUTPUT_DIR, "current_model")
+CURRENT_MODEL_FEATHER_DIR = os.path.join(CURRENT_MODEL_OUTPUT_DIR, "feather")
 NOVEL_MODEL_OUTPUT_DIR = os.path.join(INTERNAL_OUTPUT_DIR, "novel_model")
 
 # Locations where 'external' (non-PHI) outputs are saved
