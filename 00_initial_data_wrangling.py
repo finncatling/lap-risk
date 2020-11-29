@@ -3,17 +3,31 @@ import os
 import numpy as np
 import pandas as pd
 
-from utils.constants import RAW_NELA_DATA_FILEPATH
+from utils.constants import (
+    RAW_NELA_DATA_FILEPATH,
+    STATS_OUTPUT_DIR,
+    CURRENT_MODEL_OUTPUT_DIR,
+    NOVEL_MODEL_OUTPUT_DIR,
+    FIGURES_OUTPUT_DIR
+)
 from utils.report import Reporter
 from utils.wrangling import (
     drop_values_under_threshold,
     remap_categories,
     remove_non_whole_numbers
 )
+from utils.io import make_directory
 
 
 reporter = Reporter()
 reporter.title("Initial data wrangling")
+
+
+reporter.report("Creating output directories (if they don't already exist)")
+make_directory(STATS_OUTPUT_DIR)
+make_directory(FIGURES_OUTPUT_DIR)
+make_directory(NOVEL_MODEL_OUTPUT_DIR)
+make_directory(CURRENT_MODEL_OUTPUT_DIR)
 
 
 reporter.report('Loading raw data')

@@ -4,13 +4,9 @@ from datetime import datetime
 from utils.constants import (
     RANDOM_SEED,
     STATS_OUTPUT_DIR,
-    INTERNAL_OUTPUT_DIR,
-    CURRENT_MODEL_OUTPUT_DIR,
-    NOVEL_MODEL_OUTPUT_DIR,
-    FIGURES_OUTPUT_DIR
+    INTERNAL_OUTPUT_DIR
 )
 from utils.data_check import load_nela_data_and_sanity_check
-from utils.io import make_directory
 from utils.io import save_object
 from utils.model.current import CURRENT_MODEL_VARS
 from utils.model.shared import flatten_model_var_dict
@@ -23,13 +19,6 @@ reporter.title(
     "Derive case indices needed to repeatedly split NELA data into train and "
     "test folds"
 )
-
-
-reporter.report("Creating output directories (if they don't already exist)")
-make_directory(STATS_OUTPUT_DIR)
-make_directory(FIGURES_OUTPUT_DIR)
-make_directory(NOVEL_MODEL_OUTPUT_DIR)
-make_directory(CURRENT_MODEL_OUTPUT_DIR)
 
 
 reporter.report("Loading manually-wrangled NELA data")
