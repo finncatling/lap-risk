@@ -1,14 +1,15 @@
 import os
+
 import numpy as np
 import pandas as pd
 
-from utils.constants import RAW_NELA_DATA_FILEPATH, NELA_DATA_FILEPATH
-from utils.wrangling import (
-    remap_categories,
-    remove_non_whole_numbers,
-    drop_values_under_threshold
-)
+from utils.constants import RAW_NELA_DATA_FILEPATH
 from utils.report import Reporter
+from utils.wrangling import (
+    drop_values_under_threshold,
+    remap_categories,
+    remove_non_whole_numbers
+)
 
 
 reporter = Reporter()
@@ -17,26 +18,26 @@ reporter.title("Initial data wrangling")
 
 reporter.report('Loading raw data')
 df = pd.read_csv(RAW_NELA_DATA_FILEPATH)
-print(f'Dataset contains {df.shape[0]} patients')
+print(f'Dataset contains {df.shape[0]} cases')
 
 
 reporter.first('Processing S01AgeOnArrival')
 reporter.report('Excluding patients < 18 years old')
 df = df.loc[df['S01AgeOnArrival'] > 17]
-print(df.shape[0], 'patients remain')
+print(df.shape[0], 'cases remain')
 reporter.report('Excluding patients >= 110')
 df = df.loc[df['S01AgeOnArrival'] < 110]
-print(df.shape[0], 'patients remain')
+print(df.shape[0], 'cases remain')
 
 
 reporter.first('Preprocessing HospitalId.anon')
-# Remove 'trust' prefix and convert to integers
+# Remove prefix and convert to integers
 df['HospitalId.anon'] = df['HospitalId.anon'].str[4:].astype(int)
 
 
 reporter.report('Processing S01Sex')
 # 1 = male, 2 = female.
-# We convert this to binary
+# We convert to a {0, 1} encoding
 df = remap_categories(df, 'S01Sex', [(1, 0), (2, 1)])
 
 
@@ -45,43 +46,82 @@ reporter.report('Processing S02PreOpCTPerformed')
 # - 0 = no
 # - 9 = unknown
 # We convert the unknowns to missing values
-df.loc[df['S02PreOpCTPerformed'] == 9,
-       'S02PreOpCTPerformed'] = np.nan
+df.loc[
+    df['S02PreOpCTPerformed'] == 9,
+    'S02PreOpCTPerformed'
+] = np.nan
 
 
 reporter.first('Processing urea and creatinine')
-# Looks like some creatinine and urea values are swapped
-# **Decision to redact very low creatinine values.**
-# Our search reveals assays can't detect below 8.8 (see GitHub reference).
-redact = df[['S03SerumCreatinine', 'S03Urea']].copy()
-redact.loc[redact['S03SerumCreatinine'] < 8.8,
-           'S03SerumCreatinine'] = np.nan
-print(df.loc[df['S03SerumCreatinine'].notnull()].shape[0])
-print(redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0])
-# **Decision to redact very high urea values.**
-# Highest we found in a case report was 72.
-redact.loc[redact['S03Urea'] > 72,
-           'S03Urea'] = np.nan
-print(df.loc[df['S03Urea'].notnull()].shape[0])
-print(redact.loc[redact['S03Urea'].notnull()].shape[0])
-# There also appear to be some patients where Urea and creatinine are exactly
-# the same
-# **Decision to remove both values in these cases**
-redact.loc[(redact['S03SerumCreatinine'] - redact['S03Urea']) < 0.1,
-           ['S03SerumCreatinine', 'S03Urea']] = np.nan
-print(df.loc[df['S03SerumCreatinine'].notnull()].shape[0])
-print(redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0])
-# **Decision to apply the rule**: redact any creatinine and urea where
-# (a * urea) > creatinine, where urea is over some threshold?
-a = 2.0
-redact.loc[((a * redact['S03Urea'] > redact['S03SerumCreatinine'])
-            & (redact['S03Urea'] > 30)),
-           ['S03SerumCreatinine', 'S03Urea']] = np.nan
-print(df.loc[df['S03SerumCreatinine'].notnull()].shape[0])
-print(redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0])
-# update the main data with these changes
-df[['S03SerumCreatinine', 'S03Urea']] = redact[
-    ['S03SerumCreatinine', 'S03Urea']]
+# Looks like creatinine and urea values are accidentally swapped in some cases
+# In other cases, urea and creatinine have exactly the same value
+CREATININE_LOWER_THRESHOLD = 8.8
+UREA_UPPER_THRESHOLD = 72
+JOINT_CREATININE_UREA_REDACTION_RATIO = 2.0
+JOINT_CREATININE_UREA_REDACTION_THRESHOLD = 30
+CREATININE_UREA_VARIABLE_NAMES = ['S03SerumCreatinine', 'S03Urea']
+redact = df[CREATININE_UREA_VARIABLE_NAMES].copy()
+for name in CREATININE_UREA_VARIABLE_NAMES:
+    reporter.report(
+        f'{df.loc[df[name].notnull()].shape[0]} cases have non-null '
+        f'{name} prior to processing'
+    )
+
+
+reporter.report(f'Redacting creatinines below {CREATININE_LOWER_THRESHOLD}')
+n_before = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
+redact.loc[
+    redact['S03SerumCreatinine'] < CREATININE_LOWER_THRESHOLD,
+    'S03SerumCreatinine'
+] = np.nan
+n_after = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
+reporter.report(f'{n_before - n_after} creatinines removed')
+
+
+reporter.report(f'Redacting ureas above {UREA_UPPER_THRESHOLD}')
+n_before = redact.loc[redact['S03Urea'].notnull()].shape[0]
+redact.loc[
+    redact['S03Urea'] > UREA_UPPER_THRESHOLD,
+    'S03Urea'
+] = np.nan
+n_after = redact.loc[redact['S03Urea'].notnull()].shape[0]
+reporter.report(f'{n_before - n_after} ureas removed')
+
+
+reporter.report(
+    'Redacting both creatinine and urea in cases where they are the same'
+)
+n_before = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
+redact.loc[
+    (redact['S03SerumCreatinine'] - redact['S03Urea']) < 0.1,
+    CREATININE_UREA_VARIABLE_NAMES
+] = np.nan
+n_after = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
+reporter.report(f'Urea & creatinine removed in {n_before - n_after} cases')
+
+
+reporter.report(
+    'Redacting both creatinine and urea in cases where urea > '
+    f'{JOINT_CREATININE_UREA_REDACTION_THRESHOLD}, and '
+    f'{JOINT_CREATININE_UREA_REDACTION_RATIO} * urea > creatinine'
+)
+n_before = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
+redact.loc[
+    ((
+        JOINT_CREATININE_UREA_REDACTION_RATIO * redact['S03Urea'] >
+        redact['S03SerumCreatinine']
+    ) & (
+            redact['S03Urea'] > JOINT_CREATININE_UREA_REDACTION_THRESHOLD
+    )),
+    CREATININE_UREA_VARIABLE_NAMES
+] = np.nan
+n_after = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
+reporter.report(f'Urea & creatinine removed in {n_before - n_after} cases')
+
+
+reporter.report('Updating main data with creatinine and urea redactions')
+df.loc[:, CREATININE_UREA_VARIABLE_NAMES] = redact.loc[
+    :, CREATININE_UREA_VARIABLE_NAMES]
 
 
 reporter.first('Processing S03PreOpArterialBloodLactate')
@@ -107,7 +147,7 @@ df = remove_non_whole_numbers(df, 'S03GlasgowComaScore')
 reporter.report('Processing S03WhatIsTheOperativeSeverity')
 # - 8 is 'major+'
 # - 4 is 'major'
-# We convert this to a binary variable
+# We convert to a {0, 1} encoding
 df = remap_categories(df, 'S03WhatIsTheOperativeSeverity', [(8, 1), (4, 0)])
 
 
@@ -117,16 +157,16 @@ reporter.report('Processing S03NCEPODUrgency')
 # - 3 = 2A urgent (2-6 hours)
 # - 4 = Emergency, resuscitation of >2 hours possible (no longer available)
 # - 8 = 1 immediate (<2 hours)
+# We consolidate category 4 to 3
 df.loc[df['S03NCEPODUrgency'] == 4., 'S03NCEPODUrgency'] = 3.
 
 
 reporter.report('Processing indications')
 indications = [c for c in df.columns if "S05Ind_" in c]
-# - 1 = this is the indication
-# - 2 = This isn't the indication
-# 
-# There are some NaNs - unclear why
-# Convert indications to binary, eliminating NaNs
+# - 1 = case has this indication
+# - 2 = case doesn't have this indication#
+# There are some NaNs. Unclear why this is.
+# We convert to a {0, 1} encoding, eliminating NaNs
 for c in indications:
     df.loc[df[c] != 1, c] = 0
     df.loc[:, c] = df[c].astype(int).values
@@ -136,25 +176,34 @@ reporter.first('Processing S07Status_Disch')
 # - 0 - Dead
 # - 1 - Alive
 # - 60 - still in hospital at 60 days
-reporter.first('Summarising mortality in raw data (as frequencies)')
+reporter.report('Summarising mortality in raw data (as frequencies)')
 print(df['S07Status_Disch'].value_counts())
-reporter.first('Summarising mortality in raw data (as proportions)')
+reporter.report('Summarising mortality in raw data (as proportions)')
 print(df['S07Status_Disch'].value_counts(normalize=True))
 
 
-reporter.first('Reassigning patients still alive in hospital at 60 days post-op as alive')
+reporter.first(
+    'Reassigning patients still alive in hospital at 60 days post-op as alive'
+)
 df = remap_categories(df, 'S07Status_Disch', [
     (60, 1),
     (1, 2),  # make temporary category 2 so that (0, 1) works properly below
     (0, 1),
     (2, 0)  # reassign from temporary category
 ])
-reporter.first('Summarising mortality in raw data (as frequencies)')
+reporter.report('Summarising mortality in raw data (as frequencies)')
 print(df['S07Status_Disch'].value_counts())
-reporter.first('Summarising mortality in raw data (as proportions)')
+reporter.report('Summarising mortality in raw data (as proportions)')
 print(df['S07Status_Disch'].value_counts(normalize=True))
 df['Target'] = df['S07Status_Disch'].copy()
 df.drop('S07Status_Disch', axis=1)
+
+
+reporter.report('Resetting DataFrame index')
+df = df.reset_index(drop=True)
+
+
+# TODO: Generate Table 1 here
 
 
 reporter.first('Dropping variables unused in downstream analysis')
@@ -185,10 +234,7 @@ lap_risk_vars = [
     "S03PreOpLowestAlbumin",
     "Target"
 ] + indications
-
-
-reporter.report('Resetting DataFrame index')
-df = df[lap_risk_vars].reset_index(drop=True)
+df = df[lap_risk_vars]
 
 
 # TODO: Remove this testing code
