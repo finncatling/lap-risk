@@ -176,9 +176,9 @@ reporter.first('Processing S07Status_Disch')
 # - 0 - Dead
 # - 1 - Alive
 # - 60 - still in hospital at 60 days
-reporter.first('Summarising mortality in raw data (as frequencies)')
+reporter.report('Summarising mortality in raw data (as frequencies)')
 print(df['S07Status_Disch'].value_counts())
-reporter.first('Summarising mortality in raw data (as proportions)')
+reporter.report('Summarising mortality in raw data (as proportions)')
 print(df['S07Status_Disch'].value_counts(normalize=True))
 
 
@@ -191,9 +191,9 @@ df = remap_categories(df, 'S07Status_Disch', [
     (0, 1),
     (2, 0)  # reassign from temporary category
 ])
-reporter.first('Summarising mortality in raw data (as frequencies)')
+reporter.report('Summarising mortality in raw data (as frequencies)')
 print(df['S07Status_Disch'].value_counts())
-reporter.first('Summarising mortality in raw data (as proportions)')
+reporter.report('Summarising mortality in raw data (as proportions)')
 print(df['S07Status_Disch'].value_counts(normalize=True))
 df['Target'] = df['S07Status_Disch'].copy()
 df.drop('S07Status_Disch', axis=1)
