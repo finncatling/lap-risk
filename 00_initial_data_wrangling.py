@@ -199,6 +199,13 @@ df['Target'] = df['S07Status_Disch'].copy()
 df.drop('S07Status_Disch', axis=1)
 
 
+reporter.report('Resetting DataFrame index')
+df = df.reset_index(drop=True)
+
+
+# TODO: Generate Table 1 here
+
+
 reporter.first('Dropping variables unused in downstream analysis')
 lap_risk_vars = [
     "HospitalId.anon",
@@ -227,10 +234,7 @@ lap_risk_vars = [
     "S03PreOpLowestAlbumin",
     "Target"
 ] + indications
-
-
-reporter.report('Resetting DataFrame index')
-df = df[lap_risk_vars].reset_index(drop=True)
+df = df[lap_risk_vars]
 
 
 # TODO: Remove this testing code
