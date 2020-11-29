@@ -91,12 +91,12 @@ reporter.report(f'{n_before - n_after} ureas removed')
 reporter.report(
     'Redacting both creatinine and urea in cases where they are the same'
 )
-n_before = redact.loc[redact[CREATININE_UREA_VARIABLE_NAMES].notnull()].shape[0]
+n_before = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
 redact.loc[
     (redact['S03SerumCreatinine'] - redact['S03Urea']) < 0.1,
     CREATININE_UREA_VARIABLE_NAMES
 ] = np.nan
-n_after = redact.loc[redact[CREATININE_UREA_VARIABLE_NAMES].notnull()].shape[0]
+n_after = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
 reporter.report(f'Urea & creatinine removed in {n_before - n_after} cases')
 
 
@@ -105,7 +105,7 @@ reporter.report(
     f'{JOINT_CREATININE_UREA_REDACTION_THRESHOLD}, and '
     f'{JOINT_CREATININE_UREA_REDACTION_RATIO} * urea > creatinine'
 )
-n_before = redact.loc[redact[CREATININE_UREA_VARIABLE_NAMES].notnull()].shape[0]
+n_before = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
 redact.loc[
     ((
         JOINT_CREATININE_UREA_REDACTION_RATIO * redact['S03Urea'] >
@@ -115,7 +115,7 @@ redact.loc[
     )),
     CREATININE_UREA_VARIABLE_NAMES
 ] = np.nan
-n_after = redact.loc[redact[CREATININE_UREA_VARIABLE_NAMES].notnull()].shape[0]
+n_after = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
 reporter.report(f'Urea & creatinine removed in {n_before - n_after} cases')
 
 
