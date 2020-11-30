@@ -20,6 +20,7 @@ raw_df = pd.read_pickle(os.path.join(
 
 
 reporter.report('Loading preprocessed data')
+# These data are not Winsorized, so safe to use for summary stats
 df = pd.read_pickle(os.path.join(DATA_DIR, "05_preprocessed_df.pkl"))
 
 
