@@ -10,7 +10,8 @@ from utils.constants import (
     STATS_OUTPUT_DIR,
     CURRENT_MODEL_OUTPUT_DIR,
     NOVEL_MODEL_OUTPUT_DIR,
-    FIGURES_OUTPUT_DIR
+    FIGURES_OUTPUT_DIR,
+    TABLES_OUTPUT_DIR
 )
 from utils.report import Reporter
 from utils.wrangling import (
@@ -28,6 +29,7 @@ reporter.title("Initial data wrangling")
 reporter.report("Creating output directories (if they don't already exist)")
 make_directory(STATS_OUTPUT_DIR)
 make_directory(FIGURES_OUTPUT_DIR)
+make_directory(TABLES_OUTPUT_DIR)
 make_directory(NOVEL_MODEL_OUTPUT_DIR)
 make_directory(CURRENT_MODEL_OUTPUT_DIR)
 
