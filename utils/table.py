@@ -44,10 +44,10 @@ def generate_demographic_table(
         if var.var_type == 'continuous':
             table.loc[var_i, 'Variable'] = f'{var.pretty_name}: median (IQR)'
             for df_i, df in enumerate(dfs.values()):
-                quantiles = df[var.name].quantile([0.25, 0.5, 0.75])
+                quantiles = df[var.name].quantile([0.25, 0.5, 0.75]).values
                 quantiles = np.round(quantiles, var.decimal_places).astype(str)
                 table.iloc[var_i, df_i + 1] = (
-                    f'{quantiles[1]} ({quantiles[0]} - {quantiles[1]})')
+                    f'{quantiles[1]} ({quantiles[0]} - {quantiles[2]})')
         elif var.var_type == 'binary':
             pass
         elif var.var_type == 'ordinal_multicat':
