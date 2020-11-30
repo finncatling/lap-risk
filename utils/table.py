@@ -36,7 +36,7 @@ def generate_demographic_table(
             f'All cases (n={dfs["all"].shape[0]})',
             f'Development cases (n={dfs["train"].shape[0]})',
             f'Evalulation cases (n={dfs["test"].shape[0]})',
-            'Missing values (%)',
+            'Missing values',
             'In novel model'
         ),
         dtype=str
@@ -67,7 +67,8 @@ def generate_demographic_table(
         # Calculate missingness
         n_missing = df.loc[df[var.name].isnull()].shape[0]
         perc_missing = np.round(percent_missing(df, var.name), 1)
-        table.loc[var_i, 'Missing values (%)'] = f'{n_missing} ({perc_missing})'
+        table.loc[var_i, 'Missing values'] = (
+            f'{n_missing} ({perc_missing}%)')
 
         # Add indicator for whether variable in novel model
         if var.in_novel_model:
