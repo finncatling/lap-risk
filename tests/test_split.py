@@ -115,9 +115,16 @@ class TestTrainTestSplitter:
 def test_tt_splitter_all_test_case_modifier(train_test_split_fixture):
     original_tts = train_test_split_fixture
     mod_tts = split.tt_splitter_all_test_case_modifier(original_tts)
+    # all_test_folds_equal_size = True
     for split_i in range(original_tts.n_splits):
         assert all(original_tts.train_i[split_i] == mod_tts.train_i[split_i])
-        # TODO: modify fixture for meaningful test of test fold inequality
+    #     if(
+    #         original_tts.train_i[split_i].shape[0] <
+    #         mod_tts.train_i[split_i].shape[0]
+    #     ):
+    #         all_test_folds_equal_size = False
+    # assert not all_test_folds_equal_size
+    # TODO: modify fixture for meaningful test of test fold inequality
 
 
 @pytest.fixture(scope='function')
