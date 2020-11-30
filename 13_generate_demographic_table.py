@@ -3,7 +3,7 @@ import pandas as pd
 
 from utils.constants import DATA_DIR, TABLES_OUTPUT_DIR, INTERNAL_OUTPUT_DIR
 from utils.io import load_object
-from utils.split import TrainTestSplitter
+from utils.split import TrainTestSplitter, tt_splitter_all_test_case_modifier
 from utils.table import Table1Variable
 from utils.report import Reporter
 
@@ -28,6 +28,10 @@ reporter.report("Loading data needed for train-test splitting")
 tt_splitter: TrainTestSplitter = load_object(
     os.path.join(INTERNAL_OUTPUT_DIR, "01_train_test_splitter.pkl")
 )
+
+
+reporter.report("Modifying train-test splitter to include all test cases")
+tt_splitter = tt_splitter_all_test_case_modifier(tt_splitter)
 
 
 reporter.report('Defining Table 1 specification')
