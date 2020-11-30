@@ -68,13 +68,15 @@ table_1_variables = (
         "S03Potassium",
         "Potassium (mmol/L)",
         True,
-        'continuous'
+        'continuous',
+        1
     ),
     DemographicTableVariable(
         "S03WhiteCellCount",
-        r"White cell count ($\times$10${^9}$/L)",
+        r"White cell count (x10^9/L)",
         True,
-        'continuous'
+        'continuous',
+        1
     ),
     DemographicTableVariable(
         "S03SerumCreatinine",
@@ -86,13 +88,15 @@ table_1_variables = (
         "S03Urea",
         "Urea (mmol/L)",
         True,
-        'continuous'
+        'continuous',
+        1
     ),
     DemographicTableVariable(
         "S03PreOpArterialBloodLactate",
         "Lactate (mmol/L)",
         True,
-        'continuous'
+        'continuous',
+        1
     ),
     DemographicTableVariable(
         "S03PreOpLowestAlbumin",
