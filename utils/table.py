@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from utils.split import TrainTestSplitter
+from utils.wrangling import percent_missing
 
 
 @dataclass
@@ -27,6 +28,7 @@ def generate_demographic_table(
     dfs['train'] = df.loc[modified_tts.train_i[0]].copy().reset_index(drop=True)
     dfs['test'] = df.loc[modified_tts.test_i[0]].copy().reset_index(drop=True)
 
+    # Initialise demographic table
     table = pd.DataFrame(
         data=np.zeros((len(variables), 6)),
         columns=(
@@ -41,6 +43,7 @@ def generate_demographic_table(
     )
 
     for var_i, var in enumerate(variables):
+        # Calculate summary statistics
         if var.var_type == 'continuous':
             table.loc[var_i, 'Variable'] = f'{var.pretty_name}: median (IQR)'
             for df_i, df in enumerate(dfs.values()):
@@ -60,5 +63,16 @@ def generate_demographic_table(
 
         elif var.var_type == 'multicat':
             pass
+
+        # Calculate missingness
+        n_missing = df.loc[df[var.name].isnull()].shape[0]
+        perc_missing = np.round(percent_missing(df, var.name), 1)
+        table.loc[var_i, 'Missing values (%)'] = f'{n_missing} ({perc_missing})'
+
+        # Add indicator for whether variable in novel model
+        if var.in_novel_model:
+            table.loc[var_i, 'In novel model'] = 'Yes'
+        else:
+            table.loc[var_i, 'In novel model'] = 'No'
 
     return table
