@@ -32,9 +32,9 @@ def generate_demographic_table(
         columns=(
             'Variable',
             f'All cases (n={dfs["all"].shape[0]})',
-            'Missing values (%)',
             f'Development cases (n={dfs["train"].shape[0]})',
             f'Evalulation cases (n={dfs["test"].shape[0]})',
+            'Missing values (%)',
             'In novel model'
         ),
         dtype=str
@@ -49,7 +49,7 @@ def generate_demographic_table(
                     quantiles = np.round(quantiles, var.decimal_places)
                 else:
                     quantiles = np.round(quantiles).astype(int).astype(str)
-                table.iloc[var_i, df_i + 2] = (
+                table.iloc[var_i, df_i + 1] = (
                     f'{quantiles[1]} ({quantiles[0]} - {quantiles[2]})')
 
         elif var.var_type == 'binary':
