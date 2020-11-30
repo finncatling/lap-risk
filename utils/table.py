@@ -24,8 +24,8 @@ def generate_demographic_table(
 ):
     dfs = OrderedDict()
     dfs['all'] = df
-    dfs['train'] = df.loc[modified_tts.train_i].copy().reset_index(drop=True)
-    dfs['test'] = df.loc[modified_tts.test_i].copy().reset_index(drop=True)
+    dfs['train'] = df.loc[modified_tts.train_i[0]].copy().reset_index(drop=True)
+    dfs['test'] = df.loc[modified_tts.test_i[0]].copy().reset_index(drop=True)
 
     table = pd.DataFrame(
         data=np.zeros((len(variables), 6)),
