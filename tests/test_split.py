@@ -112,6 +112,14 @@ class TestTrainTestSplitter:
         }
 
 
+def test_tt_splitter_all_test_case_modifier(train_test_split_fixture):
+    original_tts = train_test_split_fixture
+    mod_tts = split.tt_splitter_all_test_case_modifier(original_tts)
+    for split_i in range(original_tts.n_splits):
+        assert all(original_tts.train_i[split_i] == mod_tts.train_i[split_i])
+        # TODO: modify fixture to for meaningful test of test fold inequality
+
+
 @pytest.fixture(scope='function')
 def splitter_current_model_df_fixture() -> pd.DataFrame:
     """Note discontinuous index, as if incomplete cases have been previously
