@@ -174,7 +174,7 @@ table_1_variables = (
 print(
     generate_demographic_table(
         variables=table_1_variables,
-        df=df,
+        this_df=df,
         modified_tts=tt_splitter,
         output_filepath='FILL THIS IN PROPERLY'
     )

@@ -19,14 +19,14 @@ class DemographicTableVariable:
 
 def generate_demographic_table(
     variables: Tuple[DemographicTableVariable, ...],
-    df: pd.DataFrame,
+    this_df: pd.DataFrame,
     modified_tts: TrainTestSplitter,
     output_filepath: str
 ):
     dfs = OrderedDict()
-    dfs['all'] = df
-    dfs['train'] = df.loc[modified_tts.train_i[0]].copy().reset_index(drop=True)
-    dfs['test'] = df.loc[modified_tts.test_i[0]].copy().reset_index(drop=True)
+    dfs['all'] = this_df
+    dfs['train'] = this_df.loc[modified_tts.train_i[0]].copy().reset_index(drop=True)
+    dfs['test'] = this_df.loc[modified_tts.test_i[0]].copy().reset_index(drop=True)
 
     # Initialise demographic table
     table = pd.DataFrame(
@@ -46,8 +46,8 @@ def generate_demographic_table(
         # Calculate summary statistics
         if var.var_type == 'continuous':
             table.loc[var_i, 'Variable'] = f'{var.pretty_name}: median (IQR)'
-            for df_i, df in enumerate(dfs.values()):
-                quantiles = df[var.name].quantile([0.25, 0.5, 0.75]).values
+            for df_i, this_df in enumerate(dfs.values()):
+                quantiles = this_df[var.name].quantile([0.25, 0.5, 0.75]).values
                 if var.decimal_places > 0:
                     quantiles = np.round(quantiles, var.decimal_places)
                 else:
@@ -65,8 +65,8 @@ def generate_demographic_table(
             pass
 
         # Calculate missingness
-        n_missing = df.loc[df[var.name].isnull()].shape[0]
-        perc_missing = np.round(percent_missing(df, var.name), 1)
+        n_missing = dfs['all'].loc[dfs['all'][var.name].isnull()].shape[0]
+        perc_missing = np.round(percent_missing(dfs['all'], var.name), 1)
         table.loc[var_i, 'Missing values'] = (
             f'{n_missing} ({perc_missing}%)')
 
