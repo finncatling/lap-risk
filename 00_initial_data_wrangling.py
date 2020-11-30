@@ -5,6 +5,8 @@ import pandas as pd
 
 from utils.constants import (
     RAW_NELA_DATA_FILEPATH,
+    DATA_DIR,
+    NELA_DATA_FILEPATH,
     STATS_OUTPUT_DIR,
     CURRENT_MODEL_OUTPUT_DIR,
     NOVEL_MODEL_OUTPUT_DIR,
@@ -217,7 +219,12 @@ reporter.report('Resetting DataFrame index')
 df = df.reset_index(drop=True)
 
 
-# TODO: Generate Table 1 here
+reporter.report('Saving wrangled data')
+df.to_pickle(os.path.join(
+    DATA_DIR,
+    "lap_risk_df_after_univariate_wrangling_all_variables.pkl"
+))
+
 
 
 reporter.first('Dropping variables unused in downstream analysis')
