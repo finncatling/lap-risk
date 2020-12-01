@@ -110,63 +110,63 @@ table_1_variables = (
         True,
         "continuous"  # this approximation suffices here
     ),
-    # Table1Variable(
-    #     "S01Sex",
-    #     "Female",
-    #     False,
-    #     'binary',
-    # ),
-    # Table1Variable(
-    #     "Target",
-    #     "Died",
-    #     True,
-    #     'binary'
-    # ),
-    # Table1Variable(
+    DemographicTableVariable(
+        "S01Sex",
+        "Female",
+        False,
+        'binary',
+    ),
+    DemographicTableVariable(
+        "Target",
+        "Died",
+        True,
+        'binary'
+    ),
+    DemographicTableVariable(
+        "S03ECG",
+        "Non-sinus rhythm",
+        True,
+        'binary'
+    ),
+    # DemographicTableVariable(
     #     "S03ASAScore",
     #     "ASA physical status",
     #     True,
     #     'ordinal_multicat'
     # ),
-    # Table1Variable(
+    # DemographicTableVariable(
     #     "S03CardiacSigns",
     #     "Cardiovascular status",
     #     True,
     #     'ordinal_multicat'
     # ),
-    # Table1Variable(
+    # DemographicTableVariable(
     #     "S03RespiratorySigns",
     #     "Respiratory status",
     #     True,
     #     'ordinal_multicat'
     # ),
-    # Table1Variable(
-    #     "S03ECG",  # TODO: Need to use binarized version
-    #     "Non-sinus rhythm",
-    #     True,
-    #     'binary'
-    # ),
-    # Table1Variable(
+    # DemographicTableVariable(
     #     "S03Pred_Peritsoil",
     #     "Peritoneal soiling",
     #     True,
     #     'ordinal_multicat'
     # ),
-    # Table1Variable(
+    # DemographicTableVariable(
     #     "S03DiagnosedMalignancy",
     #     "Malignancy",
     #     True,
     #     'ordinal_multicat'
     # ),
-    # Table1Variable(
+    # DemographicTableVariable(
     #     "S03WhatIsTheOperativeSeverity",),
-    # Table1Variable(
+    # DemographicTableVariable(
     #     "S02PreOpCTPerformed",),
-    # Table1Variable(
+    # DemographicTableVariable(
     #     "S03Pred_TBL",),
-    # Table1Variable(
+    # DemographicTableVariable(
     #     "S03NumberOfOperativeProcedures",),
-    # Table1Variable(
+    # DemographicTableVariable(
     #     "S03NCEPODUrgency",),
 )
 

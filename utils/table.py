@@ -56,7 +56,13 @@ def generate_demographic_table(
                     f'{quantiles[1]} ({quantiles[0]} - {quantiles[2]})')
 
         elif var.var_type == 'binary':
-            pass
+            table.loc[var_i, 'Variable'] = (
+                f'{var.pretty_name}: n (% of non-missing)')
+            for df_i, this_df in enumerate(dfs.values()):
+                n_nonnull = this_df.loc[this_df[var.name].notnull()].shape[0]
+                n_positive = this_df.loc[this_df[var.name] == 1].shape[0]
+                perc_positive = np.round(n_positive / n_nonnull * 100, 1)
+                table.iloc[var_i, df_i + 1] = f'{n_positive} ({perc_positive}%)'
 
         elif var.var_type == 'ordinal_multicat':
             pass
