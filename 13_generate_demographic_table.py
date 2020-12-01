@@ -47,10 +47,62 @@ table_1_variables = (
         'continuous'
     ),
     DemographicTableVariable(
+        "S01Sex",
+        "Female",
+        False,
+        'binary',
+    ),
+    DemographicTableVariable(
+        "Target",
+        "Died",
+        True,
+        'binary'
+    ),
+    DemographicTableVariable(
+        "S03ASAScore",
+        "ASA physical status",
+        True,
+        'ordinal_multicat',
+        0,
+        '1 2 3 4 5'.split()
+    ),
+    DemographicTableVariable(
+        "S03CardiacSigns",
+        "Cardiovascular status",
+        True,
+        'ordinal_multicat',
+        0,
+        [
+            'No failure',
+            'CVS medications',
+            'Peripheral oedema / warfarin',
+            'Cardiomegaly / raised JVP'
+        ]
+    ),
+    DemographicTableVariable(
+        "S03RespiratorySigns",
+        "Respiratory status",
+        True,
+        'ordinal_multicat',
+        0,
+        [
+            'No dyspnoea',
+            'Mild COPD / dyspnoea',
+            'Moderate COPD / dyspnoea',
+            'Fibrosis / consolidation / severe dyspnoea'
+        ]
+    ),
+    DemographicTableVariable(
         "S03Pulse",
         "Heart rate (BPM)",
         True,
         'continuous'
+    ),
+    DemographicTableVariable(
+        "S03ECG",
+        "Non-sinus rhythm",
+        True,
+        'binary'
     ),
     DemographicTableVariable(
         "S03SystolicBloodPressure",
@@ -111,38 +163,10 @@ table_1_variables = (
         "continuous"  # this approximation suffices here
     ),
     DemographicTableVariable(
-        "S03ASAScore",
-        "ASA physical status",
+        "S02PreOpCTPerformed",
+        "CT performed",
         True,
-        'ordinal_multicat',
-        0,
-        '1 2 3 4 5'.split()
-    ),
-    DemographicTableVariable(
-        "S03CardiacSigns",
-        "Cardiovascular status",
-        True,
-        'ordinal_multicat',
-        0,
-        [
-            'No failure',
-            'CVS medications',
-            'Peripheral oedema / warfarin',
-            'Cardiomegaly / raised JVP'
-        ]
-    ),
-    DemographicTableVariable(
-        "S03RespiratorySigns",
-        "Respiratory status",
-        True,
-        'ordinal_multicat',
-        0,
-        [
-            'No dyspnoea',
-            'Mild COPD / dyspnoea',
-            'Moderate COPD / dyspnoea',
-            'Fibrosis / consolidation / severe dyspnoea'
-        ]
+        'binary'
     ),
     DemographicTableVariable(
         "S03Pred_Peritsoil",
@@ -159,30 +183,6 @@ table_1_variables = (
         'ordinal_multicat',
         0,
         ["None", "Primary only", "Nodal mets.", "Distant mets."]
-    ),
-    DemographicTableVariable(
-        "S01Sex",
-        "Female",
-        False,
-        'binary',
-    ),
-    DemographicTableVariable(
-        "Target",
-        "Died",
-        True,
-        'binary'
-    ),
-    DemographicTableVariable(
-        "S03ECG",
-        "Non-sinus rhythm",
-        True,
-        'binary'
-    ),
-    DemographicTableVariable(
-        "S02PreOpCTPerformed",
-        "CT performed",
-        True,
-        'binary'
     ),
     # DemographicTableVariable(
     #     "S03WhatIsTheOperativeSeverity",),
