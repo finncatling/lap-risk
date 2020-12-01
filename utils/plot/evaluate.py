@@ -4,6 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from arviz.stats.density_utils import kde
 
 from utils.evaluate import stratify_y_pred
 
@@ -49,4 +50,37 @@ def plot_calibration(
         xlim=[0, 1],
         ylim=[0, 1],
     )
+    return fig, ax
+
+
+def plot_example_risk_distributions(
+    y_pred_samples: np.ndarray,
+    patient_indices: Tuple[int, ...],
+    kde_bandwidths: Tuple[float, ...]
+) -> Tuple[Figure, Axes]:
+    """Plot predicted risk distributions (and corresponding point estimates)
+        for example patients. y_pred_samples is (n_sampled_risks, n_patients).
+        kde_bandwidths should be same length as patient_indices."""
+    fig, ax = plt.subplots()
+    for i, j in enumerate(patient_indices):
+        grid, pdf = kde(y_pred_samples[:, j], bw=kde_bandwidths[i])
+        ax.fill_between(grid, pdf, alpha=0.4, label=f'Patient {i + 1}')
+        if i:
+            ax.axvline(np.median(y_pred_samples[:, j]), c='black', ls=':')
+        else:
+            ax.axvline(
+                np.median(y_pred_samples[:, j]),
+                c='black',
+                ls=':',
+                label='Point prediction'
+            )
+
+    ax.set_ylim(bottom=0)
+    ax.set(
+        xlim=(0, 1),
+        xlabel='Predicted risk of death',
+        ylabel='Probability density'
+    )
+    ax.legend()
+
     return fig, ax
