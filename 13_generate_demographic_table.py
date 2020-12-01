@@ -134,12 +134,14 @@ table_1_variables = (
         True,
         'binary'
     ),
-    # DemographicTableVariable(
-    #     "S03ASAScore",
-    #     "ASA physical status",
-    #     True,
-    #     'ordinal_multicat'
-    # ),
+    DemographicTableVariable(
+        "S03ASAScore",
+        "ASA physical status",
+        True,
+        'ordinal_multicat',
+        0,
+        tuple('1 2 3 4 5'.split())
+    ),
     # DemographicTableVariable(
     #     "S03CardiacSigns",
     #     "Cardiovascular status",
