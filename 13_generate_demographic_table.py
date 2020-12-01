@@ -1,9 +1,16 @@
 import os
 import pandas as pd
 
-from utils.constants import DATA_DIR, TABLES_OUTPUT_DIR, INTERNAL_OUTPUT_DIR
+from utils.constants import (
+    DATA_DIR,
+    TABLES_OUTPUT_DIR,
+    INTERNAL_OUTPUT_DIR,
+    NOVEL_MODEL_OUTPUT_DIR
+)
 from utils.io import load_object
 from utils.split import TrainTestSplitter, tt_splitter_all_test_case_modifier
+from utils.indications import INDICATION_VAR_NAME, IndicationNameProcessor
+from utils.model.novel import LactateAlbuminImputer
 from utils.table import DemographicTableVariable, generate_demographic_table
 from utils.report import Reporter
 
@@ -36,6 +43,17 @@ tt_splitter: TrainTestSplitter = load_object(
 
 reporter.report("Modifying train-test splitter to include all test cases")
 tt_splitter = tt_splitter_all_test_case_modifier(tt_splitter)
+
+
+reporter.report("Sanitising indication names")
+albumin_imputer: LactateAlbuminImputer = load_object(
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "07_albumin_imputer.pkl")
+)
+indication_names = IndicationNameProcessor(
+    multi_category_levels=albumin_imputer.multi_cat_vars,
+    remove_missing_category=True,
+    max_line_length=100  # Long enough so never uses new line character
+)
 
 
 reporter.report('Specifying Table 1 variables')
@@ -184,6 +202,14 @@ table_1_variables = (
         0,
         ["None", "Primary only", "Nodal mets.", "Distant mets."]
     ),
+    DemographicTableVariable(
+        INDICATION_VAR_NAME,
+        'Indication',
+        True,
+        'multicat',
+        0,
+        indication_names.sanitized
+    )
     # DemographicTableVariable(
     #     "S03WhatIsTheOperativeSeverity",),
     # DemographicTableVariable(
@@ -198,7 +224,7 @@ table_1_variables = (
 print(
     generate_demographic_table(
         variables=table_1_variables,
-        this_df=df,
+        df=df,
         modified_tts=tt_splitter,
         output_filepath='FILL THIS IN PROPERLY'
     )

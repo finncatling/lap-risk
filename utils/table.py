@@ -20,15 +20,15 @@ class DemographicTableVariable:
 
 def generate_demographic_table(
     variables: Tuple[DemographicTableVariable, ...],
-    this_df: pd.DataFrame,
+    df: pd.DataFrame,
     modified_tts: TrainTestSplitter,
     output_filepath: str
 ):
     dfs = OrderedDict()
-    dfs['all'] = this_df
-    dfs['train'] = this_df.loc[
+    dfs['all'] = df
+    dfs['train'] = df.loc[
         modified_tts.train_i[0]].copy().reset_index(drop=True)
-    dfs['test'] = this_df.loc[
+    dfs['test'] = df.loc[
         modified_tts.test_i[0]].copy().reset_index(drop=True)
 
     # Initialise demographic table
@@ -79,7 +79,15 @@ def generate_demographic_table(
                 table.iloc[var_i, df_i + 1] = f'{n_positive} ({perc_positive}%)'
 
         elif var.var_type == 'multicat':
-            pass
+            table.loc[var_i, 'Variable'] = (
+                f'{var.pretty_name}: Mode (n, % of non-missing)')
+            for df_i, this_df in enumerate(dfs.values()):
+                n_nonnull = this_df.loc[this_df[var.name].notnull()].shape[0]
+                vc = this_df[var.name].value_counts()
+                mode_label = var.category_labels[int(vc.index[0])]
+                mode_perc = np.round(vc.values[0] / n_nonnull * 100, 1)
+                table.iloc[var_i, df_i + 1] = (
+                    f'{mode_label} ({vc.values[0]}, {mode_perc}%)')
 
         # Calculate missingness
         n_missing = dfs['all'].loc[dfs['all'][var.name].isnull()].shape[0]
