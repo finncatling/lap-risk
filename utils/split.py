@@ -256,6 +256,27 @@ class TrainTestSplitter:
         )
 
 
+def tt_splitter_all_test_case_modifier(tts: TrainTestSplitter):
+    """Modifies already-instantiated TrainTestSplitter where .split() has
+        already been run, so that each test fold contains all non-train cases,
+        rather than just the current-model-complete non-train cases.
+
+        We modify an existing instance to ensure consistent randomisation."""
+    tts = copy.deepcopy(tts)
+    tts.split_stats = None  # Some will be invalidated, so safer to remove
+    tts.test_i = []  # Wipe old test case indices, as we will reassign these
+    for split_i in range(tts.n_splits):
+        tts.test_i.append(
+            tts.df.index[
+                tts.df[tts.split_variable_name].isin(
+                    tts.test_institution_ids[split_i]
+                )
+            ].to_numpy()
+        )
+    tts.all_test_cases_included = True  # Add flag for easy checking in future
+    return tts
+
+
 class Splitter:
     """Base class to handle repeated train-test splitting, according to
         pre-defined splits in passed TrainTestSplitter. Thin wrapper around

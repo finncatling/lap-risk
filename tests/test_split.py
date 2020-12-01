@@ -112,6 +112,18 @@ class TestTrainTestSplitter:
         }
 
 
+def test_tt_splitter_all_test_case_modifier(train_test_split_fixture):
+    original_tts = train_test_split_fixture
+    mod_tts = split.tt_splitter_all_test_case_modifier(original_tts)
+    # all_test_folds_equal_size = True
+    for split_i in range(original_tts.n_splits):
+        assert all(original_tts.train_i[split_i] == mod_tts.train_i[split_i])
+        assert (
+            mod_tts.train_i[split_i].shape[0] +
+            mod_tts.test_i[split_i].shape[0]
+        ) == mod_tts.df.shape[0]
+
+
 @pytest.fixture(scope='function')
 def splitter_current_model_df_fixture() -> pd.DataFrame:
     """Note discontinuous index, as if incomplete cases have been previously
