@@ -118,6 +118,28 @@ def tjurs_coef(y_true, y_pred):
     return y_pred_1.mean() - y_pred_0.mean()
 
 
+def mean_log_pointwise_predictive_density(
+    y_true: np.ndarray,
+    y_pred_samples: np.ndarray
+) -> float:
+    """Calculates mean of the log pointwise predictive density - see
+        https://arxiv.org/abs/1307.5928 p5- for a logistic model given samples
+        from the posterior predictive. y_pred_samples is of shape
+        (n_sampled_predicted_probabilities, n_patients). y_true is binary
+        labels of shape (n_patients, ).
+
+        This just amounts to log loss for the mean predicted probability.
+
+        # TODO: Apply an epsilon if we get any mean y_pred = 0 causing -inf
+    """
+    return - np.log(
+        (
+            y_true * y_pred_samples +
+            (1 - y_true) * (1 - y_pred_samples)
+        ).mean(0)
+    ).mean()
+
+
 def score_logistic_predictions(
     y_true: np.ndarray,
     y_pred: np.ndarray
