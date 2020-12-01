@@ -61,7 +61,8 @@ def generate_demographic_table(
                         f'{quantiles[1]} ({quantiles[0]} - {quantiles[2]})')
 
                 elif var.var_type == 'ordinal_multicat':
-                    quantiles = np.round(quantiles, var.decimal_places)
+                    quantiles = np.round(
+                        quantiles, var.decimal_places).astype(int)
                     labelled_quantiles = [
                         var.category_labels[label_i] for label_i in quantiles]
                     table.iloc[var_i, df_i + 1] = (
