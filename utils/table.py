@@ -23,7 +23,7 @@ def generate_demographic_table(
     df: pd.DataFrame,
     modified_tts: TrainTestSplitter,
     output_filepath: str
-):
+) -> None:
     dfs = OrderedDict()
     dfs['all'] = df
     dfs['train'] = df.loc[
@@ -80,7 +80,7 @@ def generate_demographic_table(
 
         elif var.var_type == 'multicat':
             table.loc[var_i, 'Variable'] = (
-                f'{var.pretty_name}: Mode (n, % of non-missing)')
+                f'{var.pretty_name}: mode (n, % of non-missing)')
             for df_i, this_df in enumerate(dfs.values()):
                 n_nonnull = this_df.loc[this_df[var.name].notnull()].shape[0]
                 vc = this_df[var.name].value_counts()
@@ -101,4 +101,5 @@ def generate_demographic_table(
         else:
             table.loc[var_i, 'In novel model'] = 'No'
 
-    return table
+    # Export as tab-separated values, given that we use commas in the fields
+    table.to_csv(output_filepath, sep='\t')

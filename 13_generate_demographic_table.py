@@ -16,7 +16,7 @@ from utils.report import Reporter
 
 
 reporter = Reporter()
-reporter.title("Generate Table 1 (demographic information")
+reporter.title("Generate demographic table")
 
 
 reporter.report('Loading preprocessed data')
@@ -31,7 +31,7 @@ raw_df = pd.read_pickle(os.path.join(
     DATA_DIR,
     "lap_risk_df_after_univariate_wrangling_all_variables.pkl"
 ))
-for variable_name in ("S01Sex",):  # TODO: Add more variables here if needed
+for variable_name in ("S01Sex",):
     df[variable_name] = raw_df[variable_name]
 
 
@@ -56,7 +56,7 @@ indication_names = IndicationNameProcessor(
 )
 
 
-reporter.report('Specifying Table 1 variables')
+reporter.report('Specifying demographic table variables')
 table_1_variables = (
     DemographicTableVariable(
         "S01AgeOnArrival",
@@ -221,15 +221,13 @@ table_1_variables = (
 )
 
 
-print(
-    generate_demographic_table(
-        variables=table_1_variables,
-        df=df,
-        modified_tts=tt_splitter,
-        output_filepath='FILL THIS IN PROPERLY'
-    )
+reporter.report('Constructing and saving demographic table')
+generate_demographic_table(
+    variables=table_1_variables,
+    df=df,
+    modified_tts=tt_splitter,
+    output_filepath=os.path.join(TABLES_OUTPUT_DIR, 'demographic_table.csv')
 )
 
 
-# TODO: 6 Columns - variable, missingness (all), all, train0, test0, in n. model
-# TODO: Table needs key to define ordinal categories
+reporter.last('Done.')
