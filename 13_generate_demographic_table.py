@@ -111,6 +111,56 @@ table_1_variables = (
         "continuous"  # this approximation suffices here
     ),
     DemographicTableVariable(
+        "S03ASAScore",
+        "ASA physical status",
+        True,
+        'ordinal_multicat',
+        0,
+        '1 2 3 4 5'.split()
+    ),
+    DemographicTableVariable(
+        "S03CardiacSigns",
+        "Cardiovascular status",
+        True,
+        'ordinal_multicat',
+        0,
+        [
+            'No failure',
+            'CVS medications',
+            'Peripheral oedema / warfarin',
+            'Cardiomegaly / raised JVP'
+        ]
+    ),
+    DemographicTableVariable(
+        "S03RespiratorySigns",
+        "Respiratory status",
+        True,
+        'ordinal_multicat',
+        0,
+        [
+            'No dyspnoea',
+            'Mild COPD / dyspnoea',
+            'Moderate COPD / dyspnoea',
+            'Fibrosis / consolidation / severe dyspnoea'
+        ]
+    ),
+    DemographicTableVariable(
+        "S03Pred_Peritsoil",
+        "Peritoneal soiling",
+        True,
+        'ordinal_multicat',
+        0,
+        ["None", "Serous", "Local pus", "Free pus / blood / faeces"]
+    ),
+    DemographicTableVariable(
+        "S03DiagnosedMalignancy",
+        "Malignancy",
+        True,
+        'ordinal_multicat',
+        0,
+        ["None", "Primary only", "Nodal mets.", "Distant mets."]
+    ),
+    DemographicTableVariable(
         "S01Sex",
         "Female",
         False,
@@ -134,38 +184,6 @@ table_1_variables = (
         True,
         'binary'
     ),
-    DemographicTableVariable(
-        "S03ASAScore",
-        "ASA physical status",
-        True,
-        'ordinal_multicat',
-        0,
-        tuple('1 2 3 4 5'.split())
-    ),
-    # DemographicTableVariable(
-    #     "S03CardiacSigns",
-    #     "Cardiovascular status",
-    #     True,
-    #     'ordinal_multicat'
-    # ),
-    # DemographicTableVariable(
-    #     "S03RespiratorySigns",
-    #     "Respiratory status",
-    #     True,
-    #     'ordinal_multicat'
-    # ),
-    # DemographicTableVariable(
-    #     "S03Pred_Peritsoil",
-    #     "Peritoneal soiling",
-    #     True,
-    #     'ordinal_multicat'
-    # ),
-    # DemographicTableVariable(
-    #     "S03DiagnosedMalignancy",
-    #     "Malignancy",
-    #     True,
-    #     'ordinal_multicat'
-    # ),
     # DemographicTableVariable(
     #     "S03WhatIsTheOperativeSeverity",),
     # DemographicTableVariable(

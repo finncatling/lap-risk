@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 from collections import OrderedDict
 from dataclasses import dataclass
 import numpy as np
@@ -15,7 +15,7 @@ class DemographicTableVariable:
     in_novel_model: bool
     var_type: str  # {'continuous', 'binary', 'ordinal_multicat', 'multicat'}
     decimal_places: int = 0
-    category_labels: Union[None, Tuple[str, ...]] = None
+    category_labels: Union[None, List[str, ...]] = None
 
 
 def generate_demographic_table(
