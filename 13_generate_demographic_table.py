@@ -128,6 +128,12 @@ table_1_variables = (
         True,
         'binary'
     ),
+    DemographicTableVariable(
+        "S02PreOpCTPerformed",
+        "CT performed",
+        True,
+        'binary'
+    ),
     # DemographicTableVariable(
     #     "S03ASAScore",
     #     "ASA physical status",
@@ -160,8 +166,6 @@ table_1_variables = (
     # ),
     # DemographicTableVariable(
     #     "S03WhatIsTheOperativeSeverity",),
-    # DemographicTableVariable(
-    #     "S02PreOpCTPerformed",),
     # DemographicTableVariable(
     #     "S03Pred_TBL",),
     # DemographicTableVariable(
