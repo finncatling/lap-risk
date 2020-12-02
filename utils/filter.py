@@ -88,7 +88,7 @@ class StratifiedDispersionQuantifier:
             'just_lac_imputation',
             'just_lac_alb_imputation'
         ):
-            per_split_range_95ci[description] = np.zeros(self.n_splits, 2)
+            per_split_range_95ci[description] = np.zeros((self.n_splits, 2))
         return per_split_range_95ci
 
     def _calculate_y_pred_95ci_range(self, split_i: int):
