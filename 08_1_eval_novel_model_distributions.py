@@ -23,7 +23,22 @@ novel_model: NovelModel = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
 
 
-reporter.report(f"Generating predicted risk distributions.")
+reporter.report("Load calibration GAM best lams from point-prediction novel "
+                "model scorer")
+point_prediction_novel_model_scorer: LogisticScorer = load_object(
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model_scorer.pkl"))
+best_lams = np.array([nested_lam[0][0] for nested_lam in
+                      point_prediction_novel_model_scorer.calib_lams])
+
+
+reporter.report("Restricting calibration GAM fitting for risk distributions to "
+                "the 3 most-frequently-chosen lams, as GAM fitting is slow "
+                "with such large datasets.")
+unique_lams, counts_per_unique_lam = np.unique(best_lams, return_counts=True)
+top_3_lams = unique_lams[counts_per_unique_lam.argsort()][-3:]
+
+
+reporter.report("Generating predicted risk distributions.")
 y_obs, y_preds = [], []
 for split_i in pb(
     range(novel_model.cat_imputer.tts.n_splits),
@@ -40,6 +55,9 @@ for split_i in pb(
     y_preds.append(y_pred.flatten(order='F'))
 
 
+reporter.report(f"{y_pred.shape[0]} samples form each risk distribution")
+
+
 reporter.report(f"Scoring novel model performance.")
 scorer = LogisticScorer(
     y_true=y_obs,
@@ -47,7 +65,8 @@ scorer = LogisticScorer(
     scorer_function=score_logistic_predictions,
     n_splits=novel_model.cat_imputer.tts.n_splits,
     calibration_n_splines=CALIB_GAM_N_SPLINES,
-    calibration_lam_candidates=np.array(0.00132571, 0.00175751))
+    calibration_lam_candidates=top_3_lams
+)
 scorer.calculate_scores()
 reporter.first("Scores with median as point estimate:")
 scorer.print_scores(dec_places=3, point_estimate='median')
@@ -58,7 +77,7 @@ scorer.print_scores(dec_places=3, point_estimate='split0')
 reporter.first("Saving model scorer for later use")
 save_object(
     scorer,
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "12_novel_model_samples_scorer.pkl"))
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_1_novel_model_samples_scorer.pkl"))
 
 
 reporter.last("Done.")

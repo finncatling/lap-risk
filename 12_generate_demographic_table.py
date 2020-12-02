@@ -41,6 +41,7 @@ tt_splitter: TrainTestSplitter = load_object(
 )
 
 
+# TODO: Exclude this step and derive table for just complete case test fold
 reporter.report("Modifying train-test splitter to include all test cases")
 tt_splitter = tt_splitter_all_test_case_modifier(tt_splitter)
 
