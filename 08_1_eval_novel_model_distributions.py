@@ -32,10 +32,12 @@ best_lams = np.array([nested_lam[0][0] for nested_lam in
 
 
 reporter.report("Restricting calibration GAM fitting for risk distributions to "
-                "the 3 most-frequently-chosen lams, as GAM fitting is slow "
-                "with such large datasets.")
+                "the 3 most-frequently-chosen lams during previous novel model "
+                "fiting, as calibration GAM fitting is slow with such large "
+                "datasets.")
 unique_lams, counts_per_unique_lam = np.unique(best_lams, return_counts=True)
 top_3_lams = unique_lams[counts_per_unique_lam.argsort()][-3:]
+reporter.report(f"Top 3 lams are f{top_3_lams}")
 
 
 reporter.report("Generating predicted risk distributions.")
