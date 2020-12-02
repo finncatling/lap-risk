@@ -101,7 +101,7 @@ class StratifiedDispersionQuantifier:
             y_pred_percentiles[1, :] - y_pred_percentiles[0, :])
 
     def _stratify(self, split_i: int):
-        all_case_i = set(range(self.y_pred_samples[split_i].shape[0]))
+        all_case_i = set(range(self.y_pred_samples[split_i].shape[1]))
         non_mice_cat_imputed_case_i = (
             all_case_i - self.mice_cat_imputed_case_i[split_i]
         )
