@@ -9,6 +9,7 @@ from utils.constants import (
 from utils.evaluate import LogisticScorer, score_logistic_predictions
 from utils.io import load_object, save_object
 from utils.model.novel import NovelModel
+from utils.filter import StratifiedDispersionQuantifier
 from utils.report import Reporter
 
 reporter = Reporter()
@@ -41,7 +42,7 @@ reporter.report(f"Top 3 lams are f{top_3_lams}")
 
 
 reporter.report("Generating predicted risk distributions.")
-y_obs, y_preds = [], []
+y_preds, y_obs_repeated, y_preds_flat = [], [], []
 for split_i in pb(
     range(novel_model.cat_imputer.tts.n_splits),
     prefix="Split iteration"
@@ -53,17 +54,34 @@ for split_i in pb(
     )
     # NB. Shape of y_ob is (n_patients,)
     # NB. Shape of y_pred is (n_predicted_probabilities, n_patients)
-    y_obs.append(np.repeat(y_ob, y_pred.shape[0]))
-    y_preds.append(y_pred.flatten(order='F'))
+    y_preds.append(y_pred)
+    y_obs_repeated.append(np.repeat(y_ob, y_pred.shape[0]))
+    y_preds_flat.append(y_pred.flatten(order='F'))
 
 
-reporter.report(f"{y_pred.shape[0]} samples form each risk distribution")
+reporter.report(f"{y_preds[0].shape[0]} samples form each risk distribution")
 
 
-reporter.report(f"Scoring novel model performance.")
+reporter.report("Quantifying dispersion of predicted risk distributions, "
+                "stratified by imputation method")
+dispersion_quantifier = StratifiedDispersionQuantifier(
+    y_pred_samples=y_preds,
+    novel_model=novel_model,
+    fold_name='test'
+)
+dispersion_quantifier.calculate_dispersion_and_stratify()
+
+
+reporter.report("Saving dispersion quantifier for later use")
+save_object(
+    dispersion_quantifier,
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_1_dispersion_quantifier.pkl"))
+
+
+reporter.report("Scoring novel model performance.")
 scorer = LogisticScorer(
-    y_true=y_obs,
-    y_pred=y_preds,
+    y_true=y_obs_repeated,
+    y_pred=y_preds_flat,
     scorer_function=score_logistic_predictions,
     n_splits=novel_model.cat_imputer.tts.n_splits,
     calibration_n_splines=CALIB_GAM_N_SPLINES,
