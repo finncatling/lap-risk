@@ -76,6 +76,7 @@ class StratifiedDispersionQuantifier:
             these."""
         for split_i in pb(range(self.n_splits), prefix="Split iteration"):
             self._calculate_y_pred_95ci_range(split_i)
+            self._stratify(split_i)
 
     def _init_per_split_95ci(self) -> Dict[str, np.ndarray]:
         """Each value in dict is of shape (n_splits, 2)"""
