@@ -291,7 +291,7 @@ class LogisticScorer(Scorer):
         self.calib_n_splines = calibration_n_splines
         self.calib_lam_candidates = calibration_lam_candidates
         self.p: Union[None, np.ndarray] = None
-        self.calib_lams: List[float] = []
+        self.calib_lams: List[List[List[float]]] = []
         self.calib_curves: List[np.ndarray] = []
 
     def calculate_scores(self):
