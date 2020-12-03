@@ -50,9 +50,9 @@ reporter.first("Difference with split 0 as difference point estimate:")
 score_comparer.print_scores(dec_places=4, point_estimate='split0')
 
 
-reporter.report("Calculating difference between scores for current model and "
-                "mean across all samples from novel model predicted "
-                "distributions")
+reporter.first("Calculating difference between scores for current model and "
+               "mean across all samples from novel model predicted "
+               "distributions")
 score_comparer_samples = ScoreComparer(
     scorers=(current_scorer, novel_samples_scorer),
     scorer_names=('current', 'novel_samples')
