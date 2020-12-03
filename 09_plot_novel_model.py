@@ -54,7 +54,7 @@ for scorer_name in ('novel_model', '1_novel_model_samples'):
         plot_calibration_subplots,
         p=scorer.p,
         calib_curves=(current_scorer.calib_curves, scorer.calib_curves),
-        model_names=('NELA calculator', 'Novel model'),
+        model_names=('Re-fit NELA calculator', 'Novel model'),
         curve_transparency=0.15,
         output_dir=FIGURES_OUTPUT_DIR,
         output_filename=f"09_current_vs_{scorer_name}_calibration",
