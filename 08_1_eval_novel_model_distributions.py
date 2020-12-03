@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from progressbar import progressbar as pb
+from pprint import PrettyPrinter
 
 from utils.constants import (
     CALIB_GAM_N_SPLINES,
@@ -72,7 +73,11 @@ dispersion_quantifier = StratifiedDispersionQuantifier(
 dispersion_quantifier.calculate_dispersion_and_stratify()
 
 
-reporter.report("Saving dispersion quantifier for later use")
+reporter.first('Printing stratified dispersion')
+PrettyPrinter().pprint(dispersion_quantifier.per_split_median_95ci)
+
+
+reporter.first("Saving dispersion quantifier for later use")
 save_object(
     dispersion_quantifier,
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_1_dispersion_quantifier.pkl"))

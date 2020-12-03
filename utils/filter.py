@@ -64,7 +64,7 @@ class StratifiedDispersionQuantifier:
         self.n_splits = novel_model.cat_imputer.tts.n_splits
         self.fold_name = fold_name
         self.per_case_ranges: List[np.ndarray] = []
-        self.per_split_95ci = self._init_per_split_95ci()
+        self.per_split_median_95ci = self._init_per_split_median_95ci()
         self.mice_cat_imputed_case_i = get_indices_of_case_imputed_using_target(
             fold_name,
             novel_model.cat_imputer.swm,
@@ -78,7 +78,7 @@ class StratifiedDispersionQuantifier:
             self._calculate_y_pred_95ci_range(split_i)
             self._stratify(split_i)
 
-    def _init_per_split_95ci(self) -> Dict[str, np.ndarray]:
+    def _init_per_split_median_95ci(self) -> Dict[str, np.ndarray]:
         """Each value in dict is of shape (n_splits, 2)"""
         per_split_range_95ci = {}
         for description in (
@@ -88,7 +88,7 @@ class StratifiedDispersionQuantifier:
             'just_lac_imputation',
             'just_lac_alb_imputation'
         ):
-            per_split_range_95ci[description] = np.zeros((self.n_splits, 2))
+            per_split_range_95ci[description] = np.zeros((self.n_splits, 3))
         return per_split_range_95ci
 
     def _calculate_y_pred_95ci_range(self, split_i: int):
@@ -130,22 +130,23 @@ class StratifiedDispersionQuantifier:
             lac_imputed_case_i.intersection(
                 alb_imputed_case_i)
         ) - self.mice_cat_imputed_case_i[split_i]
-        self.per_split_95ci['no_imputation'][split_i, :] = (
-            self._calculate_per_split_95ci(split_i, no_imputation_case_i))
-        self.per_split_95ci['just_mice_cat_imputation'][split_i, :] = (
-            self._calculate_per_split_95ci(
+        self.per_split_median_95ci['no_imputation'][split_i, :] = (
+            self._calculate_per_split_median_95ci(
+                split_i, no_imputation_case_i))
+        self.per_split_median_95ci['just_mice_cat_imputation'][split_i, :] = (
+            self._calculate_per_split_median_95ci(
                 split_i, just_mice_cat_imputation_case_i))
-        self.per_split_95ci['just_alb_imputation'][split_i, :] = (
-            self._calculate_per_split_95ci(
+        self.per_split_median_95ci['just_alb_imputation'][split_i, :] = (
+            self._calculate_per_split_median_95ci(
                 split_i, just_alb_imputation_case_i))
-        self.per_split_95ci['just_lac_imputation'][split_i, :] = (
-            self._calculate_per_split_95ci(
+        self.per_split_median_95ci['just_lac_imputation'][split_i, :] = (
+            self._calculate_per_split_median_95ci(
                 split_i, just_lac_imputation_case_i))
-        self.per_split_95ci['just_lac_alb_imputation'][split_i, :] = (
-            self._calculate_per_split_95ci(
+        self.per_split_median_95ci['just_lac_alb_imputation'][split_i, :] = (
+            self._calculate_per_split_median_95ci(
                 split_i, just_lac_alb_imputation_case_i))
 
-    def _calculate_per_split_95ci(
+    def _calculate_per_split_median_95ci(
         self,
         split_i: int,
         case_subset_indices: Set[int]
@@ -153,7 +154,8 @@ class StratifiedDispersionQuantifier:
         mask = np.in1d(
             range(self.per_case_ranges[split_i].size),
             list(case_subset_indices))
-        return np.percentile(self.per_case_ranges[split_i][mask], (2.5, 97.5))
+        return np.percentile(
+            self.per_case_ranges[split_i][mask], (2.5, 50.0, 97.5))
 
 
 def filter_y_and_rescore(
