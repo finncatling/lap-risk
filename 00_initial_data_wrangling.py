@@ -20,6 +20,8 @@ from utils.wrangling import (
     remove_non_whole_numbers
 )
 from utils.io import make_directory
+from utils.plot.inspect import plot_creatinine_urea_redaction
+from utils.plot.helpers import plot_saver
 
 
 reporter = Reporter()
@@ -135,6 +137,16 @@ redact.loc[
 ] = np.nan
 n_after = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
 reporter.report(f'Urea & creatinine removed in {n_before - n_after} cases')
+
+
+reporter.report('Plotting creatine and urea redaction')
+plot_saver(
+    plot_creatinine_urea_redaction,
+    pre_redaction_df=df,
+    post_redaction_df=redact,
+    output_dir=FIGURES_OUTPUT_DIR,
+    output_filename="00_creatinine_urea_redaction",
+)
 
 
 reporter.report('Updating main data with creatinine and urea redactions')
