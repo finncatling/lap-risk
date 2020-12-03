@@ -146,6 +146,8 @@ plot_saver(
     post_redaction_df=redact,
     output_dir=FIGURES_OUTPUT_DIR,
     output_filename="00_creatinine_urea_redaction",
+    extensions=("pdf", "png"),
+    dpi=(None, 300)
 )
 
 
