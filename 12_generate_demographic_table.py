@@ -221,7 +221,8 @@ table_1_variables = (
 )
 
 
-reporter.report('Constructing and saving demographic table')
+reporter.report('Constructing and saving demographic table (test fold with '
+                'just current model-complete cases)')
 generate_demographic_table(
     variables=table_1_variables,
     df=df,
@@ -230,7 +231,8 @@ generate_demographic_table(
 )
 
 
-reporter.report('Constructing and saving demographic table')
+reporter.report('Constructing and saving demographic table (test fold with '
+                'all cases)')
 generate_demographic_table(
     variables=table_1_variables,
     df=df,
