@@ -21,15 +21,15 @@ class DemographicTableVariable:
 def generate_demographic_table(
     variables: Tuple[DemographicTableVariable, ...],
     df: pd.DataFrame,
-    modified_tts: TrainTestSplitter,
+    tts: TrainTestSplitter,
     output_filepath: str
 ) -> None:
     dfs = OrderedDict()
     dfs['all'] = df
     dfs['train'] = df.loc[
-        modified_tts.train_i[0]].copy().reset_index(drop=True)
+        tts.train_i[0]].copy().reset_index(drop=True)
     dfs['test'] = df.loc[
-        modified_tts.test_i[0]].copy().reset_index(drop=True)
+        tts.test_i[0]].copy().reset_index(drop=True)
 
     # Initialise demographic table
     table = pd.DataFrame(

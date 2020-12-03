@@ -41,9 +41,8 @@ tt_splitter: TrainTestSplitter = load_object(
 )
 
 
-# TODO: Exclude this step and derive table for just complete case test fold
 reporter.report("Modifying train-test splitter to include all test cases")
-tt_splitter = tt_splitter_all_test_case_modifier(tt_splitter)
+tt_splitter_all_test_cases = tt_splitter_all_test_case_modifier(tt_splitter)
 
 
 reporter.report("Sanitising indication names")
@@ -226,8 +225,18 @@ reporter.report('Constructing and saving demographic table')
 generate_demographic_table(
     variables=table_1_variables,
     df=df,
-    modified_tts=tt_splitter,
+    tts=tt_splitter,
     output_filepath=os.path.join(TABLES_OUTPUT_DIR, 'demographic_table.csv')
+)
+
+
+reporter.report('Constructing and saving demographic table')
+generate_demographic_table(
+    variables=table_1_variables,
+    df=df,
+    tts=tt_splitter_all_test_cases,
+    output_filepath=os.path.join(
+        TABLES_OUTPUT_DIR, 'demographic_table_all_test_cases.csv')
 )
 
 
