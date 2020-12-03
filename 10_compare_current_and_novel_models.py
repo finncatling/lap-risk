@@ -25,6 +25,9 @@ current_scorer: LogisticScorer = load_object(
 novel_scorer: LogisticScorer = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model_scorer.pkl")
 )
+novel_samples_scorer: LogisticScorer = load_object(
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_1_novel_model_samples_scorer.pkl")
+)
 swm: SplitterWinsorMICE = load_object(
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "05_splitter_winsor_mice.pkl")
 )
@@ -33,8 +36,9 @@ cat_imputer: CategoricalImputer = load_object(
 )
 
 
-reporter.report("Calculating difference between scores for each model on each "
-                "train-test split")
+reporter.report("Calculating difference between scores for current model and "
+                "median-risk point estimate from novel model predicted "
+                "distributions")
 score_comparer = ScoreComparer(
     scorers=(current_scorer, novel_scorer),
     scorer_names=('current', 'novel')
@@ -46,10 +50,27 @@ reporter.first("Difference with split 0 as difference point estimate:")
 score_comparer.print_scores(dec_places=4, point_estimate='split0')
 
 
-reporter.first("Saving score comparer for later use")
+reporter.report("Calculating difference between scores for current model and "
+                "mean across all samples from novel model predicted "
+                "distributions")
+score_comparer_samples = ScoreComparer(
+    scorers=(current_scorer, novel_samples_scorer),
+    scorer_names=('current', 'novel_samples')
+)
+score_comparer_samples.compare_scores()
+reporter.first("Difference in scores with median as difference point estimate:")
+score_comparer_samples.print_scores(dec_places=4, point_estimate='median')
+reporter.first("Difference with split 0 as difference point estimate:")
+score_comparer_samples.print_scores(dec_places=4, point_estimate='split0')
+
+
+reporter.first("Saving score comparers for later use")
 save_object(
     score_comparer,
     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "10_score_comparer.pkl"))
+save_object(
+    score_comparer_samples,
+    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "10_score_comparer_samples.pkl"))
 
 
 reporter.report("Recalculating scores for both model when we exclude test fold "
