@@ -39,7 +39,7 @@ def plot_calibration(
     calib_curves: List[np.ndarray],
     curve_transparency: float
 ) -> Tuple[Figure, Axes]:
-    """Plot calibration curve, with confidence intervals."""
+    """Plot calibration curves from each train-test split."""
     fig, ax = plt.subplots(figsize=(4, 4))
     for calib_curve in calib_curves:
         ax.plot(p, calib_curve, c="tab:blue", alpha=curve_transparency)
@@ -51,6 +51,29 @@ def plot_calibration(
         ylim=[0, 1],
     )
     return fig, ax
+
+
+def plot_calibration_subplots(
+    p: np.ndarray,
+    calib_curves: Tuple[List[np.ndarray], List[np.ndarray]],
+    model_names: Tuple[str, str],
+    curve_transparency: float
+) -> Tuple[Figure, Axes]:
+    """Plot figure with 2 subplots, each containing calibration curves."""
+    fig, axes = plt.subplots(1, 2, figsize=(7, 3.5))
+    for ax_i, ax in enumerate(axes):
+        for calib_curve in calib_curves[ax_i]:
+            ax.plot(p, calib_curve, c="tab:blue", alpha=curve_transparency)
+        ax.plot([0, 1], [0, 1], linestyle="dotted", c="black")
+        ax.set(
+            title=model_names[ax_i],
+            xlabel="Predicted mortality risk",
+            ylabel="Estimated true mortality risk",
+            xlim=[0, 1],
+            ylim=[0, 1],
+        )
+    fig.tight_layout()
+    return fig, axes
 
 
 def plot_example_risk_distributions(
