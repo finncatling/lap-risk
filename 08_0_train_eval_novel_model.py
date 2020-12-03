@@ -146,20 +146,20 @@ save_object(
 BEGIN code for either instantiating novel model (if no previous training) or 
 loading a partially-trained instance of novel model. Comment as appropriate.
 """
-# reporter.report("Making new instance of novel model")
-# novel_model = NovelModel(
-#     categorical_imputer=albumin_imputer.cat_imputer,
-#     albumin_imputer=albumin_imputer,
-#     lactate_imputer=lactate_imputer,
-#     model_factory=novel_model_factory,
-#     n_lacalb_imputations_per_mice_imp=(
-#         imputation_stages.multiple_of_previous_n_imputations[1]),
-#     random_seed=RANDOM_SEED
-# )
+reporter.report("Making new instance of novel model")
+novel_model = NovelModel(
+    categorical_imputer=albumin_imputer.cat_imputer,
+    albumin_imputer=albumin_imputer,
+    lactate_imputer=lactate_imputer,
+    model_factory=novel_model_factory,
+    n_lacalb_imputations_per_mice_imp=(
+        imputation_stages.multiple_of_previous_n_imputations[1]),
+    random_seed=RANDOM_SEED
+)
 
-reporter.report(f"Loading pretrained novel model")
-novel_model: NovelModel = load_object(
-    os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
+# reporter.report(f"Loading pretrained novel model")
+# novel_model: NovelModel = load_object(
+#     os.path.join(NOVEL_MODEL_OUTPUT_DIR, "08_novel_model.pkl"))
 """END code for instantiating / loading novel model."""
 
 

@@ -242,7 +242,6 @@ df.to_pickle(os.path.join(
 ))
 
 
-
 reporter.first('Dropping variables unused in downstream analysis')
 lap_risk_vars = [
     "HospitalId.anon",
@@ -275,17 +274,16 @@ df = df[lap_risk_vars]
 
 
 # TODO: Remove this testing code
-comparison = pd.read_pickle(os.path.join(
-    os.pardir,
-    'nelarisk',
-    'data',
-    'lap_risk_df_after_univariate_wrangling.pkl'))
-assert df.equals(comparison)
+# comparison = pd.read_pickle(os.path.join(
+#     os.pardir,
+#     'nelarisk',
+#     'data',
+#     'lap_risk_df_after_univariate_wrangling.pkl'))
+# assert df.equals(comparison)
 
 
-# TODO: Uncomment when script rewriting is complete
-# reporter.report('Saving wrangled data')
-# df.to_pickle(NELA_DATA_FILEPATH)
+reporter.report('Saving wrangled data')
+df.to_pickle(NELA_DATA_FILEPATH)
 
 
 reporter.last('Done.')
