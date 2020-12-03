@@ -19,15 +19,17 @@ def plot_saver(
     *plot_func_args,
     output_dir: str,
     output_filename: str,
-    extensions: Tuple[str] = ("pdf", ),
+    extensions: Tuple[str, ...] = ("pdf",),
+    dpi: Tuple = (None,),
     **plot_func_kwargs,
 ) -> None:
     """Wraps plotting function so figures are saved. output_filename should
         lack extension."""
     fig, _ = plot_func(*plot_func_args, **plot_func_kwargs)
-    for ext in extensions:
+    for ext, this_dpi in zip(extensions, dpi):
         fig.savefig(
             os.path.join(output_dir, f"{output_filename}.{ext}"),
+            dpi=this_dpi,
             format=ext,
             bbox_inches="tight",
         )

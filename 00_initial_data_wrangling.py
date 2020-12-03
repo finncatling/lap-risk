@@ -20,6 +20,8 @@ from utils.wrangling import (
     remove_non_whole_numbers
 )
 from utils.io import make_directory
+from utils.plot.inspect import plot_creatinine_urea_redaction
+from utils.plot.helpers import plot_saver
 
 
 reporter = Reporter()
@@ -137,6 +139,18 @@ n_after = redact.loc[redact['S03SerumCreatinine'].notnull()].shape[0]
 reporter.report(f'Urea & creatinine removed in {n_before - n_after} cases')
 
 
+reporter.report('Plotting creatine and urea redaction')
+plot_saver(
+    plot_creatinine_urea_redaction,
+    pre_redaction_df=df,
+    post_redaction_df=redact,
+    output_dir=FIGURES_OUTPUT_DIR,
+    output_filename="00_creatinine_urea_redaction",
+    extensions=("pdf", "png"),
+    dpi=(None, 300)
+)
+
+
 reporter.report('Updating main data with creatinine and urea redactions')
 df.loc[:, CREATININE_UREA_VARIABLE_NAMES] = redact.loc[
     :, CREATININE_UREA_VARIABLE_NAMES]
@@ -228,7 +242,6 @@ df.to_pickle(os.path.join(
 ))
 
 
-
 reporter.first('Dropping variables unused in downstream analysis')
 lap_risk_vars = [
     "HospitalId.anon",
@@ -261,17 +274,16 @@ df = df[lap_risk_vars]
 
 
 # TODO: Remove this testing code
-comparison = pd.read_pickle(os.path.join(
-    os.pardir,
-    'nelarisk',
-    'data',
-    'lap_risk_df_after_univariate_wrangling.pkl'))
-assert df.equals(comparison)
+# comparison = pd.read_pickle(os.path.join(
+#     os.pardir,
+#     'nelarisk',
+#     'data',
+#     'lap_risk_df_after_univariate_wrangling.pkl'))
+# assert df.equals(comparison)
 
 
-# TODO: Uncomment when script rewriting is complete
-# reporter.report('Saving wrangled data')
-# df.to_pickle(NELA_DATA_FILEPATH)
+reporter.report('Saving wrangled data')
+df.to_pickle(NELA_DATA_FILEPATH)
 
 
 reporter.last('Done.')
