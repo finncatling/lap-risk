@@ -744,7 +744,6 @@ class LactateAlbuminImputer(Imputer):
         random_seed):
         """
         Args:
-            mortality_as_feature:
             df: Must just contain the variable to impute, plus the mortality
                 variable (latter needed for compatibility with Splitter).
             categorical_imputer: With pre-fit imputers for all categorical
