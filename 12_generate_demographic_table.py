@@ -210,14 +210,6 @@ table_1_variables = (
         0,
         indication_names.sanitized
     )
-    # DemographicTableVariable(
-    #     "S03WhatIsTheOperativeSeverity",),
-    # DemographicTableVariable(
-    #     "S03Pred_TBL",),
-    # DemographicTableVariable(
-    #     "S03NumberOfOperativeProcedures",),
-    # DemographicTableVariable(
-    #     "S03NCEPODUrgency",),
 )
 
 
