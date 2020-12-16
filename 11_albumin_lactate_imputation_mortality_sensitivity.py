@@ -244,7 +244,7 @@ for space, transformer in (
     plot_saver(
         compare_pdps_from_different_gams_plot,
         gams=(original_novel_model.models[0], refit_novel_model.models[0]),
-        gam_names=('Original', 'Re-fit'),
+        gam_names=('Original', 'Re-fitted'),
         term_indices=(6, 7),
         term_names=("Lactate (mmol/L)", "Albumin (g/L)"),
         column_indices=(19, 17),
