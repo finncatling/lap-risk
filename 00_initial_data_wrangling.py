@@ -273,15 +273,6 @@ lap_risk_vars = [
 df = df[lap_risk_vars]
 
 
-# TODO: Remove this testing code
-# comparison = pd.read_pickle(os.path.join(
-#     os.pardir,
-#     'nelarisk',
-#     'data',
-#     'lap_risk_df_after_univariate_wrangling.pkl'))
-# assert df.equals(comparison)
-
-
 reporter.report('Saving wrangled data')
 df.to_pickle(NELA_DATA_FILEPATH)
 
