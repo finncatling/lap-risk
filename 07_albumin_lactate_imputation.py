@@ -64,11 +64,11 @@ pdp_terms = [
     ),
     PDPTerm(
         "S03WhiteCellCount",
-        r"White cell count ($\times$10${^9}$/L)",
+        r"White cell count ($\times$10$^9$ L$^{-1}$)",
         (1, 0)
     ),
-    PDPTerm("S03Sodium", "Sodium (mmol/L)", (1, 1)),
-    PDPTerm("S03Potassium", "Potassium (mmol/L)", (1, 2)),
+    PDPTerm("S03Sodium", r"Sodium (mmol L$^{-1}$)", (1, 1)),
+    PDPTerm("S03Potassium", r"Potassium (mmol L$^{-1}$)", (1, 2)),
     PDPTerm("S03GlasgowComaScore", "Glasgow Coma Score", (2, 0)),
     PDPTerm("S03ASAScore", "ASA physical status", (2, 1), list(range(1, 6))),
     PDPTerm(
@@ -98,7 +98,7 @@ pdp_terms = [
     ),
     PDPTerm(
         ("S03SerumCreatinine", "S03Urea"),
-        ("Creatinine (mmol/L)", "Urea (mmol/L)"),
+        (r"Creatinine (mmol L$^{-1}$)", r"Urea (mmol L$^{-1}$)"),
         (3, 2),
         (None, None),
         None,
@@ -124,8 +124,18 @@ save_object(
 
 
 for name, pretty_name, variable_name, model_factory in (
-    ('albumin', 'Albumin (g/L)', ALBUMIN_VAR_NAME, albumin_model_factory),
-    ('lactate', 'Lactate (mmol/L)', LACTATE_VAR_NAME, lactate_model_factory)
+    (
+        'albumin',
+        r'Albumin (g L$^{-1}$)',
+        ALBUMIN_VAR_NAME,
+        albumin_model_factory
+    ),
+    (
+        'lactate',
+        r'Lactate (mmol L$^{-1}$)',
+        LACTATE_VAR_NAME,
+        lactate_model_factory
+    )
 ):
     reporter.report(f"Fitting imputers for {name}")
     imputer = LactateAlbuminImputer(
