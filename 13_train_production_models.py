@@ -196,8 +196,18 @@ reporter.title(
 
 imputers = {}
 for name, pretty_name, variable_name, model_factory in (
-    ('albumin', 'Albumin (g/L)', ALBUMIN_VAR_NAME, albumin_model_factory),
-    ('lactate', 'Lactate (mmol/L)', LACTATE_VAR_NAME, lactate_model_factory)
+    (
+        'albumin',
+        r"Albumin (g L$^{-1}$)",
+        ALBUMIN_VAR_NAME,
+        albumin_model_factory
+    ),
+    (
+        'lactate',
+        r"Lactate (mmol L$^{-1}$)",
+        LACTATE_VAR_NAME,
+        lactate_model_factory
+    )
 ):
     reporter.report(f"Fitting imputers for {name}")
     imputers[name] = LactateAlbuminImputer(

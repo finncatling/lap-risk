@@ -83,8 +83,8 @@ lacalb_pdp_terms.append(
 
 imputers = {}
 for name, pretty_name, variable_name, model_factory in (
-    ('albumin', 'Albumin (g/L)', ALBUMIN_VAR_NAME, albumin_model_factory),
-    ('lactate', 'Lactate (mmol/L)', LACTATE_VAR_NAME, lactate_model_factory)
+    ('albumin', r'Albumin (g L$^{-1}$)', ALBUMIN_VAR_NAME, albumin_model_factory),
+    ('lactate', r'Lactate (mmol L$^{-1}$)', LACTATE_VAR_NAME, lactate_model_factory)
 ):
     reporter.report(f"Fitting imputers for {name}")
     imputers[name] = LactateAlbuminImputer(
@@ -246,7 +246,7 @@ for space, transformer in (
         gams=(original_novel_model.models[0], refit_novel_model.models[0]),
         gam_names=('Original', 'Re-fitted'),
         term_indices=(6, 7),
-        term_names=("Lactate (mmol/L)", "Albumin (g/L)"),
+        term_names=(r"Lactate (mmol L$^{-1}$)", r"Albumin (g L$^{-1}$)"),
         column_indices=(19, 17),
         transformer=transformer,
         output_dir=FIGURES_OUTPUT_DIR,

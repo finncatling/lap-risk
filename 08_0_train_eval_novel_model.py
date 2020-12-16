@@ -69,13 +69,13 @@ pdp_terms = [
     ),
     PDPTerm(
         "S03WhiteCellCount",
-        r"White cell count ($\times$10${^9}$/L)",
+        r"White cell count ($\times$10$^9$ L$^{-1}$)",
         (1, 0)
     ),
-    PDPTerm("S03Sodium", "Sodium (mmol/L)", (1, 1)),
-    PDPTerm("S03Potassium", "Potassium (mmol/L)", (1, 2)),
-    PDPTerm("S03PreOpArterialBloodLactate", "Lactate (mmol/L)", (2, 0)),
-    PDPTerm("S03PreOpLowestAlbumin", "Albumin (g/L)", (2, 1)),
+    PDPTerm("S03Sodium", r"Sodium (mmol L$^{-1}$)", (1, 1)),
+    PDPTerm("S03Potassium", r"Potassium (mmol L$^{-1}$)", (1, 2)),
+    PDPTerm("S03PreOpArterialBloodLactate", r"Lactate (mmol L$^{-1}$)", (2, 0)),
+    PDPTerm("S03PreOpLowestAlbumin", r"Albumin (g L$^{-1}$)", (2, 1)),
     PDPTerm("S03GlasgowComaScore", "Glasgow Coma Score", (2, 2)),
     PDPTerm("S03ASAScore", "ASA physical status", (3, 0), list(range(1, 6))),
     PDPTerm(
@@ -117,7 +117,7 @@ pdp_terms = [
     ),
     PDPTerm(
         ("S03SerumCreatinine", "S03Urea"),
-        ("Creatinine (mmol/L)", "Urea (mmol/L)"),
+        (r"Creatinine (mmol L$^{-1}$)", r"Urea (mmol L$^{-1}$)"),
         (5, 2),
         (None, None),
         None,

@@ -24,8 +24,8 @@ def plot_creatinine_urea_redaction(
             s=5
         )
         axs[i].set(
-            xlabel='Creatinine (mmol/L)',
-            ylabel='Urea (mmol/L)',
+            xlabel=r'Creatinine (mmol L$^{-1}$)',
+            ylabel=r'Urea (mmol L$^{-1}$)',
             title=titles[i],
             xlim=(-35, 1235),
             ylim=(-10, 310)
