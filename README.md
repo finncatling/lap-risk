@@ -1,14 +1,20 @@
 # lap-risk
 
-Modelling mortality risk in emergency laparotomy, using data from the NELA.
+This analysis code relates to the study *Predicting uncertainty: a novel model of mortality risk in emergency laparotomy*.
 
 ![Tests](https://github.com/finncatling/lap-risk/workflows/Tests/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/finncatling/lap-risk/badge.svg?t=H4at4E)](https://coveralls.io/github/finncatling/lap-risk)
 
 
-## Install
+## Study data
 
-This codebase is written in Python 3.8.6 and R 4.0.3. We manage dependencies with pipenv and renv. To get started, you'll need to:
+The NELA dataset is required to run the full analysis, and is not included in this repository. Under the terms of the data sharing agreement for this study we are unable to share the source data directly. Requests for anonymous patient-level data can be made directly to the NELA project team. 
+
+Without these data, it is still possible to set up the project environment and run the tests.
+
+## Environmental setup
+
+This codebase is written in Python 3.8.6 and R 4.0.3. We manage dependencies with pipenv and renv. To set up your project environment, you'll need to:
 
 - Install Python and pip
 - [Install pipenv](https://pipenv-fork.readthedocs.io/en/latest/install.html#installing-pipenv)
@@ -25,6 +31,11 @@ Then install dependencies with  `pipenv install` and `renv::restore()`
 
 ## Running the analysis
 
+The shell script `run_full_analysis_on_bdau.sh` runs the full analysis (not the initial enironmental setup) on the Imperial BDAU. It runs all scripts in sequence inside our pipenv and renv environments, restricting itself to 8 cores. 
+
+
+### Running the analysis scripts individually
+
 Enter the project's python environment:
 
 ```console
@@ -37,29 +48,17 @@ Then run the python scripts in the root directory in numerical order, i.e. start
 python 00_initial_data_wrangling.py
 ```
 
-### Limiting the number of cores used
 
-When running in the Imperial BDAU, we should limit the number of cores used for the computationally-intensive bits of the analysis. E.g. to run on the first 8 cores:
+## Running the tests
 
-```console
-taskset -c 0-7 python 00_initial_data_wrangling.py
-```
-
-The convenience shell script `run_full_analysis_on_bdau.sh` automates running the analysis (not the initial install) on the BDAU. It runs all scripts in sequence inside our pipenv and renv environments, restricting itself to 8 cores. 
-
-
-## Running tests
-
-Install dev packages with:
+Install development packages with:
 
 ```console
 pipenv install --dev 
 ```
 
-Run tests and check coverage:
+Run tests for the `utils` module and check coverage:
 
 ```console
 pytest --cov=utils tests/ 
 ```
-
-NB. Tests are currently only written for the `utils` module as this provides the functions upon which we build the analysis
