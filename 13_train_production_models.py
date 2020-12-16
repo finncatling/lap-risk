@@ -234,10 +234,7 @@ for name, pretty_name, variable_name, model_factory in (
         scorer_function=score_linear_predictions,
         n_splits=imputers[name].tts.n_splits)
     lacalb_scorer.calculate_scores()
-    reporter.first("Scores with median as point estimate:")
     lacalb_scorer.print_scores(dec_places=3, point_estimate='median')
-    reporter.first("Scores with split 0 as point estimate:")
-    lacalb_scorer.print_scores(dec_places=3, point_estimate='split0')
 
 
     reporter.first("Saving model scorer for later use")
@@ -426,10 +423,7 @@ scorer = LogisticScorer(
     calibration_lam_candidates=top_3_lams
 )
 scorer.calculate_scores()
-reporter.first("Scores with median as point estimate:")
 scorer.print_scores(dec_places=3, point_estimate='median')
-reporter.first("Scores with split 0 as point estimate:")
-scorer.print_scores(dec_places=3, point_estimate='split0')
 
 
 reporter.first("Saving model scorer for later use")
