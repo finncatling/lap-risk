@@ -191,13 +191,6 @@ save_object(
         "11_novel_model_lacalb_sensitivity.pkl"))
 
 
-# # TODO: Remove this development code
-# reporter.report("Loading pre-refitted novel model")
-# refit_novel_model: NovelModel = load_object(os.path.join(
-#     NOVEL_MODEL_OUTPUT_DIR,
-#     "11_novel_model_lacalb_sensitivity.pkl"))
-
-
 reporter.report('Preparing data for PDP histograms')
 pdp_hist_data = pd.concat(
     objs=(

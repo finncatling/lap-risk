@@ -181,12 +181,6 @@ for name, pretty_name, variable_name, model_factory in (
             NOVEL_MODEL_OUTPUT_DIR, f"07_{name}_imputer_scorer.pkl"))
 
 
-    # # TODO: Remove this development code
-    # reporter.report(f"Loading pretrained imputation model")
-    # imputer: LactateAlbuminImputer = load_object(
-    #     os.path.join(NOVEL_MODEL_OUTPUT_DIR, f"07_{name}_imputer.pkl"))
-
-
     reporter.report('Preparing data for PDP histograms')
     pdp_hist_data = pd.concat(
         objs=(

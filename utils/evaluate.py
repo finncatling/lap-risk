@@ -118,40 +118,6 @@ def tjurs_coef(y_true, y_pred):
     return y_pred_1.mean() - y_pred_0.mean()
 
 
-# TODO: delete these as they are unused
-# def log_loss_samples(
-#     y_true: np.ndarray,
-#     y_pred_samples: np.ndarray,
-#     eps=1e-15
-# ) -> float:
-#     """Calculates overall mean of per-patient mean log loss where y_pred_samples
-#         is of shape (n_predicted_probabilities, n_patients), and y_true
-#         is binary labels of shape (n_patients,).
-#
-#         We apply the same epsilon (to avoid errors from log(0)) as used by
-#         sklearn's log_loss() elsewhere in our analysis.
-#     """
-#     y_pred_samples[y_pred_samples < eps] = eps
-#     y_pred_samples[y_pred_samples > 1 - eps] = eps
-#     return - (
-#         y_true * np.log(y_pred_samples) +
-#         (1 - y_true) * np.log(1 - y_pred_samples)
-#     ).mean(0).mean()  # actually equivalent to simply .mean()
-#
-#
-# def brier_score_samples(
-#     y_true: np.ndarray,
-#     y_pred_samples: np.ndarray
-# ) -> float:
-#     """Calculates overall mean of per-patient mean Brier score where
-#         y_pred_samples is of shape (n_predicted_probabilities, n_patients),
-#         and y_true is binary labels of shape (n_patients,).
-#     """
-#     return (
-#         (y_true - y_pred_samples) ** 2
-#     ).mean(0).mean()  # actually equivalent to simply .mean()
-
-
 def score_logistic_predictions(
     y_true: np.ndarray,
     y_pred: np.ndarray
