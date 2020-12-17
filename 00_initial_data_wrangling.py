@@ -11,7 +11,8 @@ from utils.constants import (
     CURRENT_MODEL_OUTPUT_DIR,
     NOVEL_MODEL_OUTPUT_DIR,
     FIGURES_OUTPUT_DIR,
-    TABLES_OUTPUT_DIR
+    TABLES_OUTPUT_DIR,
+    PRODUCTION_OUTPUT_DIR
 )
 from utils.report import Reporter
 from utils.wrangling import (
@@ -34,6 +35,7 @@ make_directory(FIGURES_OUTPUT_DIR)
 make_directory(TABLES_OUTPUT_DIR)
 make_directory(NOVEL_MODEL_OUTPUT_DIR)
 make_directory(CURRENT_MODEL_OUTPUT_DIR)
+make_directory(PRODUCTION_OUTPUT_DIR)
 
 
 reporter.report('Loading raw data')

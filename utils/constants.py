@@ -41,6 +41,7 @@ EXTERNAL_OUTPUT_DIR = os.path.join(ROOT_DIR, os.pardir, "lap-risk-outputs")
 STATS_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, "statistics")
 FIGURES_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, "figures")
 TABLES_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, "tables")
+PRODUCTION_OUTPUT_DIR = os.path.join(EXTERNAL_OUTPUT_DIR, "production")
 
 # For use in model evaluation
 CALIB_GAM_N_SPLINES = 5
