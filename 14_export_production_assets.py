@@ -1,25 +1,22 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[136]:
-
-
-import os, sys
 import copy
-sys.path.append(os.pardir)
+import os
+
 import numpy as np
-from pprint import PrettyPrinter
-import matplotlib.pyplot as plt
 
-from utils.io import load_object
+from utils.constants import NOVEL_MODEL_OUTPUT_DIR, PRODUCTION_OUTPUT_DIR
+from utils.io import load_object, save_object
 from utils.model.novel import NovelModel
-from utils.constants import NOVEL_MODEL_OUTPUT_DIR
-from utils.gam import quick_sample
+from utils.report import Reporter
 
 
-# In[7]:
+reporter = Reporter()
+reporter.title(
+    "Export (non-PHI) assets needed to deploy the novel model, plus the "
+    "lactate and albumin imputation models, in production."
+)
 
 
+reporter.report("Loading pretrained production novel model")
 novel_model: NovelModel = load_object(
     os.path.join(
         NOVEL_MODEL_OUTPUT_DIR,
@@ -28,11 +25,7 @@ novel_model: NovelModel = load_object(
 )
 
 
-# ## Initialise dict for novel model assets export
-
-# In[75]:
-
-
+reporter.report("Storing production models")
 assets = {
     'albumin': {'model': copy.deepcopy(novel_model.alb_imputer.imputers[0])},
     'lactate': {'model': copy.deepcopy(novel_model.lac_imputer.imputers[0])},
@@ -40,155 +33,62 @@ assets = {
 }
 
 
-# ## Winsor thresholds
-
-# In[76]:
-
-
-wt = copy.deepcopy(novel_model.cat_imputer.swm.winsor_thresholds[0])
-
-
-# In[77]:
-
-
-wt[novel_model.alb_imputer.lacalb_variable_name] = copy.deepcopy(
-    copy.deepcopy(novel_model.alb_imputer.winsor_thresholds[0])
+reporter.report("Consolidating and storing Winsorization thresholds")
+assets['winsor_thresholds'] = copy.deepcopy(
+    novel_model.cat_imputer.swm.winsor_thresholds[0]
 )
+assets['winsor_thresholds'][
+    novel_model.alb_imputer.lacalb_variable_name
+] = copy.deepcopy(novel_model.alb_imputer.winsor_thresholds[0])
+assets['winsor_thresholds'][
+    novel_model.lac_imputer.lacalb_variable_name
+] = copy.deepcopy(novel_model.lac_imputer.winsor_thresholds[0])
+assets['winsor_thresholds']['S01AgeOnArrival'][0] = 18.0
+del assets['winsor_thresholds']['S03GlasgowComaScore']
 
-wt[novel_model.lac_imputer.lacalb_variable_name] = copy.deepcopy(
-    copy.deepcopy(novel_model.lac_imputer.winsor_thresholds[0])
+
+reporter.report(
+    "Storing format of the input data for each model (not the data itself)"
 )
-
-
-# In[78]:
-
-
-wt['S01AgeOnArrival'][0] = 18.0
-
-
-# In[79]:
-
-
-del wt['S03GlasgowComaScore']
-
-
-# In[80]:
-
-
-assets['winsor_thresholds'] = wt
-
-
-# ## Albumin imputer assets
-
-# In[99]:
-
-
-alb_features = novel_model.alb_imputer._get_features_where_lacalb_missing(
-    fold_name='train',
-    split_i=0,
-    mice_imp_i=0
-)
-
-
-# In[100]:
-
-
-assets['albumin']['input_data'] = {
-    'dtypes': copy.deepcopy(alb_features.dtypes),
-    'describe': alb_features.describe(),
-    'unique_categories': {}
+model_input_data = {  # This dictionary is NOT for export with other assets
+    'albumin': novel_model.alb_imputer._get_features_where_lacalb_missing(
+        fold_name='train',
+        split_i=0,
+        mice_imp_i=0
+    ),
+    'lactate': novel_model.lac_imputer._get_features_where_lacalb_missing(
+        fold_name='train',
+        split_i=0,
+        mice_imp_i=0
+    ),
+    'mortality': novel_model.get_features_and_labels(
+        fold_name='train',
+        split_i=0,
+        mice_imp_i=0,
+        lac_alb_imp_i=0
+    )[0]
 }
 
-
-# In[101]:
-
-
-for c in alb_features[alb_features.columns.difference(list(wt.keys()))].columns:
-    assets['albumin']['input_data']['unique_categories'][c] = np.sort(
-        alb_features[c].unique()
-    )
-
-
-# In[102]:
-
-
-assets['albumin']['transformer'] = novel_model.alb_imputer.transformers[0]
+for model_name, features in model_input_data.items():
+    assets[model_name]['input_data'] = {
+        'dtypes': copy.deepcopy(features.dtypes),
+        'describe': features.describe(),
+        'unique_categories': {}
+    }
+    for c in features[
+        features.columns.difference(list(assets['winsor_thresholds'].keys()))
+    ].columns:
+        assets[model_name]['input_data']['unique_categories'][c] = np.sort(
+            features[c].unique()
+        )
 
 
-# ## Lactate imputer assets
-
-# In[106]:
-
-
-lac_features = novel_model.lac_imputer._get_features_where_lacalb_missing(
-    fold_name='train',
-    split_i=0,
-    mice_imp_i=0
-)
+reporter.report("Storing transformer for both imputation models")
+for model_name in ('albumin', 'lactate'):
+    assets[model_name]['transformer'] = novel_model.alb_imputer.transformers[0]
 
 
-# In[107]:
-
-
-assets['lactate']['input_data'] = {
-    'dtypes': copy.deepcopy(lac_features.dtypes),
-    'describe': lac_features.describe(),
-    'unique_categories': {}
-}
-
-
-# In[108]:
-
-
-for c in lac_features[lac_features.columns.difference(list(wt.keys()))].columns:
-    assets['lactate']['input_data']['unique_categories'][c] = np.sort(
-        lac_features[c].unique()
-    )
-
-
-# In[109]:
-
-
-assets['lactate']['transformer'] = novel_model.lac_imputer.transformers[0]
-
-
-# ## Mortality model assets
-
-# In[110]:
-
-
-mort_features, mort_labels = novel_model.get_features_and_labels(
-    fold_name='train',
-    split_i=0,
-    mice_imp_i=0,
-    lac_alb_imp_i=0
-)
-
-
-# In[115]:
-
-
-assets['mortality']['input_data'] = {
-    'dtypes': copy.deepcopy(mort_features.dtypes),
-    'describe': mort_features.describe(),
-    'unique_categories': {}
-}
-
-
-# In[116]:
-
-
-for c in mort_features[mort_features.columns.difference(list(wt.keys()))].columns:
-    assets['mortality']['input_data']['unique_categories'][c] = np.sort(
-        mort_features[c].unique()
-    )
-
-
-# ## Label encoding for non-binary categorical variables
-
-# In[122]:
-
-
+reporter.report("Storing label encoding for non-binary categorical labels")
 assets['label_encoding'] = load_object(
     os.path.join(
         NOVEL_MODEL_OUTPUT_DIR,
@@ -197,41 +97,11 @@ assets['label_encoding'] = load_object(
 )
 
 
-# ## Sanity check
-
-# ### No imputation
-
-# In[132]:
-
-
-mort_pred = quick_sample(
-    gam = assets['mortality']['model'],
-    sample_at_X = mort_features.iloc[:1, :].values,
-    quantity='mu',
-    n_draws=500,
-    random_seed=1
+reporter.report("Exporting all stored assets")
+save_object(
+    assets,
+    os.path.join(PRODUCTION_OUTPUT_DIR, 'production_assets.pkl')
 )
 
 
-# In[138]:
-
-
-plt.hist(mort_pred.flatten())
-plt.show()
-
-
-# ### Imputation
-
-# In[ ]:
-
-
-
-
-
-# ## Inspect assets
-
-# In[123]:
-
-
-PrettyPrinter().pprint(assets)
-
+reporter.last('Done.')
