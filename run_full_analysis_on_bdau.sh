@@ -20,3 +20,4 @@ pipenv run taskset -c 32-39 python 10_compare_current_and_novel_models.py
 pipenv run taskset -c 32-39 python 11_albumin_lactate_imputation_mortality_sensitivity.py
 pipenv run taskset -c 32-39 python 12_generate_demographic_table.py
 pipenv run taskset -c 32-39 python 13_train_production_models.py
+pipenv run taskset -c 32-39 python 14_export_production_assets.py
