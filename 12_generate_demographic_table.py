@@ -88,7 +88,7 @@ table_1_variables = (
         "S03CardiacSigns",
         "Cardiovascular status",
         True,
-        'ordinal_multicat',
+        'multicat',
         0,
         [
             'No failure',
@@ -101,7 +101,7 @@ table_1_variables = (
         "S03RespiratorySigns",
         "Respiratory status",
         True,
-        'ordinal_multicat',
+        'multicat',
         0,
         [
             'No dyspnoea',
@@ -190,7 +190,7 @@ table_1_variables = (
         "S03Pred_Peritsoil",
         "Peritoneal soiling",
         True,
-        'ordinal_multicat',
+        'multicat',
         0,
         ["None", "Serous", "Local pus", "Free pus / blood / faeces"]
     ),
@@ -198,7 +198,7 @@ table_1_variables = (
         "S03DiagnosedMalignancy",
         "Malignancy",
         True,
-        'ordinal_multicat',
+        'multicat',
         0,
         ["None", "Primary only", "Nodal mets.", "Distant mets."]
     ),
