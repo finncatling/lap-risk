@@ -79,21 +79,9 @@ pdp_terms = [
     PDPTerm("S03GlasgowComaScore", "Glasgow Coma Score", (2, 2)),
     PDPTerm("S03ASAScore", "ASA physical status", (3, 0), list(range(1, 6))),
     PDPTerm(
-        "S03PreOpArterialBloodLactate_missing",
-        "Lactate missing",
-        (3, 1),
-        ["No", "Yes"]
-    ),
-    PDPTerm(
-        "S03PreOpLowestAlbumin_missing",
-        "Albumin missing",
-        (3, 2),
-        ["No", "Yes"]
-    ),
-    PDPTerm(
         "S03DiagnosedMalignancy",
         "Malignancy",
-        (4, 0),
+        (3, 1),
         ["None", "Primary\nonly", "Nodal\nmets.", "Distant\nmets."],
         ["No CT", "CT"],
         "best",
@@ -101,7 +89,7 @@ pdp_terms = [
     PDPTerm(
         "S03Pred_Peritsoil",
         "Peritoneal soiling",
-        (4, 1),
+        (3, 2),
         ["None", "Serous", "Local\npus", "Free pus /\nblood / faeces"],
         ["No CT", "CT"],
         "best",
@@ -109,7 +97,7 @@ pdp_terms = [
     PDPTerm(
         ("S03CardiacSigns", "S03RespiratorySigns"),
         ("Cardiovascular", "Respiratory"),
-        (4, 2),
+        (4, 0),
         (None, None),
         None,
         None,
@@ -118,7 +106,7 @@ pdp_terms = [
     PDPTerm(
         ("S03SerumCreatinine", "S03Urea"),
         (r"Creatinine (mmol L$^{-1}$)", r"Urea (mmol L$^{-1}$)"),
-        (5, 2),
+        (4, 1),
         (None, None),
         None,
         None,
@@ -127,11 +115,11 @@ pdp_terms = [
     PDPTerm(
         INDICATION_VAR_NAME,
         "Indication",
-        (slice(5, 7), slice(0, 2)),
+        (slice(5, 7), slice(0, 3)),
         indication_names.sanitized,
         ["No CT", "CT"],
         "best",
-    ),
+    )
 ]
 
 
@@ -227,7 +215,8 @@ for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
         plot_saver(
             pdp_generator.plot,
             output_dir=FIGURES_OUTPUT_DIR,
-            output_filename=f"08_novel_model_{space_name}_pd_plot{hist_text}")
+            output_filename=(
+                f"08_novel_model_{space_name}_pd_plot{hist_text}_nomissinds"))
 
 
 reporter.last("Done.")
