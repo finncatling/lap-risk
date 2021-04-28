@@ -27,6 +27,7 @@ class PDPTerm:
     legend_loc: Union[None, str] = None
     view_3d: Union[None, Tuple[int, int]] = None
     plot: bool = True
+    scale_ticklabels: Union[None, Dict[str, float]] = None
 
 
 class PDPFigure:
@@ -303,22 +304,29 @@ class PDPFigure:
             raise NotImplementedError
 
     def _modify_axes(self):
-        """Loop back over axes, optionally standardising their y axis scale and
-            adding histograms. We have to do these operations in a second loop
-            after the initial plotting as we only know the correct global y
-            axis scale at this point, and if we are standardising the y axis
-            then we need to know what its lower limit is in order to place the
-            align the histogram with the bottom of each plot. Also autoscales x
-            limits."""
+        """Loop back over axes, optionally standardising their y axis scale,
+            adding histograms and optionally rescaling the tick labels (but not
+            the plotted data).
+
+        We have to do these operations in a second loop after the initial
+        plotting as we only know the correct global y axis scale at this point,
+        and if we are standardising the y axis then we need to know what its
+        lower limit is in order to place the align the histogram with the
+        bottom of each plot.
+        """
         for i, ax in enumerate(self.fig.axes):
             if self.plotted_pdp_terms[i].view_3d is None:
                 if self.standardise_y_scale:
                     ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
                 if self.plot_hists:
                     self._plot_hist(i, ax)
+                if self.plotted_pdp_terms[i].scale_ticklabels is None:
+                    self._rescale_axis_tick_labels(i, ax)
             else:
                 if self.standardise_y_scale:
                     ax.set_zlim3d(self.y_min['3d'], self.y_max['3d'])
+                if self.plotted_pdp_terms[i].scale_ticklabels is not None:
+                    raise NotImplementedError
 
     def _plot_hist(self, i: int, ax: Axes):
         hist, bins = np.histogram(
@@ -349,6 +357,11 @@ class PDPFigure:
             return len(self.plotted_pdp_terms[i].labels)
         else:
             return self.max_hist_bins
+
+    def _rescale_axis_tick_labels(self, i: int, ax: Axes):
+        for axis, divisor in self.plotted_pdp_terms[i].scale_ticklabels.items():
+            ticklabels = getattr(ax, f'get_{axis}ticklabels')()
+            print(ticklabels)
 
 
 def compare_pdps_from_different_gams_plot(
