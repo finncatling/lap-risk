@@ -20,8 +20,8 @@ def plot_creatinine_urea_redaction(
     titles = ['Raw data', 'After redaction']
 
     for i, data in enumerate([pre_redaction_df, post_redaction_df]):
-        xlim = np.array([-35, 1235])
-        ylim = np.array([-10, 310])
+        xlim = np.array([-35., 1235.])
+        ylim = np.array([-10., 310.])
 
         if us_units:
             data = convert_creatinine_urea(data)
