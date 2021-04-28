@@ -150,13 +150,15 @@ table_1_variables = (
     ),
     DemographicTableVariable(
         "S03SerumCreatinine",
-        "Creatinine (mmol/L)",
+        # "Creatinine (mmol/L)",
+        "Creatinine (mg/dL)",
         True,
         'continuous'
     ),
     DemographicTableVariable(
         "S03Urea",
-        "Urea (mmol/L)",
+        # "Urea (mmol/L)",
+        "BUN (mg/dL)",
         True,
         'continuous',
         1
@@ -219,7 +221,9 @@ generate_demographic_table(
     variables=table_1_variables,
     df=df,
     tts=tt_splitter,
-    output_filepath=os.path.join(TABLES_OUTPUT_DIR, 'demographic_table.csv')
+    us_units=True,
+    output_filepath=os.path.join(
+        TABLES_OUTPUT_DIR, 'demographic_table_us_units.csv')
 )
 
 
@@ -229,8 +233,9 @@ generate_demographic_table(
     variables=table_1_variables,
     df=df,
     tts=tt_splitter_all_test_cases,
+    us_units=True,
     output_filepath=os.path.join(
-        TABLES_OUTPUT_DIR, 'demographic_table_all_test_cases.csv')
+        TABLES_OUTPUT_DIR, 'demographic_table_all_test_cases_us_units.csv')
 )
 
 
