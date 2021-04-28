@@ -120,7 +120,7 @@ pdp_terms = [
     PDPTerm(
         ("S03SerumCreatinine", "S03Urea"),
         (r"Creatinine (mmol L$^{-1}$)", r"Urea (mmol L$^{-1}$)"),
-        (4, 1),
+        (4, 2),
         (None, None),
         None,
         None,
