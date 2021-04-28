@@ -26,6 +26,7 @@ class PDPTerm:
     strata: Union[None, List[str]] = None
     legend_loc: Union[None, str] = None
     view_3d: Union[None, Tuple[int, int]] = None
+    plot: bool = True
 
 
 class PDPFigure:
@@ -124,7 +125,8 @@ class PDPFigure:
         """Generate figure of partial dependence plots."""
         self._init_figure()
         for i, term in enumerate(self.terms):
-            self._plot_single_pdp(i, term)
+            if self.pdp_terms[i].plot:
+                self._plot_single_pdp(i, term)
         self._modify_axes()
         self.fig.tight_layout()
         return self.fig, None

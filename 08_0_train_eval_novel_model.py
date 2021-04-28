@@ -78,6 +78,20 @@ pdp_terms = [
     PDPTerm("S03PreOpLowestAlbumin", r"Albumin (g L$^{-1}$)", (2, 1)),
     PDPTerm("S03GlasgowComaScore", "Glasgow Coma Score", (2, 2)),
     PDPTerm("S03ASAScore", "ASA physical status", (3, 0), list(range(1, 6))),
+    PDPTerm(   # not plotted, included so as not to mess up the term indexing
+        "S03PreOpArterialBloodLactate_missing",
+        "Lactate missing",
+        (0, 0),
+        ["No", "Yes"],
+        plot=False
+    ),
+    PDPTerm(   # not plotted, included so as not to mess up the term indexing
+        "S03PreOpLowestAlbumin_missing",
+        "Albumin missing",
+        (0, 0),
+        ["No", "Yes"],
+        plot=False
+    ),
     PDPTerm(
         "S03DiagnosedMalignancy",
         "Malignancy",
