@@ -79,6 +79,12 @@ class PDPFigure:
         return self.gam.terms.info["terms"][:-1]
 
     @property
+    def plotted_pdp_terms(self) -> List[PDPTerm]:
+        """Slightly hacky workaround to overcome indexing issues when we don't
+            plot every model term in the PDP figure."""
+        return [t for t in self.pdp_terms if t.plot]
+
+    @property
     def mid_cat_i(self) -> int:
         """Used to centre the x axis labels for each category."""
         return int((self.ticks_per_cat - 1) / 2)
@@ -305,7 +311,7 @@ class PDPFigure:
             align the histogram with the bottom of each plot. Also autoscales x
             limits."""
         for i, ax in enumerate(self.fig.axes):
-            if self.pdp_terms[i].view_3d is None:
+            if self.plotted_pdp_terms[i].view_3d is None:
                 if self.standardise_y_scale:
                     ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
                 if self.plot_hists:
@@ -316,9 +322,9 @@ class PDPFigure:
 
     def _plot_hist(self, i: int, ax: Axes):
         hist, bins = np.histogram(
-            self.hist_data[self.pdp_terms[i].name].values,
+            self.hist_data[self.plotted_pdp_terms[i].name].values,
             bins=self._determine_n_hist_bins(i))
-        if self.pdp_terms[i].labels is not None:
+        if self.plotted_pdp_terms[i].labels is not None:
             x_ticks = ax.get_xticks()
             xlim = ax.get_xlim()
             width = (xlim[1] - xlim[0]) / len(x_ticks)
@@ -337,10 +343,10 @@ class PDPFigure:
             alpha=0.15)
 
     def _determine_n_hist_bins(self, i: int):
-        if self.pdp_terms[i].name == "S03GlasgowComaScore":
+        if self.plotted_pdp_terms[i].name == "S03GlasgowComaScore":
             return 13
-        elif self.pdp_terms[i].labels is not None:
-            return len(self.pdp_terms[i].labels)
+        elif self.plotted_pdp_terms[i].labels is not None:
+            return len(self.plotted_pdp_terms[i].labels)
         else:
             return self.max_hist_bins
 
