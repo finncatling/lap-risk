@@ -285,7 +285,7 @@ class PDPFigure:
         ax.set_zlabel(self.ylabel)
 
     def _inverse_transform(self, x: np.ndarray) -> np.ndarray:
-        """Converts probability to risk ration for logistic models."""
+        """Converts probability to risk ratio for logistic models."""
         inv_trans_x = self.transformer.inverse_transform(
             x.reshape(np.prod(x.shape), 1)
         ).reshape(x.shape)
@@ -298,11 +298,12 @@ class PDPFigure:
 
     def _modify_axes(self):
         """Loop back over axes, optionally standardising their y axis scale and
-            adding rug plots. We have to do these operations in a second loop
+            adding histograms. We have to do these operations in a second loop
             after the initial plotting as we only know the correct global y
             axis scale at this point, and if we are standardising the y axis
             then we need to know what its lower limit is in order to place the
-            rug at the bottom of each plot. Also autoscales x limits."""
+            align the histogram with the bottom of each plot. Also autoscales x
+            limits."""
         for i, ax in enumerate(self.fig.axes):
             if self.pdp_terms[i].view_3d is None:
                 if self.standardise_y_scale:
