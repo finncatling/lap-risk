@@ -153,7 +153,8 @@ table_1_variables = (
         # "Creatinine (mmol/L)",
         "Creatinine (mg/dL)",
         True,
-        'continuous'
+        'continuous',
+        2
     ),
     DemographicTableVariable(
         "S03Urea",
