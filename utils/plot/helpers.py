@@ -2,6 +2,7 @@ import os
 from typing import Tuple, Callable
 
 import numpy as np
+import pandas as pd
 
 
 def generate_ci_quantiles(cis: Tuple[float]) -> np.ndarray:
@@ -33,3 +34,21 @@ def plot_saver(
             format=ext,
             bbox_inches="tight",
         )
+
+
+def convert_creatinine_urea(df: pd.DataFrame) -> pd.DataFrame:
+    """Converts creatinine and urea to US units.
+
+    Creatinine (mmol/L) is converted to Creatinine (mg/dL)
+    Urea (mmol/L) is converted to BUN (mg/dL)
+
+    Args:
+        df: Contains 'S03SerumCreatinine' and 'S03Urea' columns for conversion
+
+    Returns:
+        Data with converted (but not renamed) creatinine and urea columns
+    """
+    df = df.copy()
+    df['S03SerumCreatinine'] /= 88.42
+    df['S03Urea'] /= 0.357
+    return df
