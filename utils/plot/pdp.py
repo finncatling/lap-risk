@@ -27,7 +27,7 @@ class PDPTerm:
     legend_loc: Union[None, str] = None
     view_3d: Union[None, Tuple[int, int]] = None
     plot: bool = True
-    scale_ticklabels: Union[None, Dict[str, float]] = None
+    scale_ticklabels: Union[None, Dict[str, Tuple[float, int]]] = None
 
 
 class PDPFigure:
@@ -320,13 +320,13 @@ class PDPFigure:
                     ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
                 if self.plot_hists:
                     self._plot_hist(i, ax)
-                if self.plotted_pdp_terms[i].scale_ticklabels is None:
-                    self._rescale_axis_tick_labels(i, ax)
+                if self.plotted_pdp_terms[i].scale_ticklabels is not None:
+                    raise NotImplementedError
             else:
                 if self.standardise_y_scale:
                     ax.set_zlim3d(self.y_min['3d'], self.y_max['3d'])
                 if self.plotted_pdp_terms[i].scale_ticklabels is not None:
-                    raise NotImplementedError
+                    self._rescale_axis_tick_labels(i, ax)
 
     def _plot_hist(self, i: int, ax: Axes):
         hist, bins = np.histogram(
@@ -359,9 +359,15 @@ class PDPFigure:
             return self.max_hist_bins
 
     def _rescale_axis_tick_labels(self, i: int, ax: Axes):
-        for axis, divisor in self.plotted_pdp_terms[i].scale_ticklabels.items():
-            ticklabels = getattr(ax, f'get_{axis}ticklabels')()
-            print(ticklabels)
+        scale_ticklabels = self.plotted_pdp_terms[i].scale_ticklabels
+        for axis_name, (divisor, decimal_places) in scale_ticklabels.items():
+            ticks = getattr(ax, f'get_{axis_name}ticks')()
+            scaled_ticks = ticks / divisor
+            if decimal_places > 0:
+                scaled_ticks = np.round(scaled_ticks, decimal_places)
+            else:
+                scaled_ticks = np.round(scaled_ticks, 0).astype(int)
+            getattr(ax, f'set_{axis_name}ticklabels')(scaled_ticks)
 
 
 def compare_pdps_from_different_gams_plot(
