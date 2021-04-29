@@ -296,6 +296,7 @@ for name, pretty_name, variable_name, model_factory in (
                 output_dir=FIGURES_OUTPUT_DIR,
                 output_filename=(
                     f"13_{name}_imputer_{space}_pd_plot{hist_text}_production"
+                    "_nomissinds_us_units"
                 )
             )
 
@@ -353,6 +354,7 @@ for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
             output_dir=FIGURES_OUTPUT_DIR,
             output_filename=(
                 f"13_novel_model_{space_name}_pd_plot{hist_text}_production"
+                "_nomissinds_us_units"
             )
         )
 

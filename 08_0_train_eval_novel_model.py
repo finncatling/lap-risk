@@ -119,12 +119,14 @@ pdp_terms = [
     ),
     PDPTerm(
         ("S03SerumCreatinine", "S03Urea"),
-        (r"Creatinine (mmol L$^{-1}$)", r"Urea (mmol L$^{-1}$)"),
+        # (r"Creatinine (mmol L$^{-1}$)", r"Urea (mmol L$^{-1}$)"),
+        (r'Creatinine (mg dL$^{-1}$)', r'BUN (mg dL$^{-1}$)'),
         (4, 2),
         (None, None),
         None,
         None,
-        (40, 205)
+        (40, 205),
+        scale_features=[88.42, 0.357]
     ),
     PDPTerm(
         INDICATION_VAR_NAME,
@@ -230,7 +232,8 @@ for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
             pdp_generator.plot,
             output_dir=FIGURES_OUTPUT_DIR,
             output_filename=(
-                f"08_novel_model_{space_name}_pd_plot{hist_text}_nomissinds"))
+                f"08_novel_model_{space_name}_pd_plot{hist_text}_nomissinds"
+                "_us_units"))
 
 
 reporter.last("Done.")
