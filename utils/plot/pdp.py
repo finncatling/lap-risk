@@ -314,9 +314,10 @@ class PDPFigure:
         i: int,
         xx: Tuple[np.ndarray, np.ndarray]
     ) -> Tuple[np.ndarray, np.ndarray]:
+        new_xx = []
         for axis_i, divisor in enumerate(self.pdp_terms[i].scale_features):
-            xx[axis_i] /= divisor
-        return xx
+            new_xx.append(xx[axis_i] / divisor)
+        return tuple(new_xx)
 
     def _modify_axes(self):
         """Loop back over axes, optionally standardising their y axis scale
