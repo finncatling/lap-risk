@@ -105,7 +105,7 @@ pdp_terms = [
         None,
         None,
         (30, 115),
-        scale_ticklabels={'x': (88.42, 1), 'z': (0.357, 0)}
+        scale_features=[88.42, 0.357]
     ),
     PDPTerm(
         INDICATION_VAR_NAME,

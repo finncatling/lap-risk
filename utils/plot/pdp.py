@@ -27,7 +27,7 @@ class PDPTerm:
     legend_loc: Union[None, str] = None
     view_3d: Union[None, Tuple[int, int]] = None
     plot: bool = True
-    scale_ticklabels: Union[None, Dict[str, Tuple[float, int]]] = None
+    scale_features: Union[None, List[float]] = None
 
 
 class PDPFigure:
@@ -168,6 +168,8 @@ class PDPFigure:
         return x_length
 
     def _non_tensor_pdp(self, i: int, term: Dict, ax: Axes, x_length: int):
+        if self.pdp_terms[i].scale_features is not None:
+            raise NotImplementedError
         xx = self.gam.generate_X_grid(term=i, n=x_length)
         _, confi = self.gam.partial_dependence(
             term=i, X=xx, quantiles=self.cis)
@@ -225,6 +227,8 @@ class PDPFigure:
         xx: Tuple[np.ndarray, np.ndarray],
         confi: np.ndarray
     ):
+        if self.pdp_terms[i].scale_features is not None:
+            raise NotImplementedError
         lines = []
         for slice_i, sli in enumerate([0, -1]):
             if self.transformer is not None:
@@ -284,6 +288,8 @@ class PDPFigure:
     ):
         if self.transformer is not None:
             z = self._inverse_transform(z)
+        if self.pdp_terms[i].scale_features is not None:
+            xx = self._scale_features_3d(i, xx)
         self._update_y_min_max(z, z, plot_type='3d')
         ax.plot_surface(xx[0], xx[1], z, cmap="Blues")
         ax.view_init(*self.pdp_terms[i].view_3d)
@@ -303,10 +309,18 @@ class PDPFigure:
         else:
             raise NotImplementedError
 
+    def _scale_features_3d(
+        self,
+        i: int,
+        xx: Tuple[np.ndarray, np.ndarray]
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        for axis_i, divisor in enumerate(self.pdp_terms[i].scale_features):
+            xx[axis_i] /= divisor
+        return xx
+
     def _modify_axes(self):
-        """Loop back over axes, optionally standardising their y axis scale,
-            adding histograms and optionally rescaling the tick labels (but not
-            the plotted data).
+        """Loop back over axes, optionally standardising their y axis scale
+            and adding histograms.
 
         We have to do these operations in a second loop after the initial
         plotting as we only know the correct global y axis scale at this point,
@@ -320,13 +334,9 @@ class PDPFigure:
                     ax.set_ylim(self.y_min['2d'], self.y_max['2d'])
                 if self.plot_hists:
                     self._plot_hist(i, ax)
-                if self.plotted_pdp_terms[i].scale_ticklabels is not None:
-                    raise NotImplementedError
             else:
                 if self.standardise_y_scale:
                     ax.set_zlim3d(self.y_min['3d'], self.y_max['3d'])
-                if self.plotted_pdp_terms[i].scale_ticklabels is not None:
-                    self._rescale_axis_tick_labels(i, ax)
 
     def _plot_hist(self, i: int, ax: Axes):
         hist, bins = np.histogram(
@@ -357,17 +367,6 @@ class PDPFigure:
             return len(self.plotted_pdp_terms[i].labels)
         else:
             return self.max_hist_bins
-
-    def _rescale_axis_tick_labels(self, i: int, ax: Axes):
-        scale_ticklabels = self.plotted_pdp_terms[i].scale_ticklabels
-        for axis_name, (divisor, decimal_places) in scale_ticklabels.items():
-            ticks = getattr(ax, f'get_{axis_name}ticks')()
-            scaled_ticks = ticks / divisor
-            if decimal_places > 0:
-                scaled_ticks = np.round(scaled_ticks, decimal_places)
-            else:
-                scaled_ticks = np.round(scaled_ticks, 0).astype(int)
-            getattr(ax, f'set_{axis_name}ticklabels')(scaled_ticks)
 
 
 def compare_pdps_from_different_gams_plot(
