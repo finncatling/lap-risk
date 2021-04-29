@@ -27,6 +27,7 @@ class PDPTerm:
     legend_loc: Union[None, str] = None
     view_3d: Union[None, Tuple[int, int]] = None
     plot: bool = True
+    scale_features: Union[None, List[float]] = None
 
 
 class PDPFigure:
@@ -167,6 +168,8 @@ class PDPFigure:
         return x_length
 
     def _non_tensor_pdp(self, i: int, term: Dict, ax: Axes, x_length: int):
+        if self.pdp_terms[i].scale_features is not None:
+            raise NotImplementedError
         xx = self.gam.generate_X_grid(term=i, n=x_length)
         _, confi = self.gam.partial_dependence(
             term=i, X=xx, quantiles=self.cis)
@@ -224,6 +227,8 @@ class PDPFigure:
         xx: Tuple[np.ndarray, np.ndarray],
         confi: np.ndarray
     ):
+        if self.pdp_terms[i].scale_features is not None:
+            raise NotImplementedError
         lines = []
         for slice_i, sli in enumerate([0, -1]):
             if self.transformer is not None:
@@ -283,6 +288,8 @@ class PDPFigure:
     ):
         if self.transformer is not None:
             z = self._inverse_transform(z)
+        if self.pdp_terms[i].scale_features is not None:
+            xx = self._scale_features_3d(i, xx)
         self._update_y_min_max(z, z, plot_type='3d')
         ax.plot_surface(xx[0], xx[1], z, cmap="Blues")
         ax.view_init(*self.pdp_terms[i].view_3d)
@@ -302,14 +309,26 @@ class PDPFigure:
         else:
             raise NotImplementedError
 
+    def _scale_features_3d(
+        self,
+        i: int,
+        xx: Tuple[np.ndarray, np.ndarray]
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        new_xx = []
+        for axis_i, divisor in enumerate(self.pdp_terms[i].scale_features):
+            new_xx.append(xx[axis_i] / divisor)
+        return tuple(new_xx)
+
     def _modify_axes(self):
-        """Loop back over axes, optionally standardising their y axis scale and
-            adding histograms. We have to do these operations in a second loop
-            after the initial plotting as we only know the correct global y
-            axis scale at this point, and if we are standardising the y axis
-            then we need to know what its lower limit is in order to place the
-            align the histogram with the bottom of each plot. Also autoscales x
-            limits."""
+        """Loop back over axes, optionally standardising their y axis scale
+            and adding histograms.
+
+        We have to do these operations in a second loop after the initial
+        plotting as we only know the correct global y axis scale at this point,
+        and if we are standardising the y axis then we need to know what its
+        lower limit is in order to place the align the histogram with the
+        bottom of each plot.
+        """
         for i, ax in enumerate(self.fig.axes):
             if self.plotted_pdp_terms[i].view_3d is None:
                 if self.standardise_y_scale:

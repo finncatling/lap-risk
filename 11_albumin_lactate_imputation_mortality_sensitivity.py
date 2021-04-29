@@ -220,7 +220,7 @@ for hist_switch, hist_text in ((False, ''), (True, '_with_histograms')):
             output_dir=FIGURES_OUTPUT_DIR,
             output_filename=(
                 f"11_novel_model_lacalb_sensitivity_{space_name}_pd_plot"
-                f"{hist_text}_nomissinds"))
+                f"{hist_text}_nomissinds_us_units"))
 
 
 reporter.report("Loading 'original' novel model trained in script 08")

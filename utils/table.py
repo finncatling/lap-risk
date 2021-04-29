@@ -6,6 +6,7 @@ import pandas as pd
 
 from utils.split import TrainTestSplitter
 from utils.wrangling import percent_missing
+from utils.plot.helpers import convert_creatinine_urea
 
 
 @dataclass
@@ -22,8 +23,13 @@ def generate_demographic_table(
     variables: Tuple[DemographicTableVariable, ...],
     df: pd.DataFrame,
     tts: TrainTestSplitter,
-    output_filepath: str
+    output_filepath: str,
+    us_units: bool = False
 ) -> None:
+    df = df.copy()
+    if us_units:
+        df = convert_creatinine_urea(df)
+
     dfs = OrderedDict()
     dfs['all'] = df
     dfs['train'] = df.loc[

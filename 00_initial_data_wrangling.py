@@ -146,8 +146,9 @@ plot_saver(
     plot_creatinine_urea_redaction,
     pre_redaction_df=df,
     post_redaction_df=redact,
+    us_units=True,
     output_dir=FIGURES_OUTPUT_DIR,
-    output_filename="00_creatinine_urea_redaction",
+    output_filename="00_creatinine_urea_redaction_us_units",
     extensions=("pdf", "png"),
     dpi=(None, 300)
 )

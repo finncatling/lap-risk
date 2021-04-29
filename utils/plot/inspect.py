@@ -1,22 +1,38 @@
 from typing import Dict, Any, Tuple
 
+import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from utils.model.novel import LactateAlbuminImputer
+from utils.plot.helpers import convert_creatinine_urea
 
 
 def plot_creatinine_urea_redaction(
     pre_redaction_df: pd.DataFrame,
     post_redaction_df: pd.DataFrame,
+    us_units: bool = False
 ) -> Tuple[Figure, Axes]:
     fig, axs = plt.subplots(1, 2, figsize=(8.1, 4))
     axs = axs.ravel()
     titles = ['Raw data', 'After redaction']
 
     for i, data in enumerate([pre_redaction_df, post_redaction_df]):
+        xlim = np.array([-35., 1235.])
+        ylim = np.array([-10., 310.])
+
+        if us_units:
+            data = convert_creatinine_urea(data)
+            creatinine_label = r'Creatinine (mg dL$^{-1}$)'
+            urea_label = r'BUN (mg dL$^{-1}$)'
+            xlim /= 88.42
+            ylim /= 0.357
+        else:
+            creatinine_label = r'Creatinine (mmol L$^{-1}$)'
+            urea_label = r'Urea (mmol L$^{-1}$)'
+
         axs[i].scatter(
             data['S03SerumCreatinine'].values,
             data['S03Urea'].values,
@@ -24,11 +40,11 @@ def plot_creatinine_urea_redaction(
             s=5
         )
         axs[i].set(
-            xlabel=r'Creatinine (mmol L$^{-1}$)',
-            ylabel=r'Urea (mmol L$^{-1}$)',
+            xlabel=creatinine_label,
+            ylabel=urea_label,
             title=titles[i],
-            xlim=(-35, 1235),
-            ylim=(-10, 310)
+            xlim=list(xlim),
+            ylim=list(ylim)
         )
 
     fig.tight_layout()
