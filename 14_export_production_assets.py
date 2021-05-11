@@ -84,8 +84,8 @@ for model_name, features in model_input_data.items():
 
 
 reporter.report("Storing transformer for both imputation models")
-for model_name in ('albumin', 'lactate'):
-    assets[model_name]['transformer'] = novel_model.alb_imputer.transformers[0]
+assets['albumin']['transformer'] = novel_model.alb_imputer.transformers[0]
+assets['lactate']['transformer'] = novel_model.lac_imputer.transformers[0]
 
 
 reporter.report("Storing label encoding for non-binary categorical labels")
