@@ -1,10 +1,12 @@
 import os
+import hashlib
 
 import numpy as np
 import pandas as pd
 
 from utils.constants import (
     RAW_NELA_DATA_FILEPATH,
+    RAW_NELA_DATA_CHECKSUM,
     DATA_DIR,
     NELA_DATA_FILEPATH,
     STATS_OUTPUT_DIR,
@@ -38,7 +40,10 @@ make_directory(CURRENT_MODEL_OUTPUT_DIR)
 make_directory(PRODUCTION_OUTPUT_DIR)
 
 
-reporter.report('Loading raw data')
+reporter.report('Loading raw data and checking is has not changed')
+with open(RAW_NELA_DATA_FILEPATH, 'rb') as f:
+    md5_checksum = hashlib.md5(f.read())
+assert md5_checksum.hexdigest() == RAW_NELA_DATA_CHECKSUM
 df = pd.read_csv(RAW_NELA_DATA_FILEPATH)
 print(f'Dataset contains {df.shape[0]} cases')
 
