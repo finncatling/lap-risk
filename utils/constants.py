@@ -21,6 +21,9 @@ RAW_NELA_DATA_FILEPATH = os.path.join(
     'hqip254NELAdata21May2019.csv'
 )
 
+# MD5 checksum for raw data file above
+RAW_NELA_DATA_CHECKSUM = '5ac6b5fe676372a11551e0fd26d77487'
+
 # Folder where data after initial wrangling are kept
 DATA_DIR = os.path.join(ROOT_DIR, os.pardir, "nelarisk", "data")
 
