@@ -85,7 +85,7 @@ plot_saver(
     patient_indices=(9942, 3094),
     kde_bandwidths=(0.008, 0.04),
     output_dir=FIGURES_OUTPUT_DIR,
-    output_filename="09_novel_model_2_example_risk_distributions",
+    output_filename="09_novel_model_2_example_risk_distributions_simpler",
 )
 plot_saver(
     plot_example_risk_distributions,
@@ -93,7 +93,7 @@ plot_saver(
     patient_indices=(9942, 6530, 3094),
     kde_bandwidths=(0.008, 0.012, 0.04),
     output_dir=FIGURES_OUTPUT_DIR,
-    output_filename="09_novel_model_3_example_risk_distributions",
+    output_filename="09_novel_model_3_example_risk_distributions_simpler",
 )
 
 
