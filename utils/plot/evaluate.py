@@ -4,7 +4,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from arviz.stats.density_utils import kde
+import matplotlib.ticker as mtick
+from arviz.stats.density_utils import _kde_linear
 
 from utils.evaluate import stratify_y_pred
 
@@ -84,9 +85,17 @@ def plot_example_risk_distributions(
     """Plot predicted risk distributions (and corresponding point estimates)
         for example patients. y_pred_samples is (n_sampled_risks, n_patients).
         kde_bandwidths should be same length as patient_indices."""
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(5, 3))
+
     for i, j in enumerate(patient_indices):
-        grid, pdf = kde(y_pred_samples[:, j], bw=kde_bandwidths[i])
+        grid, pdf = _kde_linear(
+            y_pred_samples[:, j],
+            bw=kde_bandwidths[i],
+            bound_correction=False,
+            extend=True,
+            extend_fct=2.0,
+            adaptive=True
+        )
         ax.fill_between(grid, pdf, alpha=0.4, label=f'Patient {i + 1}')
         if i:
             ax.axvline(np.median(y_pred_samples[:, j]), c='black', ls=':')
@@ -95,15 +104,18 @@ def plot_example_risk_distributions(
                 np.median(y_pred_samples[:, j]),
                 c='black',
                 ls=':',
-                label='Point prediction'
+                label='Point estimate'
             )
 
     ax.set_ylim(bottom=0)
     ax.set(
         xlim=(0, 1),
         xlabel='Predicted risk of death',
-        ylabel='Probability density'
+        ylabel='Probability density',
+        yticks=([])  # turn off major y ticks
     )
+    ax.set_yticks([], minor=True)  # turn off minor y ticks
+    ax.xaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.0, decimals=0))
     ax.legend()
 
     return fig, ax
