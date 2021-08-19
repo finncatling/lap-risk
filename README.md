@@ -1,6 +1,6 @@
 # lap-risk
 
-This analysis code relates to the study *Predicting uncertainty: a novel model of mortality risk in emergency laparotomy*.
+This analysis code relates to the study *Highlighting uncertainty in clinical risk prediction: A model of mortality risk in emergency laparotomy developed using data from 186 hospitals*.
 
 ![Tests](https://github.com/finncatling/lap-risk/workflows/Tests/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/finncatling/lap-risk/badge.svg?t=H4at4E)](https://coveralls.io/github/finncatling/lap-risk)
@@ -8,9 +8,10 @@ This analysis code relates to the study *Predicting uncertainty: a novel model o
 
 ## Study data
 
-The NELA dataset is required to run the full analysis, and is not included in this repository. Under the terms of the data sharing agreement for this study we are unable to share the source data directly. Requests for anonymous patient-level data can be made directly to the NELA project team. 
+The NELA dataset is required to run the full analysis, and is not included in this repository. Under the terms of the data sharing agreement for this study we are unable to share the source data directly. Requests for anonymous patient-level data can be made directly to the NELA Project Team. 
 
 Without these data, it is still possible to set up the project environment and run the tests.
+
 
 ## Environmental setup
 
