@@ -25,14 +25,17 @@ scorer: LogisticScorer = load_object(
 
 
 reporter.report("Plotting calibration curves")
-plot_saver(
-    plot_calibration,
-    p=scorer.p,
-    calib_curves=scorer.calib_curves,
-    curve_transparency=0.15,
-    output_dir=FIGURES_OUTPUT_DIR,
-    output_filename="03_current_model_calibration",
-)
+for hist_switch, hist_suffix in ((False, ''), (True, '_histograms')):
+    plot_saver(
+        plot_calibration,
+        p=scorer.p,
+        calib_curves=scorer.calib_curves,
+        curve_transparency=0.15,
+        plot_histograms=hist_switch,
+        y_pred=np.concatenate(scorer.y_pred),
+        output_dir=FIGURES_OUTPUT_DIR,
+        output_filename=f"03_current_model_calibration{hist_suffix}",
+    )
 
 
 reporter.report("Plotting risk distributions")
