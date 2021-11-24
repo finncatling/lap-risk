@@ -39,6 +39,7 @@ def plot_calibration(
     p: np.ndarray,
     calib_curves: List[np.ndarray],
     curve_transparency: float,
+    plot_histograms: bool = False,
     y_pred: Union[None, np.ndarray] = None,
     hist_bins: int = 30,
     hist_transparency: float = 0.1
@@ -47,7 +48,7 @@ def plot_calibration(
     plot histogram of `y_pred`, the predicted probabilities."""
     fig, ax = plt.subplots(figsize=(4, 4))
 
-    if y_pred is not None:  # Plot histogram
+    if plot_histograms:
         hist, bins = np.histogram(
             y_pred,
             bins=hist_bins,
@@ -82,6 +83,7 @@ def plot_calibration_subplots(
     calib_curves: Tuple[List[np.ndarray], List[np.ndarray]],
     model_names: Tuple[str, str],
     curve_transparency: float,
+    plot_histograms: bool = False,
     y_preds: Union[None, Tuple[np.ndarray, np.ndarray]] = None,
     hist_bins: int = 30,
     hist_transparency: float = 0.1
@@ -91,7 +93,7 @@ def plot_calibration_subplots(
     fig, axes = plt.subplots(1, 2, figsize=(7, 3.5))
 
     for ax_i, ax in enumerate(axes):
-        if y_preds is not None:  # Plot histogram
+        if plot_histograms:
             hist, bins = np.histogram(
                 y_preds[ax_i],
                 bins=hist_bins,
