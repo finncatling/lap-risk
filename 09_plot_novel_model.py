@@ -39,26 +39,36 @@ for scorer_name in ('novel_model', '1_novel_model_samples'):
         os.path.join(NOVEL_MODEL_OUTPUT_DIR, f"08_{scorer_name}_scorer.pkl")
     )
 
-    reporter.report("Plotting individual calibration curves")
-    plot_saver(
-        plot_calibration,
-        p=scorer.p,
-        calib_curves=scorer.calib_curves,
-        curve_transparency=0.15,
-        output_dir=FIGURES_OUTPUT_DIR,
-        output_filename=f"09_{scorer_name}_calibration",
-    )
+    for hist_switch, hist_suffix in ((False, ''), (True, '_histograms')):
+        reporter.report("Plotting individual calibration curves")
+        plot_saver(
+            plot_calibration,
+            p=scorer.p,
+            calib_curves=scorer.calib_curves,
+            curve_transparency=0.15,
+            plot_histograms=hist_switch,
+            y_pred=np.concatenate(scorer.y_pred),
+            output_dir=FIGURES_OUTPUT_DIR,
+            output_filename=f"09_{scorer_name}_calibration{hist_suffix}",
+        )
 
-    reporter.report("Plotting calibration subplots figure")
-    plot_saver(
-        plot_calibration_subplots,
-        p=scorer.p,
-        calib_curves=(current_scorer.calib_curves, scorer.calib_curves),
-        model_names=('Re-fitted NELA calculator', 'Novel model'),
-        curve_transparency=0.15,
-        output_dir=FIGURES_OUTPUT_DIR,
-        output_filename=f"09_current_vs_{scorer_name}_calibration",
-    )
+        reporter.report("Plotting calibration subplots figure")
+        plot_saver(
+            plot_calibration_subplots,
+            p=scorer.p,
+            calib_curves=(current_scorer.calib_curves, scorer.calib_curves),
+            model_names=('Re-fitted NELA calculator', 'Novel model'),
+            curve_transparency=0.15,
+            plot_histograms=hist_switch,
+            y_preds=(
+                np.concatenate(current_scorer.y_pred),
+                np.concatenate(scorer.y_pred)
+            ),
+            output_dir=FIGURES_OUTPUT_DIR,
+            output_filename=(
+                f"09_current_vs_{scorer_name}_calibration{hist_suffix}"
+            ),
+        )
 
     reporter.report("Plotting risk distributions")
     plot_saver(

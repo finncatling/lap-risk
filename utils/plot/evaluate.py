@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Union
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -38,10 +38,33 @@ def plot_stratified_risk_distributions(
 def plot_calibration(
     p: np.ndarray,
     calib_curves: List[np.ndarray],
-    curve_transparency: float
+    curve_transparency: float,
+    plot_histograms: bool = False,
+    y_pred: Union[None, np.ndarray] = None,
+    hist_bins: int = 30,
+    hist_transparency: float = 0.1
 ) -> Tuple[Figure, Axes]:
-    """Plot calibration curves from each train-test split."""
+    """Plot calibration curves from each train-test split. Optionally
+    plot histogram of `y_pred`, the predicted probabilities."""
     fig, ax = plt.subplots(figsize=(4, 4))
+
+    if plot_histograms:
+        hist, bins = np.histogram(
+            y_pred,
+            bins=hist_bins,
+            range=(0., 1.),
+            density=True
+        )
+        ax.bar(
+            x=(bins[:-1] + bins[1:]) / 2,
+            height=hist / hist.max(),
+            align='center',
+            width=bins[1] - bins[0],
+            bottom=0.,
+            color='black',
+            alpha=hist_transparency
+        )
+
     for calib_curve in calib_curves:
         ax.plot(p, calib_curve, c="tab:blue", alpha=curve_transparency)
     ax.plot([0, 1], [0, 1], linestyle="dotted", c="black")
@@ -51,6 +74,7 @@ def plot_calibration(
         xlim=[0, 1],
         ylim=[0, 1],
     )
+
     return fig, ax
 
 
@@ -58,11 +82,34 @@ def plot_calibration_subplots(
     p: np.ndarray,
     calib_curves: Tuple[List[np.ndarray], List[np.ndarray]],
     model_names: Tuple[str, str],
-    curve_transparency: float
+    curve_transparency: float,
+    plot_histograms: bool = False,
+    y_preds: Union[None, Tuple[np.ndarray, np.ndarray]] = None,
+    hist_bins: int = 30,
+    hist_transparency: float = 0.1
 ) -> Tuple[Figure, Axes]:
-    """Plot figure with 2 subplots, each containing calibration curves."""
+    """Plot figure with 2 subplots, each containing calibration curves.
+    Optionally plot histograms of `y_pred`, the predicted probabilities."""
     fig, axes = plt.subplots(1, 2, figsize=(7, 3.5))
+
     for ax_i, ax in enumerate(axes):
+        if plot_histograms:
+            hist, bins = np.histogram(
+                y_preds[ax_i],
+                bins=hist_bins,
+                range=(0., 1.),
+                density=True
+            )
+            ax.bar(
+                x=(bins[:-1] + bins[1:]) / 2,
+                height=hist / hist.max(),
+                align='center',
+                width=bins[1] - bins[0],
+                bottom=0.,
+                color='black',
+                alpha=hist_transparency
+            )
+
         for calib_curve in calib_curves[ax_i]:
             ax.plot(p, calib_curve, c="tab:blue", alpha=curve_transparency)
         ax.plot([0, 1], [0, 1], linestyle="dotted", c="black")
@@ -73,6 +120,7 @@ def plot_calibration_subplots(
             xlim=[0, 1],
             ylim=[0, 1],
         )
+
     fig.tight_layout()
     return fig, axes
 
