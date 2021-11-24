@@ -61,7 +61,7 @@ for scorer_name in ('novel_model', '1_novel_model_samples'):
             curve_transparency=0.15,
             plot_histograms=hist_switch,
             y_preds=(
-                np.concatenate(current_scorer.calib_curves),
+                np.concatenate(current_scorer.y_pred),
                 np.concatenate(scorer.y_pred)
             ),
             output_dir=FIGURES_OUTPUT_DIR,
