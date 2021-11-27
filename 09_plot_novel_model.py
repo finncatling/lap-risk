@@ -57,7 +57,7 @@ for scorer_name in ('novel_model', '1_novel_model_samples'):
             plot_calibration_subplots,
             p=scorer.p,
             calib_curves=(current_scorer.calib_curves, scorer.calib_curves),
-            model_names=('Re-fitted NELA calculator', 'Novel model'),
+            model_names=('Re-fitted NELA calculator', 'RUNE'),
             curve_transparency=0.15,
             plot_histograms=hist_switch,
             y_preds=(
