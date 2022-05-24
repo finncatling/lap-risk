@@ -1,6 +1,6 @@
 # lap-risk
 
-This analysis code relates to the study *Highlighting uncertainty in clinical risk prediction: A model of mortality risk in emergency laparotomy developed using data from 186 hospitals*.
+This analysis code relates to the study *Highlighting uncertainty in clinical risk prediction using a model of emergency laparotomy mortality risk*.
 
 ![Tests](https://github.com/finncatling/lap-risk/workflows/Tests/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/finncatling/lap-risk/badge.svg?t=H4at4E)](https://coveralls.io/github/finncatling/lap-risk)
