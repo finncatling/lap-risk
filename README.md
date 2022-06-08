@@ -1,6 +1,10 @@
 # lap-risk
 
-This analysis code relates to the study *Highlighting uncertainty in clinical risk prediction using a model of emergency laparotomy mortality risk*.
+This analysis code relates to the study: [Mathiszig-Lee JF*, Catling FJR*, Moonesinghe SR, Brett SJ _(*equal contribution)_. Highlighting uncertainty in clinical risk prediction using a model of emergency laparotomy mortality risk. npj Digital Medicine 2022;5:1–8.](https://www.nature.com/articles/s41746-022-00616-7)
+
+An online calculator and API for the production version of the RUNE model is available at [laparotomy-risk.com](https://laparotomy-risk.com/). This model has not yet been certified as a medical device and therefore should only be used for educational and research purposes and should not be used to inform patient care.
+
+Please note that RUNE is referred to as 'the novel model' throughout this codebase.
 
 ![Tests](https://github.com/finncatling/lap-risk/workflows/Tests/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/finncatling/lap-risk/badge.svg?t=H4at4E)](https://coveralls.io/github/finncatling/lap-risk)
